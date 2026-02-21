@@ -5,7 +5,7 @@
  * Tool packages (set via MCP_TOOL_PACKAGE env var):
  *   full (default), service_desk, change_coordinator, knowledge_author,
  *   catalog_builder, system_administrator, platform_developer, itom_engineer,
- *   agile_manager, ai_developer
+ *   agile_manager, ai_developer, portal_developer, integration_engineer
  */
 import type { ServiceNowClient } from '../servicenow/client.js';
 import { ServiceNowError } from '../utils/errors.js';
@@ -40,10 +40,39 @@ import { getCsmToolDefinitions, executeCsmToolCall } from './csm.js';
 import { getSecurityToolDefinitions, executeSecurityToolCall } from './security.js';
 // Flow Designer & Process Automation
 import { getFlowToolDefinitions, executeFlowToolCall } from './flow.js';
+// Service Portal & UI Builder
+import { getPortalToolDefinitions, executePortalToolCall } from './portal.js';
+// Integration (REST Messages, Transform Maps, Events)
+import { getIntegrationToolDefinitions, executeIntegrationToolCall } from './integration.js';
+// Notifications, Email, Attachments
+import { getNotificationToolDefinitions, executeNotificationToolCall } from './notification.js';
+// Performance Analytics & Data Quality
+import { getPerformanceToolDefinitions, executePerformanceToolCall } from './performance.js';
 
 // ─── Package Definitions ──────────────────────────────────────────────────────
 
 const PACKAGE_TOOL_NAMES: Record<string, string[]> = {
+  portal_developer: [
+    'query_records', 'get_record', 'get_table_schema',
+    'list_portals', 'get_portal', 'list_portal_pages', 'get_portal_page',
+    'list_portal_widgets', 'get_portal_widget', 'create_portal_widget', 'update_portal_widget',
+    'list_widget_instances',
+    'list_ux_apps', 'get_ux_app', 'list_ux_pages',
+    'list_portal_themes', 'get_portal_theme',
+    'list_ui_policies', 'get_ui_policy', 'create_ui_policy',
+    'list_ui_actions', 'get_ui_action', 'create_ui_action', 'update_ui_action',
+    'list_client_scripts', 'get_client_script', 'create_client_script', 'update_client_script',
+    'list_changesets', 'get_changeset', 'commit_changeset', 'publish_changeset',
+  ],
+  integration_engineer: [
+    'query_records', 'get_record', 'get_table_schema',
+    'list_rest_messages', 'get_rest_message', 'list_rest_message_functions', 'create_rest_message',
+    'list_transform_maps', 'get_transform_map', 'run_transform_map', 'list_transform_field_maps',
+    'list_import_sets', 'get_import_set', 'create_import_set_row', 'list_data_sources',
+    'list_event_registry', 'get_event_registry_entry', 'register_event', 'fire_event', 'list_event_log',
+    'list_oauth_applications', 'list_credential_aliases',
+    'list_changesets', 'get_changeset', 'commit_changeset', 'publish_changeset',
+  ],
   service_desk: [
     // Core read
     'query_records', 'get_record', 'get_user', 'get_group',
@@ -80,13 +109,25 @@ const PACKAGE_TOOL_NAMES: Record<string, string[]> = {
   system_administrator: [
     'query_records', 'get_record', 'get_user', 'get_group', 'get_table_schema',
     'list_users', 'create_user', 'update_user', 'list_groups', 'create_group', 'update_group', 'add_user_to_group', 'remove_user_from_group',
-    'list_reports', 'get_report', 'run_aggregate_query', 'trend_query', 'export_report_data', 'get_sys_log', 'list_scheduled_jobs',
+    'list_reports', 'get_report', 'run_aggregate_query', 'trend_query', 'export_report_data', 'get_sys_log',
+    'list_scheduled_jobs', 'get_scheduled_job', 'create_scheduled_job', 'update_scheduled_job', 'trigger_scheduled_job', 'list_job_run_history',
+    'list_acls', 'get_acl', 'create_acl', 'update_acl',
+    'list_notifications', 'get_notification', 'create_notification', 'update_notification',
+    'list_email_logs', 'get_email_log',
+    'list_attachments', 'get_attachment_metadata', 'upload_attachment', 'delete_attachment',
+    'check_table_completeness', 'get_table_record_count', 'compare_record_counts',
+    'list_pa_indicators', 'get_pa_indicator', 'get_pa_scorecard', 'get_pa_time_series',
+    'list_pa_dashboards', 'get_pa_dashboard',
+    'list_oauth_applications', 'list_credential_aliases',
   ],
   platform_developer: [
     'query_records', 'get_record', 'get_table_schema',
     'list_business_rules', 'get_business_rule', 'create_business_rule', 'update_business_rule',
     'list_script_includes', 'get_script_include', 'create_script_include', 'update_script_include',
-    'list_client_scripts', 'get_client_script',
+    'list_client_scripts', 'get_client_script', 'create_client_script', 'update_client_script',
+    'list_ui_policies', 'get_ui_policy', 'create_ui_policy',
+    'list_ui_actions', 'get_ui_action', 'create_ui_action', 'update_ui_action',
+    'list_acls', 'get_acl', 'create_acl', 'update_acl',
     'list_changesets', 'get_changeset', 'commit_changeset', 'publish_changeset',
     'list_atf_suites', 'get_atf_suite', 'run_atf_suite', 'list_atf_tests', 'get_atf_test', 'run_atf_test', 'get_atf_suite_result', 'list_atf_test_results', 'get_atf_failure_insight',
   ],
@@ -131,6 +172,10 @@ const ALL_TOOLS = [
   ...getCsmToolDefinitions(),
   ...getSecurityToolDefinitions(),
   ...getFlowToolDefinitions(),
+  ...getPortalToolDefinitions(),
+  ...getIntegrationToolDefinitions(),
+  ...getNotificationToolDefinitions(),
+  ...getPerformanceToolDefinitions(),
 ];
 
 // ─── Public API ───────────────────────────────────────────────────────────────
@@ -176,6 +221,10 @@ export async function executeTool(
     () => executeCsmToolCall(client, name, args),
     () => executeSecurityToolCall(client, name, args),
     () => executeFlowToolCall(client, name, args),
+    () => executePortalToolCall(client, name, args),
+    () => executeIntegrationToolCall(client, name, args),
+    () => executeNotificationToolCall(client, name, args),
+    () => executePerformanceToolCall(client, name, args),
   ];
 
   for (const handler of handlers) {
