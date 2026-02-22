@@ -1,7 +1,7 @@
 {
   "name": "now-ai-kit",
   "version": "2.1.0",
-  "description": "The most advanced & comprehensive ServiceNow MCP server — 220+ tools across 21 modules, full ServiceNow API coverage, integrates with Claude, GPT-4o, Gemini, Cursor, VS Code, Codex, and more",
+  "description": "The most comprehensive ServiceNow AI Kit — 230+ tools across 21 modules, 5-minute setup, always free. Connect Claude, ChatGPT, Gemini, Cursor, GitHub Copilot, and any AI to ServiceNow. Autonomous, multi-agent, multi-provider.",
   "main": "dist/server.js",
   "type": "module",
   "engines": {
@@ -20,6 +20,12 @@
   "keywords": [
     "servicenow",
     "servicenow-mcp",
+    "servicenow-ai",
+    "servicenow-agent",
+    "servicenow-automation",
+    "servicenow-developer-tools",
+    "servicenow-claude",
+    "servicenow-chatgpt",
     "mcp",
     "model-context-protocol",
     "now-ai-kit",
@@ -37,9 +43,13 @@
     "performance-analytics",
     "ai",
     "llm",
+    "autonomous-agent",
+    "multi-agent",
     "claude",
     "openai",
     "gemini",
+    "cursor",
+    "copilot",
     "typescript",
     "automation"
   ],
