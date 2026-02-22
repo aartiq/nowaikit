@@ -420,7 +420,7 @@ See [EXAMPLES.md](EXAMPLES.md) for 120+ real-world examples across all ServiceNo
 2. Edit config:
    - **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
    - **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
-3. Add this block (replace the path and credentials):
+3. Add this block — **single instance** (replace path and credentials):
 
 ```json
 {
@@ -439,9 +439,30 @@ See [EXAMPLES.md](EXAMPLES.md) for 120+ real-world examples across all ServiceNo
   }
 }
 ```
-4. Restart Claude Desktop. The hammer icon (🔨) in the bottom left confirms connection.
 
-Full guide → [clients/claude-desktop/SETUP.md](clients/claude-desktop/SETUP.md)
+Or use **multi-instance** (dev + staging + prod, or multiple customer tenants):
+
+```json
+{
+  "mcpServers": {
+    "now-ai-kit": {
+      "command": "node",
+      "args": ["/absolute/path/to/nowaikit/dist/server.js"],
+      "env": {
+        "SN_INSTANCES_CONFIG": "/absolute/path/to/instances.json"
+      }
+    }
+  }
+}
+```
+
+Copy `instances.example.json` → `instances.json`, fill in your instances, then ask:
+> *"List instances"* → *"Switch to prod"* → *"Show me all P1 incidents"*
+> *"Get open changes from customer_acme"* (uses `instance` parameter per-call)
+
+4. Restart Claude Desktop. The hammer icon confirms connection.
+
+Full guide → [clients/claude-desktop/SETUP.md](clients/claude-desktop/SETUP.md) | [docs/MULTI_INSTANCE.md](docs/MULTI_INSTANCE.md)
 </details>
 
 <details>
@@ -577,6 +598,8 @@ Full guide → [docs/CLIENT_SETUP.md](docs/CLIENT_SETUP.md)
 }
 ```
 3. Restart Cursor. Ask in Chat: *"List all open P1 incidents"*
+
+**Multi-instance:** Replace the env block with `"SN_INSTANCES_CONFIG": "/path/to/instances.json"` to connect to multiple tenants.
 
 Full guide → [clients/cursor/SETUP.md](clients/cursor/SETUP.md)
 </details>
