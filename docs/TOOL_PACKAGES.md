@@ -1,23 +1,25 @@
 # Role-Based Tool Packages
 
-Set `MCP_TOOL_PACKAGE` in your environment to load a role-specific subset of tools instead of all 230. This keeps the tool list focused and relevant for each user role.
+Set `MCP_TOOL_PACKAGE` in your environment to load a role-specific subset of tools instead of the full set. This keeps the tool list focused and relevant for each user role.
 
 ## Available Packages
 
 | Package | Target Role | Tool Count |
 |---------|-------------|------------|
-| `full` | All roles (default) | 230 |
+| `full` | All roles (default) | 270+ |
 | `service_desk` | IT help desk agent | ~35 |
 | `change_coordinator` | Change manager | ~25 |
 | `knowledge_author` | KB content creator | ~20 |
 | `catalog_builder` | Catalog administrator | ~20 |
-| `system_administrator` | SysAdmin | ~55 |
+| `system_administrator` | SysAdmin | ~60 |
 | `platform_developer` | Platform developer | ~45 |
 | `itom_engineer` | ITOM/CMDB engineer | ~15 |
 | `agile_manager` | Agile team lead | ~15 |
 | `ai_developer` | Now Assist/AI developer | ~15 |
 | `portal_developer` | Portal/UI Builder developer | ~35 |
 | `integration_engineer` | Integration specialist | ~30 |
+| `devops_engineer` | DevOps/pipeline engineer | ~25 |
+| `itam_analyst` | IT Asset Management analyst | ~15 |
 
 ## Usage
 
@@ -37,7 +39,7 @@ MCP_TOOL_PACKAGE=service_desk node dist/server.js
 ## Package Definitions
 
 ### full
-All 230 tools. Default when `MCP_TOOL_PACKAGE` is not set.
+All tools (270+). Default when `MCP_TOOL_PACKAGE` is not set.
 
 ### service_desk
 Tools for IT help desk agents handling incidents, requests, and approvals.

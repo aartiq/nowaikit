@@ -48,10 +48,33 @@ import { getIntegrationToolDefinitions, executeIntegrationToolCall } from './int
 import { getNotificationToolDefinitions, executeNotificationToolCall } from './notification.js';
 // Performance Analytics & Data Quality
 import { getPerformanceToolDefinitions, executePerformanceToolCall } from './performance.js';
+// System Properties
+import { getSysPropertiesToolDefinitions, executeSysPropertiesToolCall } from './sys-properties.js';
+// Update Set management
+import { getUpdateSetToolDefinitions, executeUpdateSetToolCall } from './updateset.js';
+// Virtual Agent authoring
+import { getVaToolDefinitions, executeVaToolCall } from './va.js';
+// IT Asset Management
+import { getItamToolDefinitions, executeItamToolCall } from './itam.js';
+// DevOps & pipeline tracking
+import { getDevopsToolDefinitions, executeDevopsToolCall } from './devops.js';
 
 // ─── Package Definitions ──────────────────────────────────────────────────────
 
 const PACKAGE_TOOL_NAMES: Record<string, string[]> = {
+  devops_engineer: [
+    'query_records', 'get_record', 'get_table_schema',
+    'list_devops_pipelines', 'get_devops_pipeline', 'list_deployments', 'get_deployment',
+    'create_devops_change', 'track_deployment', 'get_devops_insights',
+    'create_update_set', 'switch_update_set', 'get_current_update_set', 'list_update_sets',
+    'complete_update_set', 'preview_update_set', 'export_update_set', 'ensure_active_update_set',
+    'get_change_request', 'create_change_request', 'list_change_requests',
+  ],
+  itam_analyst: [
+    'query_records', 'get_record',
+    'list_assets', 'get_asset', 'create_asset', 'update_asset', 'retire_asset',
+    'list_software_licenses', 'get_license_compliance', 'list_asset_contracts',
+  ],
   portal_developer: [
     'query_records', 'get_record', 'get_table_schema',
     'list_portals', 'get_portal', 'list_portal_pages', 'get_portal_page',
@@ -119,6 +142,10 @@ const PACKAGE_TOOL_NAMES: Record<string, string[]> = {
     'list_pa_indicators', 'get_pa_indicator', 'get_pa_scorecard', 'get_pa_time_series',
     'list_pa_dashboards', 'get_pa_dashboard',
     'list_oauth_applications', 'list_credential_aliases',
+    'get_system_property', 'set_system_property', 'list_system_properties', 'search_system_properties',
+    'bulk_get_properties', 'bulk_set_properties', 'list_property_categories',
+    'get_current_update_set', 'list_update_sets',
+    'create_update_set', 'switch_update_set', 'complete_update_set', 'preview_update_set', 'ensure_active_update_set',
   ],
   platform_developer: [
     'query_records', 'get_record', 'get_table_schema',
@@ -176,6 +203,11 @@ const ALL_TOOLS = [
   ...getIntegrationToolDefinitions(),
   ...getNotificationToolDefinitions(),
   ...getPerformanceToolDefinitions(),
+  ...getSysPropertiesToolDefinitions(),
+  ...getUpdateSetToolDefinitions(),
+  ...getVaToolDefinitions(),
+  ...getItamToolDefinitions(),
+  ...getDevopsToolDefinitions(),
 ];
 
 // ─── Public API ───────────────────────────────────────────────────────────────
@@ -225,6 +257,11 @@ export async function executeTool(
     () => executeIntegrationToolCall(client, name, args),
     () => executeNotificationToolCall(client, name, args),
     () => executePerformanceToolCall(client, name, args),
+    () => executeSysPropertiesToolCall(client, name, args),
+    () => executeUpdateSetToolCall(client, name, args),
+    () => executeVaToolCall(client, name, args),
+    () => executeItamToolCall(client, name, args),
+    () => executeDevopsToolCall(client, name, args),
   ];
 
   for (const handler of handlers) {

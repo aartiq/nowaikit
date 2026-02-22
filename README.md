@@ -5,7 +5,7 @@
 <br/>
 
 [![AI-Powered](https://img.shields.io/badge/AI--Powered-Multi--Provider-6366f1?style=flat-square)](https://github.com/aartiq/nowaikit)
-[![Tools](https://img.shields.io/badge/230%2B%20Tools-21%20Modules-0ea5e9?style=flat-square)](docs/TOOLS.md)
+[![Tools](https://img.shields.io/badge/270%2B%20Tools-All%20Modules-0ea5e9?style=flat-square)](docs/TOOLS.md)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-f59e0b?style=flat-square)](LICENSE)
 [![ServiceNow](https://img.shields.io/badge/ServiceNow-Latest%20Release-00c7b4?style=flat-square)](https://developer.servicenow.com)
@@ -16,16 +16,16 @@
 
 # now-ai-kit
 
-## The Most Comprehensive ServiceNow AI Kit — Free, Forever
+## The Most Comprehensive ServiceNow AI Kit
 
-> AI-powered &bull; Multi-agent &bull; Multi-provider &bull; 230+ tools &bull; 21 modules &bull; 5-minute setup &bull; Always free
+> AI-powered &bull; Multi-agent &bull; Multi-provider &bull; 270+ tools &bull; All ServiceNow modules &bull; 5-minute setup &bull; MIT licensed
 
 **now-ai-kit** is the most comprehensive and easiest-to-set-up AI toolkit for ServiceNow.
-Connect Claude, ChatGPT, Gemini, Cursor, GitHub Copilot, or any MCP-compatible AI to your ServiceNow instance in **under 5 minutes** — and let your AI read, build, deploy, and automate across all 21 ServiceNow modules.
+Connect Claude, ChatGPT, Gemini, Google AI Studio, Cursor, GitHub Copilot, or any MCP-compatible AI to your ServiceNow instance in **under 5 minutes** — and let your AI read, build, deploy, and automate across all ServiceNow modules.
 
 Ask questions, write scripts, deploy portal widgets, trigger flows, manage incidents, automate HRSD and CSM workflows, run ATF tests, build integrations, and fire events — all from your AI chat window, in plain English.
 
-**Works with any AI. Works on any instance. Works for everyone. 100% open-source, always free.**
+**Works with any AI. Works on any instance. Works for everyone. 100% open-source.**
 
 <br/>
 
@@ -102,7 +102,7 @@ Works with every major AI platform out of the box — **Claude**, **ChatGPT**, *
 
 ### Broadest Platform Coverage
 
-230+ production-ready tools spanning every ServiceNow domain: ITSM, ITOM, HRSD, CSM, SecOps, GRC, Agile, ATF, Flow Designer, Scripting, Now Assist, Service Portal, Integration Hub, Notifications, Performance Analytics, and more — the most complete AI toolkit for ServiceNow available.
+270+ production-ready tools spanning every ServiceNow domain: ITSM, ITOM, HRSD, CSM, SecOps, GRC, Agile, ATF, Flow Designer, Scripting, Now Assist, Service Portal, Integration Hub, Notifications, Performance Analytics, and more — the most complete AI toolkit for ServiceNow available.
 
 </td>
 </tr>
@@ -137,7 +137,7 @@ Full TypeScript types, 120+ real-world examples, 9 reference guides, and beginne
 
 | Resource | Link |
 |----------|------|
-| All 230+ Tools Reference | [docs/TOOLS.md](docs/TOOLS.md) |
+| All Tools Reference | [docs/TOOLS.md](docs/TOOLS.md) |
 | Client Setup (All AI tools, beginner + advanced) | [docs/CLIENT_SETUP.md](docs/CLIENT_SETUP.md) |
 | Role-Based Tool Packages | [docs/TOOL_PACKAGES.md](docs/TOOL_PACKAGES.md) |
 | Now Assist & AI Integration | [docs/NOW_ASSIST.md](docs/NOW_ASSIST.md) |
@@ -152,7 +152,7 @@ Full TypeScript types, 120+ real-world examples, 9 reference guides, and beginne
 
 ## Module Coverage
 
-21 domain modules covering the full ServiceNow platform:
+Domain modules covering the full ServiceNow platform:
 
 | Module | Key Capabilities | Tools |
 |--------|-----------------|-------|
@@ -173,10 +173,15 @@ Full TypeScript types, 120+ real-world examples, 9 reference guides, and beginne
 | Customer Service Management (CSM) | Customer cases, accounts, contacts, products, SLAs | 11 |
 | Security Operations & GRC | SecOps incidents, vulnerabilities, GRC risks, controls, threat intel | 11 |
 | Flow Designer & Process Automation | Flows, subflows, triggers, executions, Process Automation playbooks | 10 |
-| **Service Portal & UI Builder** *(new)* | Portals, pages, **widgets (create/update/deploy)**, Next Experience apps/pages, themes | 14 |
-| **Integration Hub** *(new)* | REST Messages, Transform Maps, Import Sets, **Event Registry**, OAuth apps, credential aliases | 18 |
-| **Notifications & Attachments** *(new)* | Email notifications, email logs, **file attachments (upload/list/delete)**, templates, subscriptions | 12 |
-| **Performance Analytics** *(new)* | PA indicators/scorecards, time-series, dashboards, PA jobs, **data quality checks** | 13 |
+| Service Portal & UI Builder | Portals, pages, **widgets (create/update/deploy)**, Next Experience apps/pages, themes | 14 |
+| Integration Hub | REST Messages, Transform Maps, Import Sets, **Event Registry**, OAuth apps, credential aliases | 18 |
+| Notifications & Attachments | Email notifications, email logs, **file attachments (upload/list/delete)**, templates, subscriptions | 12 |
+| Performance Analytics | PA indicators/scorecards, time-series, dashboards, PA jobs, **data quality checks** | 13 |
+| System Properties | Get, set, bulk operations, validate, export/import, audit history | 12 |
+| Update Set Management | Create, switch, preview, complete, export, auto-ensure active set | 8 |
+| Virtual Agent (VA) | Topic authoring, conversation history, categories, topic listing | 7 |
+| IT Asset Management (ITAM) | Assets, software licenses, contracts, compliance reporting | 8 |
+| DevOps & Pipeline Tracking | Pipelines, deployments, change governance, DORA metrics | 7 |
 
 ---
 
@@ -212,7 +217,7 @@ Set `MCP_TOOL_PACKAGE` to expose only the tools relevant to each persona:
 
 | Package | Persona | Tools Included |
 |---------|---------|---------------|
-| `full` | Administrators | All 230+ tools |
+| `full` | Administrators | All tools (270+) |
 | `service_desk` | L1/L2 Agents | Incidents, tasks, approvals, KB, SLA |
 | `change_coordinator` | Change Managers | Changes (create/approve/close), CAB, CMDB, approvals |
 | `knowledge_author` | KB Authors | Knowledge base create/publish |
@@ -852,43 +857,470 @@ You: "Run the nightly sync transform map on the latest import set"
 You: "Create a scheduled job that emails the on-call team daily at 7am"
 ```
 
-See [EXAMPLES.md](EXAMPLES.md) for 120+ real-world examples across all 21 modules.
+See [EXAMPLES.md](EXAMPLES.md) for 120+ real-world examples across all ServiceNow modules.
 
 ---
 
 ## Supported AI Clients
 
-**Any MCP-compatible AI agent works.** Tested and documented for:
+**Any MCP-compatible AI works.** now-ai-kit has been tested with every major AI assistant, editor, and agent framework. Pick yours and follow the 3-step setup below.
 
-| Client | Type | Auth Methods | Config Guide |
-|--------|------|-------------|-------------|
-| Claude Desktop | Desktop app | Basic, OAuth 2.0 | [clients/claude-desktop/SETUP.md](clients/claude-desktop/SETUP.md) |
-| Claude Code | CLI / IDE | Basic, OAuth 2.0 | [clients/claude-code/SETUP.md](clients/claude-code/SETUP.md) |
-| ChatGPT / OpenAI | API / Web | Basic, OAuth 2.0 | [clients/openai/SETUP.md](clients/openai/SETUP.md) |
-| Gemini / Vertex AI | API / CLI | Basic, OAuth 2.0 | [clients/gemini/SETUP.md](clients/gemini/SETUP.md) |
-| Grok (xAI) | API / Web | Basic, OAuth 2.0 | [docs/CLIENT_SETUP.md](docs/CLIENT_SETUP.md) |
-| Cursor | AI code editor | Basic, OAuth 2.0 | [clients/cursor/SETUP.md](clients/cursor/SETUP.md) |
-| Windsurf (Codeium) | AI code editor | Basic, OAuth 2.0 | [docs/CLIENT_SETUP.md](docs/CLIENT_SETUP.md) |
-| GitHub Copilot (VS Code) | IDE extension | Basic, OAuth 2.0 | [clients/vscode/SETUP.md](clients/vscode/SETUP.md) |
-| Continue.dev | VS Code / JetBrains | Basic, OAuth 2.0 | [docs/CLIENT_SETUP.md](docs/CLIENT_SETUP.md) |
-| Cline | VS Code extension | Basic, OAuth 2.0 | [docs/CLIENT_SETUP.md](docs/CLIENT_SETUP.md) |
-| Amazon Q Developer | IDE / CLI | Basic, OAuth 2.0 | [docs/CLIENT_SETUP.md](docs/CLIENT_SETUP.md) |
-| JetBrains AI Assistant | IDE plugin | Basic, OAuth 2.0 | [docs/CLIENT_SETUP.md](docs/CLIENT_SETUP.md) |
-| Zed | AI editor | Basic, OAuth 2.0 | [docs/CLIENT_SETUP.md](docs/CLIENT_SETUP.md) |
-| Ollama (local models) | Local runtime | Basic | [docs/CLIENT_SETUP.md](docs/CLIENT_SETUP.md) |
+### AI Assistants & Chat
+
+<details>
+<summary><b>Claude Desktop</b> — Anthropic (Mac / Windows / Linux)</summary>
+
+1. Install Claude Desktop from [claude.ai/download](https://claude.ai/download)
+2. Edit config:
+   - **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
+   - **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
+3. Add this block (replace the path and credentials):
+
+```json
+{
+  "mcpServers": {
+    "now-ai-kit": {
+      "command": "node",
+      "args": ["/absolute/path/to/nowaikit/dist/server.js"],
+      "env": {
+        "SERVICENOW_INSTANCE_URL": "https://yourinstance.service-now.com",
+        "SERVICENOW_AUTH_METHOD": "basic",
+        "SERVICENOW_BASIC_USERNAME": "admin",
+        "SERVICENOW_BASIC_PASSWORD": "your_password",
+        "WRITE_ENABLED": "false"
+      }
+    }
+  }
+}
+```
+4. Restart Claude Desktop. The hammer icon (🔨) in the bottom left confirms connection.
+
+Full guide → [clients/claude-desktop/SETUP.md](clients/claude-desktop/SETUP.md)
+</details>
+
+<details>
+<summary><b>ChatGPT / OpenAI</b> — GPT-4o, o1, o3 (API)</summary>
+
+1. Start now-ai-kit as a local server or use the npm package
+2. In your OpenAI API code, configure the MCP tool endpoint:
+
+```python
+# Python example using openai + now-ai-kit
+import subprocess, json
+from openai import OpenAI
+
+# Start now-ai-kit (or run separately)
+proc = subprocess.Popen(["node", "/path/to/nowaikit/dist/server.js"],
+    env={**os.environ, "SERVICENOW_INSTANCE_URL": "https://yourinstance.service-now.com",
+         "SERVICENOW_AUTH_METHOD": "basic", "SERVICENOW_BASIC_USERNAME": "admin",
+         "SERVICENOW_BASIC_PASSWORD": "your_password"})
+```
+
+3. Use the tools via function calling in your GPT-4o requests
+
+Full guide → [clients/codex/SETUP.md](clients/codex/SETUP.md) | [docs/CLIENT_SETUP.md](docs/CLIENT_SETUP.md)
+</details>
+
+<details>
+<summary><b>Google Gemini / Vertex AI</b> (API)</summary>
+
+1. Install now-ai-kit: `npm install -g now-ai-kit`
+2. Use the Python client in `clients/gemini/`:
+
+```bash
+pip install google-generativeai
+python clients/gemini/servicenow_gemini_client.py
+```
+
+Full guide → [clients/gemini/SETUP.md](clients/gemini/SETUP.md)
+</details>
+
+<details>
+<summary><b>Google AI Studio</b> — Gemini 2.0 Flash / Pro (MCP Preview)</summary>
+
+Google AI Studio supports MCP servers via its agent execution environment (currently in preview).
+
+1. Go to [aistudio.google.com](https://aistudio.google.com) and open **Build → Agent**
+2. In the **Tools** panel, add an MCP Server and point it to your now-ai-kit instance:
+
+```json
+{
+  "name": "now-ai-kit",
+  "transport": "stdio",
+  "command": "node",
+  "args": ["/absolute/path/to/nowaikit/dist/server.js"],
+  "env": {
+    "SERVICENOW_INSTANCE_URL": "https://yourinstance.service-now.com",
+    "SERVICENOW_AUTH_METHOD": "basic",
+    "SERVICENOW_BASIC_USERNAME": "admin",
+    "SERVICENOW_BASIC_PASSWORD": "your_password",
+    "WRITE_ENABLED": "false"
+  }
+}
+```
+
+3. Alternatively, use the **Gemini API** directly with function calling by mapping now-ai-kit tool definitions:
+
+```python
+import google.generativeai as genai
+import subprocess, json, os
+
+# Start now-ai-kit MCP server
+proc = subprocess.Popen(
+    ["node", "/path/to/nowaikit/dist/server.js"],
+    stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+    env={**os.environ,
+         "SERVICENOW_INSTANCE_URL": "https://yourinstance.service-now.com",
+         "SERVICENOW_AUTH_METHOD": "basic",
+         "SERVICENOW_BASIC_USERNAME": "admin",
+         "SERVICENOW_BASIC_PASSWORD": "your_password"}
+)
+
+genai.configure(api_key=os.environ["GOOGLE_API_KEY"])
+model = genai.GenerativeModel("gemini-2.0-flash")
+# Use model.generate_content() with tools= mapped from now-ai-kit definitions
+```
+
+Full guide → [docs/CLIENT_SETUP.md](docs/CLIENT_SETUP.md)
+</details>
+
+<details>
+<summary><b>Grok (xAI)</b> — via OpenAI-compatible API</summary>
+
+1. Grok uses the OpenAI-compatible API format. Follow the OpenAI setup above
+2. Set `base_url="https://api.x.ai/v1"` and your `XAI_API_KEY`
+
+Full guide → [docs/CLIENT_SETUP.md](docs/CLIENT_SETUP.md)
+</details>
 
 ---
 
-## What's New in v2.1
+### AI Code Editors
 
-- **230+ tools** across 21 domain modules (+76 from v2.0)
-- **4 new modules**: Service Portal & UI Builder, Integration Hub, Notifications & Attachments, Performance Analytics & Data Quality
+<details>
+<summary><b>Cursor</b> — AI-first code editor</summary>
+
+1. Open Cursor → Settings → MCP
+2. Add server config:
+
+```json
+{
+  "mcpServers": {
+    "now-ai-kit": {
+      "command": "node",
+      "args": ["/absolute/path/to/nowaikit/dist/server.js"],
+      "env": {
+        "SERVICENOW_INSTANCE_URL": "https://yourinstance.service-now.com",
+        "SERVICENOW_AUTH_METHOD": "basic",
+        "SERVICENOW_BASIC_USERNAME": "admin",
+        "SERVICENOW_BASIC_PASSWORD": "your_password",
+        "WRITE_ENABLED": "true",
+        "SCRIPTING_ENABLED": "true"
+      }
+    }
+  }
+}
+```
+3. Restart Cursor. Ask in Chat: *"List all open P1 incidents"*
+
+Full guide → [clients/cursor/SETUP.md](clients/cursor/SETUP.md)
+</details>
+
+<details>
+<summary><b>Windsurf (Codeium)</b> — AI-native editor</summary>
+
+1. Open Windsurf → Cascade → Configure MCP
+2. Add the same JSON block as Cursor above
+3. Reload Windsurf window
+
+Full guide → [docs/CLIENT_SETUP.md](docs/CLIENT_SETUP.md)
+</details>
+
+<details>
+<summary><b>Zed Editor</b> — collaborative AI editor</summary>
+
+1. Open Zed → `~/.config/zed/settings.json`
+2. Add under `"context_servers"`:
+
+```json
+{
+  "context_servers": {
+    "now-ai-kit": {
+      "command": { "path": "node", "args": ["/path/to/nowaikit/dist/server.js"] },
+      "settings": {
+        "SERVICENOW_INSTANCE_URL": "https://yourinstance.service-now.com",
+        "SERVICENOW_AUTH_METHOD": "basic",
+        "SERVICENOW_BASIC_USERNAME": "admin",
+        "SERVICENOW_BASIC_PASSWORD": "your_password"
+      }
+    }
+  }
+}
+```
+
+Full guide → [docs/CLIENT_SETUP.md](docs/CLIENT_SETUP.md)
+</details>
+
+---
+
+### IDE Extensions
+
+<details>
+<summary><b>VS Code</b> — Native MCP (v1.99+, no subscription required)</summary>
+
+VS Code 1.99 and later includes built-in MCP support — no extension or subscription required.
+
+1. Install [VS Code 1.99+](https://code.visualstudio.com/download)
+2. Create `.vscode/mcp.json` in your workspace (or edit User settings):
+
+```json
+{
+  "servers": {
+    "now-ai-kit": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["/absolute/path/to/nowaikit/dist/server.js"],
+      "env": {
+        "SERVICENOW_INSTANCE_URL": "https://yourinstance.service-now.com",
+        "SERVICENOW_AUTH_METHOD": "basic",
+        "SERVICENOW_BASIC_USERNAME": "admin",
+        "SERVICENOW_BASIC_PASSWORD": "your_password",
+        "WRITE_ENABLED": "true",
+        "SCRIPTING_ENABLED": "true"
+      }
+    }
+  }
+}
+```
+
+3. Open the Command Palette (`Cmd/Ctrl+Shift+P`) → **MCP: List Servers** to verify the connection
+4. Open Copilot Chat (or any AI assistant in VS Code) and use `@now-ai-kit` or just ask naturally
+
+> **Tip:** Add `.vscode/mcp.json` to `.gitignore` if it contains credentials, or use environment variables from a `.env` file.
+
+Full guide → [clients/vscode/SETUP.md](clients/vscode/SETUP.md)
+</details>
+
+<details>
+<summary><b>VS Code — GitHub Copilot</b> (agent mode)</summary>
+
+1. Install VS Code + GitHub Copilot extension
+2. Create `.vscode/mcp.json` in your project:
+
+```json
+{
+  "servers": {
+    "now-ai-kit": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["${workspaceFolder}/../../nowaikit/dist/server.js"],
+      "env": {
+        "SERVICENOW_INSTANCE_URL": "https://yourinstance.service-now.com",
+        "SERVICENOW_AUTH_METHOD": "basic",
+        "SERVICENOW_BASIC_USERNAME": "admin",
+        "SERVICENOW_BASIC_PASSWORD": "your_password"
+      }
+    }
+  }
+}
+```
+3. Open Copilot Chat → Agent mode → `@now-ai-kit`
+
+Full guide → [clients/vscode/SETUP.md](clients/vscode/SETUP.md)
+</details>
+
+<details>
+<summary><b>VS Code — Continue.dev</b> (open-source Copilot alternative)</summary>
+
+1. Install [Continue](https://marketplace.visualstudio.com/items?itemName=Continue.continue) from VS Code Marketplace
+2. Edit `~/.continue/config.json`:
+
+```json
+{
+  "mcpServers": [
+    {
+      "name": "now-ai-kit",
+      "command": "node",
+      "args": ["/path/to/nowaikit/dist/server.js"],
+      "env": {
+        "SERVICENOW_INSTANCE_URL": "https://yourinstance.service-now.com",
+        "SERVICENOW_AUTH_METHOD": "basic",
+        "SERVICENOW_BASIC_USERNAME": "admin",
+        "SERVICENOW_BASIC_PASSWORD": "your_password"
+      }
+    }
+  ]
+}
+```
+
+Full guide → [docs/CLIENT_SETUP.md](docs/CLIENT_SETUP.md)
+</details>
+
+<details>
+<summary><b>VS Code — Cline</b> (autonomous AI agent)</summary>
+
+1. Install [Cline](https://marketplace.visualstudio.com/items?itemName=saoudrizwan.claude-dev) from VS Code Marketplace
+2. Open Cline → MCP Servers → Add Server
+3. Enter the path to `nowaikit/dist/server.js` and your environment variables
+
+Full guide → [docs/CLIENT_SETUP.md](docs/CLIENT_SETUP.md)
+</details>
+
+<details>
+<summary><b>JetBrains AI Assistant</b> (IntelliJ IDEA, PyCharm, WebStorm, etc.)</summary>
+
+1. Install JetBrains AI Assistant plugin
+2. Go to Settings → Tools → AI Assistant → MCP Servers
+3. Add a new server with the path to `nowaikit/dist/server.js`
+4. Set environment variables in the server configuration dialog
+
+Full guide → [docs/CLIENT_SETUP.md](docs/CLIENT_SETUP.md)
+</details>
+
+<details>
+<summary><b>Amazon Q Developer</b> (AWS CLI + IDE)</summary>
+
+1. Install Amazon Q Developer extension for VS Code or IntelliJ
+2. Configure MCP via `~/.aws/amazonq/mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "now-ai-kit": {
+      "command": "node",
+      "args": ["/path/to/nowaikit/dist/server.js"],
+      "env": {
+        "SERVICENOW_INSTANCE_URL": "https://yourinstance.service-now.com",
+        "SERVICENOW_AUTH_METHOD": "basic",
+        "SERVICENOW_BASIC_USERNAME": "admin",
+        "SERVICENOW_BASIC_PASSWORD": "your_password"
+      }
+    }
+  }
+}
+```
+
+Full guide → [docs/CLIENT_SETUP.md](docs/CLIENT_SETUP.md)
+</details>
+
+---
+
+### CLI & Terminal Agents
+
+<details>
+<summary><b>Claude Code / Claude CLI</b> — Anthropic's official CLI</summary>
+
+```bash
+# Install Claude Code
+npm install -g @anthropic-ai/claude-code
+
+# Register now-ai-kit as an MCP server
+claude mcp add now-ai-kit node /absolute/path/to/nowaikit/dist/server.js \
+  --env SERVICENOW_INSTANCE_URL=https://yourinstance.service-now.com \
+  --env SERVICENOW_AUTH_METHOD=basic \
+  --env SERVICENOW_BASIC_USERNAME=admin \
+  --env SERVICENOW_BASIC_PASSWORD=your_password
+
+# Verify
+claude mcp list
+
+# Use it
+claude "Show me all unresolved P1 incidents"
+```
+
+Full guide → [clients/claude-code/SETUP.md](clients/claude-code/SETUP.md)
+</details>
+
+<details>
+<summary><b>Ollama</b> — run AI locally (Llama, Mistral, Phi, etc.)</summary>
+
+1. Install [Ollama](https://ollama.ai) and pull a model: `ollama pull llama3`
+2. Use an MCP-compatible client (e.g. Cline or Continue) configured to use Ollama as the model
+3. Point the MCP server at `nowaikit/dist/server.js`
+
+Full guide → [docs/CLIENT_SETUP.md](docs/CLIENT_SETUP.md)
+</details>
+
+---
+
+### Programmatic / Agent SDK
+
+<details>
+<summary><b>OpenAI Codex / Custom Python Agent</b></summary>
+
+```bash
+cd clients/codex
+pip install -r requirements.txt
+cp .env.basic.example .env  # fill in your credentials
+python servicenow_openai_client.py
+```
+
+Full guide → [clients/codex/SETUP.md](clients/codex/SETUP.md)
+</details>
+
+<details>
+<summary><b>Anthropic Agent SDK (Claude API)</b></summary>
+
+```python
+import anthropic, subprocess, json
+
+# Start now-ai-kit subprocess
+proc = subprocess.Popen(
+    ["node", "/path/to/nowaikit/dist/server.js"],
+    stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+    env={**os.environ,
+         "SERVICENOW_INSTANCE_URL": "https://yourinstance.service-now.com",
+         "SERVICENOW_AUTH_METHOD": "basic",
+         "SERVICENOW_BASIC_USERNAME": "admin",
+         "SERVICENOW_BASIC_PASSWORD": "your_password"}
+)
+# Then use with the Anthropic MCP client SDK
+```
+
+See [Anthropic MCP Python SDK](https://github.com/modelcontextprotocol/python-sdk) for full integration.
+</details>
+
+---
+
+### Quick Reference
+
+| Client | Type | Auth | Guide |
+|--------|------|------|-------|
+| Claude Desktop | Desktop app | Basic, OAuth | [Setup](clients/claude-desktop/SETUP.md) |
+| Claude Code CLI | Terminal | Basic, OAuth | [Setup](clients/claude-code/SETUP.md) |
+| Cursor | AI editor | Basic, OAuth | [Setup](clients/cursor/SETUP.md) |
+| Windsurf | AI editor | Basic, OAuth | [Setup](docs/CLIENT_SETUP.md) |
+| Zed | AI editor | Basic, OAuth | [Setup](docs/CLIENT_SETUP.md) |
+| **VS Code** (Native MCP 1.99+) | IDE | Basic, OAuth | [Setup](clients/vscode/SETUP.md) |
+| VS Code + GitHub Copilot | IDE | Basic, OAuth | [Setup](clients/vscode/SETUP.md) |
+| VS Code + Continue.dev | IDE | Basic, OAuth | [Setup](docs/CLIENT_SETUP.md) |
+| VS Code + Cline | IDE | Basic, OAuth | [Setup](docs/CLIENT_SETUP.md) |
+| JetBrains AI | IDE | Basic, OAuth | [Setup](docs/CLIENT_SETUP.md) |
+| Amazon Q Developer | IDE / CLI | Basic, OAuth | [Setup](docs/CLIENT_SETUP.md) |
+| ChatGPT / GPT-4o | API | Basic, OAuth | [Setup](clients/codex/SETUP.md) |
+| **Google AI Studio** | API / Agent | Basic, OAuth | [Setup](docs/CLIENT_SETUP.md) |
+| Google Gemini API | API | Basic, OAuth | [Setup](clients/gemini/SETUP.md) |
+| Grok (xAI) | API | Basic, OAuth | [Setup](docs/CLIENT_SETUP.md) |
+| Ollama (local) | Local | Basic | [Setup](docs/CLIENT_SETUP.md) |
+| Anthropic Agent SDK | Python | Basic, OAuth | [Setup](docs/CLIENT_SETUP.md) |
+
+---
+
+## What's New in v2.2
+
+- **270+ tools** across all ServiceNow modules (+42 from v2.1)
+- **5 new modules**: System Properties (12), Update Set Management (8), Virtual Agent authoring (7), IT Asset Management (8), DevOps & Pipeline Tracking (7)
+- **2 new role packages** — `devops_engineer`, `itam_analyst`
+- `system_administrator` package extended with system properties and update set tools
+
+### v2.1 highlights
+
+- **4 new modules**: Service Portal & UI Builder, Integration Hub, Notifications & Attachments, Performance Analytics
 - **Scripting enhancements** — UI Policies, UI Actions, ACL management (11 new tools)
 - **Reporting enhancements** — scheduled job CRUD + run history (5 new tools)
 - **Now Assist** — `generate_work_notes` AI-drafted work notes for any record
 - **2 new role packages** — `portal_developer`, `integration_engineer`
 - **Binary file upload** — `uploadAttachment()` via ServiceNow Attachment API
-- **Server version** bumped to 2.1.0
 
 ## What's New in v2.0
 
@@ -910,7 +1342,7 @@ See [EXAMPLES.md](EXAMPLES.md) for 120+ real-world examples across all 21 module
 
 | Guide | Description |
 |-------|-------------|
-| [docs/TOOLS.md](docs/TOOLS.md) | Complete reference for all 230+ tools with parameters, return types, and permission requirements |
+| [docs/TOOLS.md](docs/TOOLS.md) | Complete reference for all tools with parameters, return types, and permission requirements |
 | [docs/CLIENT_SETUP.md](docs/CLIENT_SETUP.md) | Step-by-step beginner + advanced setup for all AI clients (Claude, ChatGPT, Gemini, Cursor, VS Code, Windsurf, Continue, Cline, Codex, JetBrains, Ollama) |
 | [docs/TOOL_PACKAGES.md](docs/TOOL_PACKAGES.md) | Role-based package reference — which tools each of the 12 persona packages includes |
 | [docs/NOW_ASSIST.md](docs/NOW_ASSIST.md) | Now Assist and AI integration guide — NLQ, AI Search, Agentic Playbooks |

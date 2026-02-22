@@ -6,6 +6,31 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ---
 
+## [2.2.0] — 2026-02-22
+
+### Added
+
+#### New Tool Modules (42 new tools)
+- **System Properties** (12 tools): `get_system_property`, `set_system_property`, `list_system_properties`, `delete_system_property`, `search_system_properties`, `bulk_get_properties`, `bulk_set_properties`, `export_properties`, `import_properties`, `validate_property`, `list_property_categories`, `get_property_history`
+- **Update Set Management** (8 tools): `get_current_update_set`, `list_update_sets`, `create_update_set`, `switch_update_set`, `complete_update_set`, `preview_update_set`, `export_update_set`, `ensure_active_update_set`
+- **Virtual Agent Authoring** (7 tools): `create_va_topic`, `update_va_topic`, `get_va_topic`, `list_va_topics_full`, `get_va_conversation`, `list_va_conversations`, `list_va_categories`
+- **IT Asset Management** (8 tools): `list_assets`, `get_asset`, `create_asset`, `update_asset`, `retire_asset`, `list_software_licenses`, `get_license_compliance`, `list_asset_contracts`
+- **DevOps & Pipeline Tracking** (7 tools): `list_devops_pipelines`, `get_devops_pipeline`, `list_deployments`, `get_deployment`, `create_devops_change`, `track_deployment`, `get_devops_insights`
+
+#### New Role-Based Tool Packages
+- `devops_engineer` — DevOps, pipelines, update sets, change management (~25 tools)
+- `itam_analyst` — Asset CRUD, license compliance, contracts (~15 tools)
+
+#### Documentation & Banner
+- Replaced stale stats in `docs/assets/banner.svg` (270+ tools, 15+ AI clients, 120+ examples)
+- Added Google AI Studio step-by-step setup guide
+- Added VS Code native MCP (1.99+) setup guide (no subscription required)
+- Updated all tool counts across README, TOOLS.md, TOOL_PACKAGES.md, EXAMPLES.md to 270+
+- Replaced all "21 modules" references with "all ServiceNow modules"
+- Removed "Free, Forever" emphasis; replaced with accurate MIT license note
+
+---
+
 ## [2.1.0] — 2026-02-21
 
 ### Added

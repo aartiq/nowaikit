@@ -1,7 +1,7 @@
 {
   "name": "now-ai-kit",
-  "version": "2.1.0",
-  "description": "The most comprehensive ServiceNow AI Kit — 230+ tools across 21 modules, 5-minute setup, always free. Connect Claude, ChatGPT, Gemini, Cursor, GitHub Copilot, and any AI to ServiceNow. Autonomous, multi-agent, multi-provider.",
+  "version": "2.2.0",
+  "description": "The most comprehensive ServiceNow AI Kit — 270+ tools across all ServiceNow modules. Connect Claude, ChatGPT, Gemini, Google AI Studio, Cursor, GitHub Copilot, and any AI to ServiceNow. Autonomous, multi-agent, multi-provider. MIT licensed.",
   "main": "dist/server.js",
   "type": "module",
   "engines": {

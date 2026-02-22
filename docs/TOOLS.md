@@ -1,6 +1,6 @@
-# Tool Reference — now-ai-kit v2.1 (Latest Release)
+# Tool Reference — now-ai-kit v2.2 (Latest Release)
 
-Complete reference for all 230 tools across 21 modules. All tools accept a `table` parameter override where applicable.
+Complete reference for all tools across all ServiceNow modules. All tools accept a `table` parameter override where applicable.
 
 ## Permission Tiers
 
@@ -1731,6 +1731,334 @@ Compare record counts across two tables or two filtered views.
 - `table2` (required)
 - `query1` — Optional filter for table1
 - `query2` — Optional filter for table2
+
+---
+
+## System Properties (12 tools)
+
+### get_system_property
+Get a single system property value by name.
+
+**Parameters**:
+- `name` (required) — Property name (e.g. `glide.system.name`)
+
+### set_system_property
+Create or update a system property value. **[Write]**
+
+**Parameters**:
+- `name` (required)
+- `value` (required)
+- `description`
+- `type` — `string`, `integer`, `boolean`
+
+### list_system_properties
+List system properties with optional category or name filter.
+
+**Parameters**:
+- `category`
+- `name_like` — Partial name match
+- `limit`
+
+### delete_system_property
+Delete a system property by name. **[Write]**
+
+**Parameters**:
+- `name` (required)
+
+### search_system_properties
+Search system properties by partial name or value.
+
+**Parameters**:
+- `query` (required) — Partial name or value
+- `limit`
+
+### bulk_get_properties
+Get multiple system property values in one call.
+
+**Parameters**:
+- `names` (required) — Array of property names
+
+### bulk_set_properties
+Set multiple system property values in one call. **[Write]**
+
+**Parameters**:
+- `properties` (required) — Object mapping name → value
+
+### export_properties
+Export system properties to a JSON snapshot for backup/comparison.
+
+**Parameters**:
+- `category`
+- `name_like`
+- `limit`
+
+### import_properties
+Import system properties from a JSON snapshot. **[Write]**
+
+**Parameters**:
+- `properties` (required) — Array of `{name, value}` objects
+- `dry_run` — Validate without saving (default false)
+
+### validate_property
+Validate a property value against its declared type without saving.
+
+**Parameters**:
+- `name` (required)
+- `value` (required)
+
+### list_property_categories
+List all distinct system property categories.
+
+**Parameters**:
+- `limit`
+
+### get_property_history
+Get audit history for a system property (changes over time).
+
+**Parameters**:
+- `name` (required)
+- `limit`
+
+---
+
+## Update Set Management (8 tools)
+
+### get_current_update_set
+Get all currently active (in-progress) Update Sets.
+
+### list_update_sets
+List Update Sets filtered by state.
+
+**Parameters**:
+- `state` — `in progress`, `complete`, `ignore`
+- `query`
+- `limit`
+
+### create_update_set
+Create a new Update Set and optionally switch to it. **[Scripting]**
+
+**Parameters**:
+- `name` (required)
+- `description`
+- `release`
+- `switch_to` — Switch after creation (default true)
+
+### switch_update_set
+Switch the active Update Set context. **[Scripting]**
+
+**Parameters**:
+- `sys_id` (required)
+
+### complete_update_set
+Mark an Update Set as complete. **[Scripting]**
+
+**Parameters**:
+- `sys_id` (required)
+
+### preview_update_set
+Preview all changes (sys_update_xml records) contained in an Update Set.
+
+**Parameters**:
+- `sys_id` (required)
+- `limit`
+
+### export_update_set
+Get the XML export summary for an Update Set. **[Scripting]**
+
+**Parameters**:
+- `sys_id` (required)
+
+### ensure_active_update_set
+Ensure an active Update Set exists; auto-creates one if none is in progress. **[Scripting]**
+
+**Parameters**:
+- `default_name` — Name for auto-created set (default: `AI Session Update Set YYYY-MM-DD`)
+
+---
+
+## Virtual Agent (7 tools)
+
+### create_va_topic
+Create a new Virtual Agent conversation topic. **[Write]**
+
+**Parameters**:
+- `name` (required)
+- `description`
+- `category` — Category sys_id
+- `active` — Default true
+- `fulfillment_type` — `itsm_integration`, `custom`, `web_service`
+
+### update_va_topic
+Update Virtual Agent topic properties. **[Write]**
+
+**Parameters**:
+- `sys_id` (required)
+- `fields` (required) — Fields to update
+
+### get_va_topic
+Get Virtual Agent topic details including intent and trigger phrases.
+
+**Parameters**:
+- `sys_id` (required)
+
+### list_va_topics_full
+List all Virtual Agent topics with category and status details.
+
+**Parameters**:
+- `active` — Default true
+- `category` — Filter by category name
+- `query`
+- `limit`
+
+### get_va_conversation
+Get conversation history for a Virtual Agent session.
+
+**Parameters**:
+- `conversation_id` (required)
+- `limit`
+
+### list_va_conversations
+List recent Virtual Agent conversations.
+
+**Parameters**:
+- `topic_sys_id`
+- `user_sys_id`
+- `limit`
+
+### list_va_categories
+List Virtual Agent topic categories.
+
+**Parameters**:
+- `limit`
+
+---
+
+## IT Asset Management / ITAM (8 tools)
+
+### list_assets
+List IT assets with optional type/status filter.
+
+**Parameters**:
+- `asset_class` — `hardware`, `software`, `consumable`
+- `status` — `in use`, `in stock`, `retired`
+- `assigned_to`
+- `query`
+- `limit`
+
+### get_asset
+Get full asset record details.
+
+**Parameters**:
+- `sys_id` (required)
+
+### create_asset
+Create a new asset record. **[Write]**
+
+**Parameters**:
+- `asset_tag` (required)
+- `model` — Model sys_id or name
+- `serial_number`
+- `assigned_to`
+- `location`
+- `status`
+
+### update_asset
+Update asset fields. **[Write]**
+
+**Parameters**:
+- `sys_id` (required)
+- `fields` (required)
+
+### retire_asset
+Mark an asset as retired (sets install_status to retired). **[Write]**
+
+**Parameters**:
+- `sys_id` (required)
+- `reason`
+
+### list_software_licenses
+List software license records.
+
+**Parameters**:
+- `vendor`
+- `product`
+- `limit`
+
+### get_license_compliance
+Get license compliance report showing purchased vs. in-use counts.
+
+**Parameters**:
+- `license_sys_id` — Specific license; all licenses if omitted
+- `limit`
+
+### list_asset_contracts
+List asset contracts (maintenance, support).
+
+**Parameters**:
+- `active` — Default true
+- `limit`
+
+---
+
+## DevOps & Pipeline Tracking (7 tools)
+
+### list_devops_pipelines
+List DevOps pipeline configurations registered in ServiceNow.
+
+**Parameters**:
+- `active` — Default true
+- `limit`
+
+### get_devops_pipeline
+Get details of a specific DevOps pipeline.
+
+**Parameters**:
+- `sys_id` (required)
+
+### list_deployments
+List recent application deployments tracked in ServiceNow.
+
+**Parameters**:
+- `pipeline_sys_id`
+- `environment` — e.g. `prod`, `staging`
+- `state` — `success`, `failed`, `in_progress`
+- `limit`
+
+### get_deployment
+Get details and status of a specific deployment.
+
+**Parameters**:
+- `sys_id` (required)
+
+### create_devops_change
+Create a change request linked to a DevOps deployment. **[Write]**
+
+**Parameters**:
+- `short_description` (required)
+- `environment` (required)
+- `pipeline`
+- `artifact`
+- `type` — `normal`, `standard`, `emergency`
+- `assigned_to`
+- `assignment_group`
+
+### track_deployment
+Record a deployment event for audit and velocity tracking. **[Write]**
+
+**Parameters**:
+- `environment` (required)
+- `artifact_name` (required)
+- `status` (required) — `success`, `failed`, `rolled_back`
+- `pipeline`
+- `artifact_version`
+- `notes`
+
+### get_devops_insights
+Get deployment frequency, failure rate, and lead time metrics.
+
+**Parameters**:
+- `pipeline_sys_id` — All pipelines if omitted
+- `days` — Look-back window (default 30)
 
 ---
 

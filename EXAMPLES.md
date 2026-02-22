@@ -1,20 +1,44 @@
 # now-ai-kit — Usage Examples
 
-This document provides real-world examples of using the now-ai-kit ServiceNow MCP server (220+ tools, 21 modules).
+This document provides real-world examples of using the now-ai-kit ServiceNow MCP server (270+ tools across all ServiceNow modules).
 
 ## Table of Contents
+
 - [Quick Reference — Full Tool Catalog](#quick-reference)
 - [Setup](#setup)
+
+### Platform & Operations
 - [Core Platform Examples](#core-platform-examples)
 - [CMDB Examples](#cmdb-examples)
 - [ITOM Examples](#itom-examples)
+- [System Properties Examples](#system-properties-examples)
+- [Update Set Examples](#update-set-examples)
+
+### ITSM & Service Management
 - [ITSM Examples](#itsm-examples)
+- [Change Management Examples](#change-management-examples)
+
+### Development & Automation
+- [Scripting Enhancement Examples](#scripting-enhancement-examples)
+- [Flow Designer Examples](#flow-designer-examples)
+- [DevOps & Pipeline Examples](#devops--pipeline-examples)
+
+### Portals & Integration
 - [Service Portal & Widget Examples](#service-portal--widget-examples)
 - [Integration Examples](#integration-examples)
+
+### Notifications, Analytics & AI
 - [Notification & Attachment Examples](#notification--attachment-examples)
 - [Performance Analytics Examples](#performance-analytics-examples)
-- [Scripting Enhancement Examples](#scripting-enhancement-examples)
 - [Natural Language Examples](#natural-language-examples)
+
+### HR, CSM & Asset Management
+- [HRSD Examples](#hrsd-examples)
+- [CSM Examples](#csm-examples)
+- [IT Asset Management Examples](#it-asset-management-examples)
+- [Virtual Agent Examples](#virtual-agent-examples)
+
+### Advanced
 - [Advanced Workflows](#advanced-workflows)
 
 ---
@@ -2571,7 +2595,7 @@ For complex filters, pass an encoded ServiceNow query string directly:
 
 - Review [SECURITY.md](SECURITY.md) for security best practices
 - Check [CONTRIBUTING.md](CONTRIBUTING.md) to extend functionality
-- See [docs/TOOLS.md](docs/TOOLS.md) for the full 150+ tool reference
+- See [docs/TOOLS.md](docs/TOOLS.md) for the full tool reference (270+ tools)
 
 ---
 
