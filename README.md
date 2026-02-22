@@ -5,7 +5,7 @@
 <br/>
 
 [![AI-Powered](https://img.shields.io/badge/AI--Powered-Multi--Provider-6366f1?style=flat-square)](https://github.com/aartiq/nowaikit)
-[![Tools](https://img.shields.io/badge/270%2B%20Tools-All%20Modules-0ea5e9?style=flat-square)](docs/TOOLS.md)
+[![Tools](https://img.shields.io/badge/284%2B%20Tools-All%20Modules-0ea5e9?style=flat-square)](docs/TOOLS.md)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-f59e0b?style=flat-square)](LICENSE)
 [![ServiceNow](https://img.shields.io/badge/ServiceNow-Latest%20Release-00c7b4?style=flat-square)](https://developer.servicenow.com)
@@ -27,6 +27,8 @@ Connect **Claude**, **ChatGPT**, **Gemini**, **Cursor**, **GitHub Copilot**, or 
 Ask in plain English. Deploy business rules from chat. Run ATF suites on demand. Query dev, staging, and prod simultaneously. Automate across multiple customer tenants without switching tabs. **Your AI, your instance, your rules.**
 
 **Any AI. Any instance. Any scale. 100% open-source.**
+
+> **Keywords:** ServiceNow MCP server · Model Context Protocol · ServiceNow AI · ITSM automation · ServiceNow Claude · ServiceNow ChatGPT · ServiceNow Cursor · ServiceNow Copilot · ServiceNow LLM · ServiceNow agent · MCP tools · ServiceNow API · agentic AI · ServiceNow developer tools
 
 <br/>
 
