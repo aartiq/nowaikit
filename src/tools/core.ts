@@ -17,6 +17,7 @@ import type {
 } from '../servicenow/types.js';
 import { ServiceNowError } from '../utils/errors.js';
 import { requireWrite } from '../utils/permissions.js';
+import { instanceManager } from '../servicenow/instances.js';
 
 export function getCoreToolDefinitions() {
   return [
@@ -207,6 +208,27 @@ export function getCoreToolDefinitions() {
         required: ['instruction', 'table'],
       },
     },
+    {
+      name: 'list_instances',
+      description: 'List all configured ServiceNow instances (multi-instance / multi-customer support)',
+      inputSchema: { type: 'object', properties: {}, required: [] },
+    },
+    {
+      name: 'switch_instance',
+      description: 'Switch the active ServiceNow instance for this session',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          name: { type: 'string', description: 'Instance name as configured (e.g. "prod", "dev", "customer_a")' },
+        },
+        required: ['name'],
+      },
+    },
+    {
+      name: 'get_current_instance',
+      description: 'Get the currently active ServiceNow instance name and URL',
+      inputSchema: { type: 'object', properties: {}, required: [] },
+    },
   ];
 }
 
@@ -283,6 +305,29 @@ export async function executeCoreToolCall(
     case 'natural_language_update':
       requireWrite();
       return await client.naturalLanguageUpdate(args.instruction, args.table);
+
+    case 'list_instances':
+      return {
+        current: instanceManager.getCurrentName(),
+        instances: instanceManager.listAll(),
+        total: instanceManager.listNames().length,
+      };
+
+    case 'switch_instance':
+      if (!args.name) throw new ServiceNowError('name is required', 'INVALID_REQUEST');
+      instanceManager.switch(args.name);
+      return {
+        action: 'switched',
+        active_instance: instanceManager.getCurrentName(),
+        url: instanceManager.getCurrentUrl(),
+      };
+
+    case 'get_current_instance':
+      return {
+        name: instanceManager.getCurrentName(),
+        url: instanceManager.getCurrentUrl(),
+        all_instances: instanceManager.listNames(),
+      };
 
     default:
       return null; // not handled here

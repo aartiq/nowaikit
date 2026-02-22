@@ -155,11 +155,11 @@ Full TypeScript types, 120+ real-world examples, 9 reference guides, and beginne
 Domain modules covering the full ServiceNow platform:
 
 | Module | Key Capabilities | Tools |
-|--------|-----------------|-------|
-| Core & CMDB | Record query, schema discovery, CMDB CIs, ITOM Discovery, MID Servers | 16 |
-| Incident Management | Full incident lifecycle — create, update, resolve, close, work notes | 9 |
+|--------|-----------------|------:|
+| Core & CMDB | Record query, schema discovery, CMDB CIs, ITOM Discovery, MID Servers, multi-instance management | 19 |
+| Incident Management | Create, update, resolve, close, work notes, comments | 7 |
 | Problem Management | Problem records, root cause analysis, known errors | 4 |
-| Change Management | **Create**, get, update, submit for approval, close change requests | 6 |
+| Change Management | Create, get, update, submit for approval, close change requests | 6 |
 | Task Management | Generic tasks, my-task lists, completions | 4 |
 | Knowledge Base | Search, create, update, publish KB articles | 6 |
 | Service Catalog & Approvals | Catalog browsing, order items, SLA tracking, approval workflows | 10 |
@@ -167,14 +167,14 @@ Domain modules covering the full ServiceNow platform:
 | Reporting & Analytics | Aggregate queries, trend analysis, **scheduled job CRUD**, run history | 13 |
 | ATF Testing | Test suites, test execution, ATF Failure Insight | 9 |
 | Now Assist / AI | NLQ, AI Search, summaries, resolution suggestions, Agentic Playbooks | 10 |
-| Scripting | Business rules, script includes, **client script CRUD**, **UI Policies**, **UI Actions**, **ACL management**, changesets | 28 |
+| Scripting | Business rules, script includes, **client script CRUD**, **UI Policies**, **UI Actions**, **ACL management**, changesets | 27 |
 | Agile / Scrum | Stories, epics, sprints, scrum tasks | 9 |
 | HR Service Delivery (HRSD) | HR cases, HR services, employee profiles, onboarding/offboarding | 12 |
 | Customer Service Management (CSM) | Customer cases, accounts, contacts, products, SLAs | 11 |
 | Security Operations & GRC | SecOps incidents, vulnerabilities, GRC risks, controls, threat intel | 11 |
 | Flow Designer & Process Automation | Flows, subflows, triggers, executions, Process Automation playbooks | 10 |
 | Service Portal & UI Builder | Portals, pages, **widgets (create/update/deploy)**, Next Experience apps/pages, themes | 14 |
-| Integration Hub | REST Messages, Transform Maps, Import Sets, **Event Registry**, OAuth apps, credential aliases | 18 |
+| Integration Hub | REST Messages, Transform Maps, Import Sets, **Event Registry**, OAuth apps, credential aliases | 19 |
 | Notifications & Attachments | Email notifications, email logs, **file attachments (upload/list/delete)**, templates, subscriptions | 12 |
 | Performance Analytics | PA indicators/scorecards, time-series, dashboards, PA jobs, **data quality checks** | 13 |
 | System Properties | Get, set, bulk operations, validate, export/import, audit history | 12 |
@@ -182,6 +182,7 @@ Domain modules covering the full ServiceNow platform:
 | Virtual Agent (VA) | Topic authoring, conversation history, categories, topic listing | 7 |
 | IT Asset Management (ITAM) | Assets, software licenses, contracts, compliance reporting | 8 |
 | DevOps & Pipeline Tracking | Pipelines, deployments, change governance, DORA metrics | 7 |
+| **Total** | | **276** |
 
 ---
 
@@ -1459,8 +1460,8 @@ Yes. The permission system is read-only by default. Write, scripting, and Now As
 **Can I use multiple AI providers at the same time?**
 Yes. Each AI client gets its own MCP config pointing at the same (or different) now-ai-kit instance. Run Claude Desktop and Cursor side by side against the same ServiceNow environment.
 
-**Does it support multi-instance?**
-Yes — prod, staging, and dev instances simultaneously. See [docs/MULTI_INSTANCE.md](docs/MULTI_INSTANCE.md).
+**Does it support multi-instance / multiple customers?**
+Yes. Configure any number of instances (prod, staging, dev, or multiple customer tenants) via `instances.json` or environment variables. Use `list_instances`, `switch_instance`, and `get_current_instance` tools to manage them, or pass `instance: "name"` to any individual tool call. See [docs/MULTI_INSTANCE.md](docs/MULTI_INSTANCE.md).
 
 **Is it free?**
 Completely free and open-source under the MIT license.
