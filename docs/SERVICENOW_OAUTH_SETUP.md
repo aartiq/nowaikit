@@ -143,7 +143,7 @@ curl -X POST "https://dev12345.service-now.com/oauth_token.do" \
 Start the MCP server and verify OAuth authentication:
 
 ```bash
-cd servicenow-mcp
+cd nowaikit
 npm run build
 npm start
 ```
@@ -304,9 +304,9 @@ After OAuth is configured:
 
 ## Additional Resources
 
-- [ServiceNow OAuth 2.0 Documentation](https://docs.servicenow.com/bundle/washingtondc-platform-security/page/administer/security/concept/c_OAuthApplications.html)
+- [ServiceNow OAuth 2.0 Documentation](https://docs.servicenow.com/bundle/zurich-platform-security/page/administer/security/concept/c_OAuthApplications.html)
 - [OAuth 2.0 Password Grant](https://oauth.net/2/grant-types/password/)
-- [ServiceNow REST API Explorer](https://developer.servicenow.com/dev.do#!/reference/api/washingtondc/rest)
+- [ServiceNow REST API Explorer](https://developer.servicenow.com/dev.do#!/reference/api/zurich/rest)
 
 ---
 
@@ -316,10 +316,10 @@ If you encounter issues:
 
 1. Check the [Troubleshooting](#troubleshooting) section above
 2. Review ServiceNow system logs: **System Logs > System Log > All**
-3. Open an issue on GitHub: https://github.com/habenani-p/servicenow-mcp/issues
+3. Open an issue on GitHub: https://github.com/aartiq/nowaikit/issues
 4. Consult your ServiceNow administrator
 
 ---
 
 **Last Updated**: February 2026
-**ServiceNow Versions Tested**: Vancouver, Washington, Xanadu
+**ServiceNow Versions Tested**: Xanadu, Yokohama, Zurich (latest three releases)

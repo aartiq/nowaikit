@@ -1,19 +1,24 @@
 # Reporting & Analytics Guide (Latest Release)
 
-This guide covers the 8 reporting and analytics tools. All are read-only and require no special flags beyond read access.
+This guide covers the 13 reporting and analytics tools. Read tools require no special flags. Scheduled job write tools require `WRITE_ENABLED=true`.
 
 ## Tool Overview
 
-| Tool | Description | API Used |
-|------|-------------|----------|
-| `list_reports` | List saved reports | Table API (`sys_report`) |
-| `get_report` | Get report definition | Table API |
-| `run_aggregate_query` | GROUP BY query with COUNT/SUM | Stats API (`/api/now/stats/{table}`) |
-| `trend_query` | Monthly trend data | Stats API (date bucketing) |
-| `get_performance_analytics` | PA widget data | PA API (`/api/now/pa/widget/{sys_id}`) |
-| `export_report_data` | Structured data export | Table API |
-| `get_sys_log` | System log entries | Table API (`sys_log`) |
-| `list_scheduled_jobs` | Scheduled jobs list | Table API (`sys_trigger`) |
+| Tool | Description | API Used | Permission |
+|------|-------------|----------|------------|
+| `list_reports` | List saved reports | Table API (`sys_report`) | Read |
+| `get_report` | Get report definition | Table API | Read |
+| `run_aggregate_query` | GROUP BY query with COUNT/SUM | Stats API (`/api/now/stats/{table}`) | Read |
+| `trend_query` | Monthly trend data | Stats API (date bucketing) | Read |
+| `get_performance_analytics` | PA widget data | PA API (`/api/now/pa/widget/{sys_id}`) | Read |
+| `export_report_data` | Structured data export | Table API | Read |
+| `get_sys_log` | System log entries | Table API (`sys_log`) | Read |
+| `list_scheduled_jobs` | Scheduled jobs list | Table API (`sys_trigger`) | Read |
+| `get_scheduled_job` | Get a scheduled job record | Table API (`sysauto`) | Read |
+| `create_scheduled_job` | Create a new scheduled script | Table API (`sysauto_script`) | Write |
+| `update_scheduled_job` | Update schedule or script | Table API (`sysauto`) | Write |
+| `trigger_scheduled_job` | Force immediate execution | Table API (`sysauto`) PATCH | Write |
+| `list_job_run_history` | Execution history log | Table API (`sysauto_trigger_log`) | Read |
 
 ## Common Use Cases
 
@@ -59,6 +64,34 @@ get_performance_analytics:
 ```
 
 Uses the ServiceNow Performance Analytics API: `GET /api/now/pa/widget/{sys_id}`
+
+## Scheduled Job Workflows
+
+### Create and Schedule a Script
+
+```
+1. Create a new daily script job
+   → create_scheduled_job name="Nightly Cleanup" script="gs.info('running');" run_type="daily" run_time="02:00:00"
+
+2. Verify the job was created
+   → get_scheduled_job sys_id="<sys_id>"
+
+3. Trigger immediately to test
+   → trigger_scheduled_job sys_id="<sys_id>"
+
+4. Check execution history
+   → list_job_run_history job_sys_id="<sys_id>"
+```
+
+### Update a Scheduled Job
+
+```
+1. List all active scheduled jobs
+   → list_scheduled_jobs active=true
+
+2. Update the script or schedule
+   → update_scheduled_job sys_id="<sys_id>" fields={script: "// updated script", run_type: "weekly"}
+```
 
 ## Latest Reporting APIs
 

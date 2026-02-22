@@ -5,6 +5,7 @@
  */
 import type { ServiceNowClient } from '../servicenow/client.js';
 import { ServiceNowError } from '../utils/errors.js';
+import { requireWrite } from '../utils/permissions.js';
 
 export function getReportingToolDefinitions() {
   return [
@@ -113,6 +114,81 @@ export function getReportingToolDefinitions() {
         required: [],
       },
     },
+    {
+      name: 'get_scheduled_job',
+      description: 'Get full details of a scheduled job by sys_id or name',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          sys_id_or_name: { type: 'string', description: 'Job sys_id or exact name' },
+        },
+        required: ['sys_id_or_name'],
+      },
+    },
+    {
+      name: 'create_scheduled_job',
+      description: 'Create a new scheduled script execution job (requires WRITE_ENABLED=true)',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          name: { type: 'string', description: 'Job name' },
+          script: { type: 'string', description: 'Server-side JavaScript to run on schedule' },
+          run_type: {
+            type: 'string',
+            description: 'Schedule type: "daily", "weekly", "monthly", "once", "periodically"',
+          },
+          run_time: {
+            type: 'string',
+            description: 'Time to run (HH:MM:SS format for daily/weekly/monthly)',
+          },
+          run_period: {
+            type: 'string',
+            description: 'Period interval for "periodically" type (e.g. "00:15:00" for 15 minutes)',
+          },
+          active: { type: 'boolean', description: 'Whether to activate immediately (default: true)' },
+        },
+        required: ['name', 'script', 'run_type'],
+      },
+    },
+    {
+      name: 'update_scheduled_job',
+      description: 'Update a scheduled job (requires WRITE_ENABLED=true)',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          sys_id: { type: 'string', description: 'Scheduled job sys_id' },
+          fields: {
+            type: 'object',
+            description: 'Fields to update (name, script, active, run_type, run_time, etc.)',
+          },
+        },
+        required: ['sys_id', 'fields'],
+      },
+    },
+    {
+      name: 'trigger_scheduled_job',
+      description: 'Immediately execute a scheduled job on-demand (requires WRITE_ENABLED=true)',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          sys_id: { type: 'string', description: 'Scheduled job sys_id to trigger' },
+        },
+        required: ['sys_id'],
+      },
+    },
+    {
+      name: 'list_job_run_history',
+      description: 'List recent run history for scheduled jobs (success/failure log)',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          job_sys_id: { type: 'string', description: 'Filter by specific job sys_id' },
+          status: { type: 'string', description: 'Filter by run status: success, error, canceled' },
+          limit: { type: 'number', description: 'Max results (default: 25)' },
+        },
+        required: [],
+      },
+    },
   ];
 }
 
@@ -191,6 +267,57 @@ export async function executeReportingToolCall(
       if (args.query) query = query ? `${query}^${args.query}` : args.query;
       const resp = await client.queryRecords({ table: 'sysauto', query: query || undefined, limit: args.limit || 20, fields: 'sys_id,name,run_type,run_time,next_action,active,last_run_time' });
       return { count: resp.count, jobs: resp.records };
+    }
+    case 'get_scheduled_job': {
+      if (!args.sys_id_or_name) throw new ServiceNowError('sys_id_or_name is required', 'INVALID_REQUEST');
+      if (/^[0-9a-f]{32}$/i.test(args.sys_id_or_name)) {
+        return await client.getRecord('sysauto', args.sys_id_or_name);
+      }
+      const resp = await client.queryRecords({ table: 'sysauto', query: `name=${args.sys_id_or_name}`, limit: 1 });
+      if (resp.count === 0) throw new ServiceNowError(`Scheduled job not found: ${args.sys_id_or_name}`, 'NOT_FOUND');
+      return resp.records[0];
+    }
+    case 'create_scheduled_job': {
+      requireWrite();
+      if (!args.name || !args.script || !args.run_type)
+        throw new ServiceNowError('name, script, and run_type are required', 'INVALID_REQUEST');
+      const data: Record<string, any> = {
+        name: args.name,
+        script: args.script,
+        run_type: args.run_type,
+        active: args.active !== false,
+      };
+      if (args.run_time) data.run_time = args.run_time;
+      if (args.run_period) data.run_period = args.run_period;
+      const result = await client.createRecord('sysauto_script', data);
+      return { ...result, summary: `Created scheduled job "${args.name}" (${args.run_type})` };
+    }
+    case 'update_scheduled_job': {
+      requireWrite();
+      if (!args.sys_id || !args.fields) throw new ServiceNowError('sys_id and fields are required', 'INVALID_REQUEST');
+      const result = await client.updateRecord('sysauto', args.sys_id, args.fields);
+      return { ...result, summary: `Updated scheduled job ${args.sys_id}` };
+    }
+    case 'trigger_scheduled_job': {
+      requireWrite();
+      if (!args.sys_id) throw new ServiceNowError('sys_id is required', 'INVALID_REQUEST');
+      // Trigger by setting next_action to now and ensuring it's active
+      const now = new Date().toISOString().replace('T', ' ').slice(0, 19);
+      const result = await client.updateRecord('sysauto', args.sys_id, { next_action: now, active: true });
+      return { ...result, summary: `Triggered scheduled job ${args.sys_id} — set next_action to now` };
+    }
+    case 'list_job_run_history': {
+      const parts: string[] = [];
+      if (args.job_sys_id) parts.push(`sysauto=${args.job_sys_id}`);
+      if (args.status) parts.push(`status=${args.status}`);
+      const resp = await client.queryRecords({
+        table: 'sysauto_trigger_log',
+        query: parts.join('^') || undefined,
+        limit: args.limit || 25,
+        orderBy: '-sys_created_on',
+        fields: 'sys_id,sysauto,status,run_time,error_message,sys_created_on',
+      });
+      return { count: resp.count, history: resp.records };
     }
     default:
       return null;

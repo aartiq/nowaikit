@@ -8,7 +8,7 @@ import {
   ReadResourceRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
 import dotenv from 'dotenv';
-import { ServiceNowClient } from './servicenow/client.js';
+import { instanceManager } from './servicenow/instances.js';
 import { getTools } from './tools/index.js';
 import { getResources, readResource } from './resources/index.js';
 import { logger } from './utils/logging.js';
@@ -16,35 +16,19 @@ import { ServiceNowError } from './utils/errors.js';
 
 dotenv.config();
 
-const requiredEnvVars = ['SERVICENOW_INSTANCE_URL', 'SERVICENOW_AUTH_METHOD'];
-const missing = requiredEnvVars.filter(v => !process.env[v]);
-if (missing.length > 0) {
-  logger.error(`Missing required environment variables: \${missing.join(', ')}`);
+// Require at least one instance to be configured
+const hasLegacy = !!process.env.SERVICENOW_INSTANCE_URL;
+const hasMulti = Object.keys(process.env).some(k => /^SN_INSTANCE_[A-Z0-9_]+_URL$/.test(k));
+const hasConfig = !!process.env.SN_INSTANCES_CONFIG;
+if (!hasLegacy && !hasMulti && !hasConfig) {
+  logger.error('No ServiceNow instance configured. Set SERVICENOW_INSTANCE_URL or SN_INSTANCES_CONFIG.');
   process.exit(1);
 }
-
-const client = new ServiceNowClient({
-  instanceUrl: process.env.SERVICENOW_INSTANCE_URL!,
-  authMethod: process.env.SERVICENOW_AUTH_METHOD as 'oauth' | 'basic',
-  oauth: {
-    clientId: process.env.SERVICENOW_CLIENT_ID,
-    clientSecret: process.env.SERVICENOW_CLIENT_SECRET,
-    username: process.env.SERVICENOW_USERNAME,
-    password: process.env.SERVICENOW_PASSWORD,
-  },
-  basic: {
-    username: process.env.SERVICENOW_BASIC_USERNAME,
-    password: process.env.SERVICENOW_BASIC_PASSWORD,
-  },
-  maxRetries: parseInt(process.env.MAX_RETRIES || '3', 10),
-  retryDelayMs: parseInt(process.env.RETRY_DELAY_MS || '1000', 10),
-  requestTimeoutMs: parseInt(process.env.REQUEST_TIMEOUT_MS || '30000', 10),
-});
 
 const server = new Server(
   {
     name: 'servicenow-mcp',
-    version: '1.0.0',
+    version: '2.2.0',
   },
   {
     capabilities: {
@@ -62,14 +46,18 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
 
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
   const { name, arguments: args } = request.params;
-  
+
   logger.info(`Tool called: \${name}`);
-  
+
   try {
     const tool = tools.find(t => t.name === name);
     if (!tool) {
       throw new ServiceNowError(`Unknown tool: \${name}`, 'UNKNOWN_TOOL');
     }
+
+    // Resolve client: use named instance if specified, otherwise current active instance
+    const instanceName = (args as any)?.instance as string | undefined;
+    const client = instanceManager.getClient(instanceName);
 
     const { executeTool } = await import('./tools/index.js');
     const result = await executeTool(client, name, args || {});
@@ -115,9 +103,9 @@ server.setRequestHandler(ListResourcesRequestSchema, async () => {
 
 server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
   const { uri } = request.params;
-  
+
   try {
-    const content = await readResource(client, uri);
+    const content = await readResource(instanceManager.getClient(), uri);
     return {
       contents: [
         {

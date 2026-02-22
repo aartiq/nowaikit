@@ -1,15 +1,44 @@
-# ServiceNow MCP - Usage Examples
+# now-ai-kit — Usage Examples
 
-This document provides real-world examples of using the ServiceNow MCP server with expected inputs and outputs.
+This document provides real-world examples of using the now-ai-kit ServiceNow MCP server (270+ tools across all ServiceNow modules).
 
 ## Table of Contents
-- [Quick Reference](#quick-reference)
+
+- [Quick Reference — Full Tool Catalog](#quick-reference)
 - [Setup](#setup)
+
+### Platform & Operations
 - [Core Platform Examples](#core-platform-examples)
 - [CMDB Examples](#cmdb-examples)
 - [ITOM Examples](#itom-examples)
+- [System Properties Examples](#system-properties-examples)
+- [Update Set Examples](#update-set-examples)
+
+### ITSM & Service Management
 - [ITSM Examples](#itsm-examples)
+- [Change Management Examples](#change-management-examples)
+
+### Development & Automation
+- [Scripting Enhancement Examples](#scripting-enhancement-examples)
+- [Flow Designer Examples](#flow-designer-examples)
+- [DevOps & Pipeline Examples](#devops--pipeline-examples)
+
+### Portals & Integration
+- [Service Portal & Widget Examples](#service-portal--widget-examples)
+- [Integration Examples](#integration-examples)
+
+### Notifications, Analytics & AI
+- [Notification & Attachment Examples](#notification--attachment-examples)
+- [Performance Analytics Examples](#performance-analytics-examples)
 - [Natural Language Examples](#natural-language-examples)
+
+### HR, CSM & Asset Management
+- [HRSD Examples](#hrsd-examples)
+- [CSM Examples](#csm-examples)
+- [IT Asset Management Examples](#it-asset-management-examples)
+- [Virtual Agent Examples](#virtual-agent-examples)
+
+### Advanced
 - [Advanced Workflows](#advanced-workflows)
 
 ---
@@ -18,24 +47,243 @@ This document provides real-world examples of using the ServiceNow MCP server wi
 
 ### Tool Catalog
 
-| Tool Name | Category | Purpose | Write Op? | Key Parameters |
-|-----------|----------|---------|-----------|----------------|
-| get_table_schema | Core | Understand table structure | No | tableName |
-| query_records | Core | Find records with filters | No | table, query, fields, limit |
-| get_record | Core | Retrieve single record | No | table, sys_id |
-| get_user | Core | Look up user details | No | user_identifier |
-| get_group | Core | Find group information | No | group_identifier |
-| search_cmdb_ci | CMDB | Search configuration items | No | query, limit |
-| get_cmdb_ci | CMDB | Get CI details | No | ci_sys_id |
-| list_relationships | CMDB | Show CI dependencies | No | ci_sys_id |
-| list_discovery_schedules | ITOM | Check discovery status | No | active_only |
-| list_mid_servers | ITOM | Verify MID server health | No | active_only |
-| list_active_events | ITOM | Monitor infrastructure events | No | query, limit |
-| cmdb_health_dashboard | ITOM | Get data quality metrics | No | none |
-| service_mapping_summary | ITOM | Service dependencies | No | service_sys_id |
-| create_change_request | ITSM | Create change record | **Yes** | short_description, assignment_group |
-| natural_language_search | NL | Query using plain English | No | query, limit |
-| natural_language_update | NL | Update conversationally | **Yes** | instruction, table |
+| Tool Name | Module | Purpose | Write? | Key Parameters |
+|-----------|--------|---------|--------|----------------|
+| **Core & CMDB** | | | | |
+| query_records | Core | Query any table with filters | No | table, query, fields, limit |
+| get_record | Core | Get a single record by sys_id | No | table, sys_id |
+| get_table_schema | Core | Inspect table field structure | No | table |
+| get_user | Core | Look up user by email/username | No | user_identifier |
+| get_group | Core | Find assignment group | No | group_identifier |
+| search_cmdb_ci | Core | Search CMDB CIs | No | query, limit |
+| get_cmdb_ci | Core | Get CI details | No | ci_sys_id |
+| list_relationships | Core | Show CI dependencies | No | ci_sys_id |
+| list_discovery_schedules | Core | Check discovery schedules | No | active_only |
+| list_mid_servers | Core | List MID servers | No | active_only |
+| list_active_events | Core | Monitor infrastructure events | No | query, limit |
+| cmdb_health_dashboard | Core | CMDB data quality metrics | No | — |
+| service_mapping_summary | Core | Service dependency map | No | service_sys_id |
+| natural_language_search | Core | Plain-English record search | No | query, limit |
+| get_my_approvals | Core | Get pending approvals | No | — |
+| approve_request | Core | Approve a request | **Yes** | sys_id |
+| reject_request | Core | Reject a request | **Yes** | sys_id, reason |
+| **Incidents** | | | | |
+| create_incident | Incident | Create a new incident | **Yes** | short_description, priority |
+| get_incident | Incident | Get incident by number/sys_id | No | number_or_sysid |
+| update_incident | Incident | Update incident fields | **Yes** | sys_id, fields |
+| resolve_incident | Incident | Resolve an incident | **Yes** | sys_id, resolution_notes |
+| close_incident | Incident | Close an incident | **Yes** | sys_id |
+| add_work_note | Incident | Add internal work note | **Yes** | sys_id, note |
+| add_comment | Incident | Add customer-visible comment | **Yes** | sys_id, comment |
+| get_sla_details | Incident | Get SLA details for a task | No | task_sys_id |
+| list_active_slas | Incident | List breached/active SLAs | No | query, limit |
+| **Problems** | | | | |
+| create_problem | Problem | Create a problem record | **Yes** | short_description |
+| get_problem | Problem | Get problem by number/sys_id | No | number_or_sysid |
+| update_problem | Problem | Update problem fields | **Yes** | sys_id, fields |
+| resolve_problem | Problem | Resolve a problem | **Yes** | sys_id |
+| **Change Management** | | | | |
+| create_change_request | Change | Create a change request | **Yes** | short_description, type |
+| get_change_request | Change | Get change by number/sys_id | No | number_or_sysid |
+| update_change_request | Change | Update change fields | **Yes** | sys_id, fields |
+| list_change_requests | Change | List change requests | No | query, state, limit |
+| submit_change_for_approval | Change | Submit change to CAB | **Yes** | sys_id |
+| close_change_request | Change | Close a change | **Yes** | sys_id, close_code |
+| **Tasks** | | | | |
+| get_task | Task | Get a generic task | No | sys_id |
+| list_my_tasks | Task | List tasks assigned to me | No | limit |
+| complete_task | Task | Mark task as complete | **Yes** | sys_id |
+| **Knowledge** | | | | |
+| list_knowledge_bases | Knowledge | List KB bases | No | limit |
+| search_knowledge | Knowledge | Search articles | No | query, limit |
+| get_knowledge_article | Knowledge | Get full article | No | sys_id_or_number |
+| create_knowledge_article | Knowledge | Create KB article | **Yes** | title, text, kb_knowledge_base |
+| update_knowledge_article | Knowledge | Update KB article | **Yes** | sys_id, fields |
+| publish_knowledge_article | Knowledge | Publish draft article | **Yes** | sys_id |
+| **Service Catalog** | | | | |
+| list_catalog_items | Catalog | List catalog items | No | query, limit |
+| search_catalog | Catalog | Search catalog | No | query |
+| get_catalog_item | Catalog | Get item details | No | sys_id_or_name |
+| order_catalog_item | Catalog | Place a catalog order | **Yes** | catalog_item_sys_id, variables |
+| **Users & Groups** | | | | |
+| list_users | User | List users | No | query, limit |
+| create_user | User | Create a user | **Yes** | user_name, email, first_name, last_name |
+| update_user | User | Update user fields | **Yes** | sys_id, fields |
+| list_groups | User | List groups | No | query, limit |
+| create_group | User | Create a group | **Yes** | name |
+| update_group | User | Update group fields | **Yes** | sys_id, fields |
+| add_user_to_group | User | Add user to group | **Yes** | user_sys_id, group_sys_id |
+| remove_user_from_group | User | Remove user from group | **Yes** | user_sys_id, group_sys_id |
+| **Reporting & Scheduled Jobs** | | | | |
+| list_reports | Reporting | List saved reports | No | search, category |
+| get_report | Reporting | Get report details | No | sys_id_or_name |
+| run_aggregate_query | Reporting | Run COUNT/SUM/AVG aggregation | No | table, group_by |
+| trend_query | Reporting | Time-bucketed trend data | No | table, date_field, group_by |
+| export_report_data | Reporting | Export table data as JSON | No | table, query, fields |
+| get_sys_log | Reporting | Get system log entries | No | query, limit |
+| list_scheduled_jobs | Reporting | List scheduled jobs | No | active, limit |
+| get_scheduled_job | Reporting | Get a scheduled job | No | sys_id_or_name |
+| create_scheduled_job | Reporting | Create a scheduled job | **Yes** | name, script, run_type |
+| update_scheduled_job | Reporting | Update a scheduled job | **Yes** | sys_id, fields |
+| trigger_scheduled_job | Reporting | Run a job immediately | **Yes** | sys_id |
+| list_job_run_history | Reporting | Job run history/logs | No | job_sys_id, status |
+| **ATF Testing** | | | | |
+| list_atf_suites | ATF | List test suites | No | query, limit |
+| get_atf_suite | ATF | Get suite details | No | sys_id_or_name |
+| run_atf_suite | ATF | Run a test suite | ATF | suite_sys_id |
+| list_atf_tests | ATF | List ATF tests | No | query, limit |
+| get_atf_test | ATF | Get test details | No | sys_id_or_name |
+| run_atf_test | ATF | Run a single test | ATF | test_sys_id |
+| get_atf_suite_result | ATF | Get suite run results | No | result_sys_id |
+| list_atf_test_results | ATF | List test results | No | suite_result_sys_id |
+| get_atf_failure_insight | ATF | ATF Failure Insight details | No | test_result_sys_id |
+| **Now Assist / AI** | | | | |
+| nlq_query | NowAssist | Natural language query | AI | query |
+| ai_search | NowAssist | AI semantic search | AI | query, limit |
+| generate_summary | NowAssist | Generate record summary | AI | table, sys_id |
+| suggest_resolution | NowAssist | AI resolution suggestion | AI | incident_sys_id |
+| categorize_incident | NowAssist | AI categorization | AI | description |
+| get_virtual_agent_topics | NowAssist | List VA topics | No | — |
+| trigger_agentic_playbook | NowAssist | Run agentic playbook | AI | playbook_name |
+| generate_work_notes | NowAssist | AI-generated work notes | AI | task_sys_id |
+| get_pi_models | NowAssist | List PI AI models | AI | — |
+| **Scripting (SCRIPTING_ENABLED=true)** | | | | |
+| list_business_rules | Script | List business rules | No | table, active |
+| get_business_rule | Script | Get rule script | No | sys_id |
+| create_business_rule | Script | Create business rule | Script | name, table, when, script |
+| update_business_rule | Script | Update business rule | Script | sys_id, fields |
+| list_script_includes | Script | List script includes | No | query, active |
+| get_script_include | Script | Get script include | No | sys_id_or_name |
+| create_script_include | Script | Create script include | Script | name, script |
+| update_script_include | Script | Update script include | Script | sys_id, fields |
+| list_client_scripts | Script | List client scripts | No | table, type, active |
+| get_client_script | Script | Get client script | No | sys_id |
+| create_client_script | Script | Create client script | Script | name, table, type, script |
+| update_client_script | Script | Update client script | Script | sys_id, fields |
+| list_ui_policies | Script | List UI policies | No | table, active |
+| get_ui_policy | Script | Get UI policy details | No | sys_id |
+| create_ui_policy | Script | Create UI policy | Script | short_description, table |
+| list_ui_actions | Script | List UI actions (buttons) | No | table, type, active |
+| get_ui_action | Script | Get UI action script | No | sys_id |
+| create_ui_action | Script | Create UI action button | Script | name, table, action_name |
+| update_ui_action | Script | Update UI action | Script | sys_id, fields |
+| list_acls | Script | List ACL rules | No | table, operation |
+| get_acl | Script | Get ACL details | No | sys_id |
+| create_acl | Script | Create ACL rule | Script | name, operation |
+| update_acl | Script | Update ACL rule | Script | sys_id, fields |
+| list_changesets | Script | List update sets | No | state, limit |
+| get_changeset | Script | Get update set details | No | sys_id_or_name |
+| commit_changeset | Script | Commit update set | Script | sys_id |
+| publish_changeset | Script | Export update set to XML | Script | sys_id |
+| **Agile / Scrum** | | | | |
+| create_story | Agile | Create a user story | **Yes** | name, description |
+| update_story | Agile | Update a story | **Yes** | sys_id, fields |
+| list_stories | Agile | List stories | No | sprint_sys_id |
+| create_epic | Agile | Create an epic | **Yes** | name |
+| update_epic | Agile | Update an epic | **Yes** | sys_id, fields |
+| list_epics | Agile | List epics | No | — |
+| create_scrum_task | Agile | Create a scrum task | **Yes** | story_sys_id, name |
+| update_scrum_task | Agile | Update a scrum task | **Yes** | sys_id, fields |
+| list_scrum_tasks | Agile | List scrum tasks | No | story_sys_id |
+| **HRSD** | | | | |
+| create_hr_case | HRSD | Create HR case | **Yes** | short_description, hr_service |
+| get_hr_case | HRSD | Get HR case | No | number_or_sysid |
+| update_hr_case | HRSD | Update HR case | **Yes** | sys_id, fields |
+| list_hr_cases | HRSD | List HR cases | No | state, hr_service |
+| close_hr_case | HRSD | Close HR case | **Yes** | sys_id, close_notes |
+| list_hr_services | HRSD | List available HR services | No | — |
+| **CSM** | | | | |
+| create_customer_case | CSM | Create customer case | **Yes** | short_description |
+| get_customer_case | CSM | Get customer case | No | number_or_sysid |
+| update_customer_case | CSM | Update customer case | **Yes** | sys_id, fields |
+| list_customer_cases | CSM | List customer cases | No | query, state |
+| list_accounts | CSM | List CSM accounts | No | query |
+| list_contacts | CSM | List contacts | No | query, account_sys_id |
+| **Security Operations & GRC** | | | | |
+| create_security_incident | Security | Create SecOps incident | **Yes** | short_description, category |
+| get_security_incident | Security | Get SecOps incident | No | number_or_sysid |
+| update_security_incident | Security | Update SecOps incident | **Yes** | sys_id, fields |
+| list_security_incidents | Security | List SecOps incidents | No | state, severity |
+| list_vulnerabilities | Security | List vulnerability entries | No | state, severity |
+| get_vulnerability | Security | Get vulnerability details | No | number_or_sysid |
+| update_vulnerability | Security | Update vulnerability | **Yes** | sys_id, fields |
+| list_grc_risks | Security | List GRC risks | No | state, category |
+| get_grc_risk | Security | Get GRC risk details | No | number_or_sysid |
+| list_grc_controls | Security | List GRC controls | No | risk_sysid, state |
+| get_threat_intelligence | Security | Query threat intel (IOCs) | No | query, type |
+| **Flow Designer** | | | | |
+| list_flows | Flow | List flows | No | query, active |
+| get_flow | Flow | Get flow details | No | name_or_sysid |
+| trigger_flow | Flow | Trigger a flow | **Yes** | flow_sys_id, inputs |
+| get_flow_execution | Flow | Get execution status | No | execution_sysid |
+| list_flow_executions | Flow | List flow executions | No | flow_sys_id, status |
+| list_subflows | Flow | List subflows | No | query, active |
+| get_subflow | Flow | Get subflow details | No | name_or_sysid |
+| list_action_instances | Flow | List flow actions | No | query, category |
+| get_process_automation | Flow | Get Process Automation | No | name_or_sysid |
+| list_process_automations | Flow | List Process Automations | No | query, active |
+| **Service Portal & UI Builder** *(new)* | | | | |
+| list_portals | Portal | List all portals | No | query, limit |
+| get_portal | Portal | Get portal config | No | id (url_suffix or sys_id) |
+| list_portal_pages | Portal | List portal pages | No | portal_sys_id |
+| get_portal_page | Portal | Get page details | No | sys_id |
+| list_portal_widgets | Portal | List portal widgets | No | query, limit |
+| get_portal_widget | Portal | Get widget source code | No | id_or_sysid |
+| create_portal_widget | Portal | Create new widget | **Yes** | name, id |
+| update_portal_widget | Portal | Update widget source | **Yes** | sys_id, fields |
+| list_widget_instances | Portal | List widget placements | No | widget_sys_id |
+| list_ux_apps | Portal | List Next Experience apps | No | query |
+| get_ux_app | Portal | Get UX app config | No | sys_id_or_name |
+| list_ux_pages | Portal | List UX app pages | No | app_sys_id |
+| list_portal_themes | Portal | List portal themes | No | limit |
+| get_portal_theme | Portal | Get theme CSS variables | No | sys_id |
+| **Integration Hub** *(new)* | | | | |
+| list_rest_messages | Integration | List REST Message definitions | No | query, limit |
+| get_rest_message | Integration | Get REST Message config | No | sys_id_or_name |
+| list_rest_message_functions | Integration | List HTTP methods in a REST Msg | No | rest_message_sys_id |
+| create_rest_message | Integration | Create REST Message | **Yes** | name, endpoint |
+| list_transform_maps | Integration | List Transform Maps | No | query, target_table |
+| get_transform_map | Integration | Get Transform Map details | No | sys_id_or_name |
+| run_transform_map | Integration | Run Transform Map on Import Set | **Yes** | transform_map_sys_id, import_set_sys_id |
+| list_transform_field_maps | Integration | List field mappings | No | transform_map_sys_id |
+| list_import_sets | Integration | List Import Sets | No | state, query |
+| get_import_set | Integration | Get Import Set details | No | sys_id |
+| create_import_set_row | Integration | Insert staging table row | **Yes** | staging_table, data |
+| list_data_sources | Integration | List Import Set data sources | No | query, type |
+| list_event_registry | Integration | List registered events | No | query, limit |
+| get_event_registry_entry | Integration | Get event definition | No | name_or_sysid |
+| register_event | Integration | Register custom event | Script | name, table |
+| fire_event | Integration | Fire a ServiceNow event | **Yes** | event_name, table, record_sys_id |
+| list_event_log | Integration | List fired events log | No | event_name, state |
+| list_oauth_applications | Integration | List OAuth app registry | No | query |
+| list_credential_aliases | Integration | List credential aliases | No | query, type |
+| **Notifications & Attachments** *(new)* | | | | |
+| list_notifications | Notification | List email notifications | No | query, table, event |
+| get_notification | Notification | Get notification details | No | sys_id_or_name |
+| create_notification | Notification | Create email notification | **Yes** | name, table |
+| update_notification | Notification | Update notification | **Yes** | sys_id, fields |
+| list_email_logs | Notification | List outbound email log | No | state, recipient |
+| get_email_log | Notification | Get email log entry | No | sys_id |
+| list_attachments | Notification | List attachments on a record | No | table, record_sys_id |
+| get_attachment_metadata | Notification | Get attachment metadata | No | attachment_sys_id |
+| delete_attachment | Notification | Delete an attachment | **Yes** | attachment_sys_id |
+| upload_attachment | Notification | Upload file to a record | **Yes** | table, record_sys_id, file_name, content_type, content_base64 |
+| list_email_templates | Notification | List email templates | No | query |
+| list_notification_subscriptions | Notification | List user subscriptions | No | user_sys_id |
+| **Performance Analytics & Data Quality** *(new)* | | | | |
+| list_pa_indicators | Performance | List PA KPI indicators | No | query, category |
+| get_pa_indicator | Performance | Get indicator details | No | sys_id_or_name |
+| get_pa_scorecard | Performance | Get current KPI scorecard | No | indicator_sys_id |
+| get_pa_time_series | Performance | Get historical KPI data | No | indicator_sys_id, start_date |
+| list_pa_breakdowns | Performance | List PA breakdowns/dimensions | No | query |
+| list_pa_dashboards | Performance | List PA dashboards | No | query |
+| get_pa_dashboard | Performance | Get PA dashboard | No | sys_id_or_name |
+| list_homepages | Performance | List homepage dashboards | No | query |
+| list_pa_jobs | Performance | List PA collection jobs | No | active, query |
+| get_pa_job | Performance | Get PA job details | No | sys_id |
+| check_table_completeness | Performance | Data quality completeness audit | No | table, fields |
+| get_table_record_count | Performance | Count records in a table | No | table, query |
+| compare_record_counts | Performance | Compare counts across tables | No | tables |
 
 ---
 
@@ -50,7 +298,7 @@ Add to your MCP client (e.g., Claude Desktop config):
   "mcpServers": {
     "servicenow": {
       "command": "node",
-      "args": ["/path/to/servicenow-mcp/dist/server.js"],
+      "args": ["/path/to/nowaikit/dist/server.js"],
       "env": {
         "SERVICENOW_INSTANCE_URL": "https://dev12345.service-now.com",
         "SERVICENOW_AUTH_METHOD": "oauth",
@@ -2347,7 +2595,7 @@ For complex filters, pass an encoded ServiceNow query string directly:
 
 - Review [SECURITY.md](SECURITY.md) for security best practices
 - Check [CONTRIBUTING.md](CONTRIBUTING.md) to extend functionality
-- See [docs/TOOLS.md](docs/TOOLS.md) for the full 150+ tool reference
+- See [docs/TOOLS.md](docs/TOOLS.md) for the full tool reference (270+ tools)
 
 ---
 
@@ -2905,6 +3153,325 @@ For complex filters, pass an encoded ServiceNow query string directly:
     "table": "incident",
     "active": true,
     "limit": 20
+  }
+}
+```
+
+---
+
+## Service Portal & Widget Examples
+
+### Example 106: List All Portals
+
+**Use Case:** Discover all Service Portal configurations in the instance.
+
+**Tool Call:**
+```json
+{
+  "tool": "list_portals",
+  "arguments": {
+    "limit": 25
+  }
+}
+```
+
+**Expected Output:**
+```json
+{
+  "count": 3,
+  "records": [
+    { "sys_id": "a2…", "title": "Employee Service Center", "url_suffix": "esc" },
+    { "sys_id": "b3…", "title": "IT Service Portal", "url_suffix": "sp" },
+    { "sys_id": "c4…", "title": "Customer Portal", "url_suffix": "csm" }
+  ]
+}
+```
+
+---
+
+### Example 107: Get Widget Source Code
+
+**Use Case:** Retrieve the full Angular template and server script of a widget for review.
+
+**Tool Call:**
+```json
+{
+  "tool": "get_portal_widget",
+  "arguments": {
+    "id_or_sysid": "widget-cool-clock"
+  }
+}
+```
+
+---
+
+### Example 108: Create a Portal Widget
+
+**Use Case:** Create a new widget that shows the current user's open incidents.
+
+**Tool Call:**
+```json
+{
+  "tool": "create_portal_widget",
+  "arguments": {
+    "name": "My Open Incidents",
+    "id": "my-open-incidents",
+    "template": "<div><h3>My Open Incidents</h3><ul><li ng-repeat='inc in data.incidents'>{{inc.number}} - {{inc.short_description}}</li></ul></div>",
+    "css": "h3 { color: #333; font-size: 18px; }",
+    "client_script": "api.controller = function($scope) { };",
+    "server_script": "data.incidents = []; var gr = new GlideRecord('incident'); gr.addQuery('caller_id', gs.getUserID()); gr.addQuery('active', true); gr.query(); while(gr.next()) { data.incidents.push({number: gr.number+'', short_description: gr.short_description+''}); }"
+  }
+}
+```
+
+---
+
+## Integration Examples
+
+### Example 109: List REST Message Definitions
+
+**Use Case:** Audit all outbound integrations configured in the instance.
+
+**Tool Call:**
+```json
+{
+  "tool": "list_rest_messages",
+  "arguments": {
+    "query": "Slack",
+    "limit": 10
+  }
+}
+```
+
+---
+
+### Example 110: Fire a Custom Event
+
+**Use Case:** Trigger a custom event to kick off a notification workflow.
+
+**Tool Call:**
+```json
+{
+  "tool": "fire_event",
+  "arguments": {
+    "event_name": "myapp.incident.escalated",
+    "table": "incident",
+    "record_sys_id": "abc123def456...",
+    "parm1": "P1",
+    "parm2": "Escalated to L3 support"
+  }
+}
+```
+
+---
+
+### Example 111: Run a Transform Map
+
+**Use Case:** Process an import set by running a transform map to create incidents from CSV data.
+
+**Tool Call:**
+```json
+{
+  "tool": "run_transform_map",
+  "arguments": {
+    "transform_map_sys_id": "tm_sys_id_here",
+    "import_set_sys_id": "is_sys_id_here"
+  }
+}
+```
+
+---
+
+## Notification & Attachment Examples
+
+### Example 112: Upload an Attachment
+
+**Use Case:** Attach a screenshot or log file to an incident record.
+
+**Tool Call:**
+```json
+{
+  "tool": "upload_attachment",
+  "arguments": {
+    "table": "incident",
+    "record_sys_id": "abc123...",
+    "file_name": "error_screenshot.png",
+    "content_type": "image/png",
+    "content_base64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJ..."
+  }
+}
+```
+
+---
+
+### Example 113: List Attachments on a Record
+
+**Use Case:** List all files attached to a change request.
+
+**Tool Call:**
+```json
+{
+  "tool": "list_attachments",
+  "arguments": {
+    "table": "change_request",
+    "record_sys_id": "chg_sys_id_here"
+  }
+}
+```
+
+---
+
+### Example 114: Create an Email Notification
+
+**Use Case:** Create a notification that emails the assignment group when an incident is reassigned.
+
+**Tool Call:**
+```json
+{
+  "tool": "create_notification",
+  "arguments": {
+    "name": "Incident Reassigned - Notify Group",
+    "table": "incident",
+    "event": "incident.reassigned",
+    "subject": "Incident ${number} has been reassigned to your group",
+    "message_html": "<p>Incident <b>${number}</b> has been assigned to your group: ${assignment_group.display_value}.</p><p>Priority: ${priority.display_value}</p>",
+    "recipients": "assignment_group",
+    "active": true
+  }
+}
+```
+
+---
+
+## Performance Analytics Examples
+
+### Example 115: Get PA Scorecard
+
+**Use Case:** Get the current value and trend for the "Mean Time to Resolve" KPI.
+
+**Tool Call:**
+```json
+{
+  "tool": "get_pa_scorecard",
+  "arguments": {
+    "indicator_sys_id": "pa_indicator_sys_id_here",
+    "period": "last_30_days",
+    "include_scores": true
+  }
+}
+```
+
+**Expected Output:**
+```json
+{
+  "indicator": {
+    "name": "Mean Time to Resolve",
+    "unit": "hours",
+    "direction": "down"
+  },
+  "current_value": "4.2",
+  "previous_value": "5.8",
+  "trend": "down",
+  "last_collected": "2026-02-20"
+}
+```
+
+---
+
+### Example 116: Check Table Data Completeness
+
+**Use Case:** Audit how complete the incident table data is — are key fields being filled in?
+
+**Tool Call:**
+```json
+{
+  "tool": "check_table_completeness",
+  "arguments": {
+    "table": "incident",
+    "fields": "assigned_to,assignment_group,category,priority,cmdb_ci",
+    "query": "active=true",
+    "sample_size": 200
+  }
+}
+```
+
+**Expected Output:**
+```json
+{
+  "table": "incident",
+  "sample_size": 200,
+  "field_completeness": {
+    "assigned_to": { "completeness_pct": "78.5%", "non_empty": 157, "total": 200 },
+    "assignment_group": { "completeness_pct": "91.0%", "non_empty": 182, "total": 200 },
+    "category": { "completeness_pct": "64.0%", "non_empty": 128, "total": 200 },
+    "priority": { "completeness_pct": "99.5%", "non_empty": 199, "total": 200 },
+    "cmdb_ci": { "completeness_pct": "42.5%", "non_empty": 85, "total": 200 }
+  }
+}
+```
+
+---
+
+## Scripting Enhancement Examples
+
+### Example 117: Create a UI Action
+
+**Use Case:** Add an "Escalate to L3" button to the incident form.
+
+**Tool Call:**
+```json
+{
+  "tool": "create_ui_action",
+  "arguments": {
+    "name": "Escalate to L3",
+    "table": "incident",
+    "action_name": "escalate_to_l3",
+    "script": "var gr = new GlideRecord('incident'); if (gr.get(current.sys_id)) { gr.assignment_group = gs.getGroupSysID('L3-Support'); gr.comments = 'Escalated to L3 support team.'; gr.update(); } gs.addInfoMessage('Incident escalated to L3 Support.');",
+    "condition": "current.active == true && current.priority == 1",
+    "form_button": true,
+    "active": true
+  }
+}
+```
+
+---
+
+### Example 118: Create a Scheduled Job
+
+**Use Case:** Schedule a nightly cleanup job to archive old closed incidents.
+
+**Tool Call:**
+```json
+{
+  "tool": "create_scheduled_job",
+  "arguments": {
+    "name": "Archive Closed Incidents (90d+)",
+    "script": "var gr = new GlideRecord('incident'); gr.addQuery('active', false); gr.addQuery('closed_at', '<', gs.daysAgo(90)); gr.query(); while (gr.next()) { gr.u_archived = true; gr.update(); } gs.log('Archived ' + gr.getRowCount() + ' closed incidents.');",
+    "run_type": "daily",
+    "run_time": "03:00:00",
+    "active": true
+  }
+}
+```
+
+---
+
+### Example 119: Create an ACL Rule
+
+**Use Case:** Restrict delete access on the change_request table to admin users only.
+
+**Tool Call:**
+```json
+{
+  "tool": "create_acl",
+  "arguments": {
+    "name": "change_request.*",
+    "type": "record",
+    "operation": "delete",
+    "admin_overrides": true,
+    "script": "answer = gs.hasRole('admin');",
+    "description": "Only admins can delete change requests",
+    "active": true
   }
 }
 ```

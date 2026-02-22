@@ -222,8 +222,8 @@ Expected response:
 
 ```bash
 cd ~/Downloads  # Or your preferred directory
-git clone https://github.com/habenani-p/servicenow-mcp.git
-cd servicenow-mcp
+git clone https://github.com/aartiq/nowaikit.git
+cd nowaikit
 ```
 
 ### Step 2: Install Dependencies
@@ -244,7 +244,7 @@ This compiles `src/server.ts` → `dist/server.js`
 
 **Expected output**:
 ```
-> servicenow-mcp@1.0.0 build
+> now-ai-kit@2.1.0 build
 > tsc
 ```
 
@@ -267,7 +267,7 @@ pwd
 
 **Copy this path** - you'll need it for Claude Desktop configuration.
 
-Example output: `/Users/hardikbenani/Downloads/servicenow-mcp`
+Example output: `/path/to/nowaikit`
 
 ---
 
@@ -302,7 +302,7 @@ Open `claude_desktop_config.json` in your text editor.
   "mcpServers": {
     "servicenow": {
       "command": "node",
-      "args": ["/ABSOLUTE/PATH/TO/servicenow-mcp/dist/server.js"],
+      "args": ["/ABSOLUTE/PATH/TO/nowaikit/dist/server.js"],
       "env": {
         "SERVICENOW_INSTANCE_URL": "https://dev12345.service-now.com",
         "SERVICENOW_AUTH_METHOD": "oauth",
@@ -329,7 +329,7 @@ Open `claude_desktop_config.json` in your text editor.
     },
     "servicenow": {
       "command": "node",
-      "args": ["/ABSOLUTE/PATH/TO/servicenow-mcp/dist/server.js"],
+      "args": ["/ABSOLUTE/PATH/TO/nowaikit/dist/server.js"],
       "env": {
         "SERVICENOW_INSTANCE_URL": "https://dev12345.service-now.com",
         "SERVICENOW_AUTH_METHOD": "oauth",
@@ -351,7 +351,7 @@ Update these fields with your actual values:
 
 | Placeholder | Replace With | Example |
 |------------|--------------|---------|
-| `/ABSOLUTE/PATH/TO/servicenow-mcp/dist/server.js` | Full path from Repository Installation Step 5 | `/Users/hardikbenani/Downloads/servicenow-mcp/dist/server.js` |
+| `/ABSOLUTE/PATH/TO/nowaikit/dist/server.js` | Full path from Repository Installation Step 5 | `/path/to/nowaikit/dist/server.js` |
 | `https://dev12345.service-now.com` | Your ServiceNow instance URL | `https://yourcompany.service-now.com` |
 | `your_client_id_here` | Client ID from OAuth setup | `a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6` |
 | `your_client_secret_here` | Client Secret from OAuth setup | (long secret string) |
@@ -448,7 +448,7 @@ Create a test incident
 **Solution**:
 1. Navigate to repository:
    ```bash
-   cd /path/to/servicenow-mcp
+   cd /path/to/nowaikit
    ```
 2. Rebuild:
    ```bash
@@ -535,7 +535,7 @@ Instead of inline environment variables, you can use a `.env` file for easier ma
 ### Step 1: Create .env File
 
 ```bash
-cd /path/to/servicenow-mcp
+cd /path/to/nowaikit
 cp .env.example .env
 ```
 
@@ -574,7 +574,7 @@ When using `.env` file, your configuration is simpler:
   "mcpServers": {
     "servicenow": {
       "command": "node",
-      "args": ["/ABSOLUTE/PATH/TO/servicenow-mcp/dist/server.js"]
+      "args": ["/ABSOLUTE/PATH/TO/nowaikit/dist/server.js"]
     }
   }
 }
@@ -643,7 +643,7 @@ Review security guidelines:
 
 ### Get Help
 
-- **Issues**: Report bugs at https://github.com/habenani-p/servicenow-mcp/issues
+- **Issues**: Report bugs at https://github.com/aartiq/nowaikit/issues
 - **OAuth Setup**: See detailed guide at [SERVICENOW_OAUTH_SETUP.md](SERVICENOW_OAUTH_SETUP.md)
 - **Examples**: Browse [EXAMPLES.md](../EXAMPLES.md) for usage patterns
 

@@ -1,21 +1,25 @@
 # Role-Based Tool Packages
 
-Set `MCP_TOOL_PACKAGE` in your environment to load a role-specific subset of tools instead of all 112. This keeps the tool list focused and relevant for each user role.
+Set `MCP_TOOL_PACKAGE` in your environment to load a role-specific subset of tools instead of the full set. This keeps the tool list focused and relevant for each user role.
 
 ## Available Packages
 
 | Package | Target Role | Tool Count |
 |---------|-------------|------------|
-| `full` | All roles (default) | 112 |
+| `full` | All roles (default) | 270+ |
 | `service_desk` | IT help desk agent | ~35 |
 | `change_coordinator` | Change manager | ~25 |
 | `knowledge_author` | KB content creator | ~20 |
 | `catalog_builder` | Catalog administrator | ~20 |
-| `system_administrator` | SysAdmin | ~30 |
-| `platform_developer` | Platform developer | ~35 |
-| `itom_engineer` | ITOM/CMDB engineer | ~25 |
-| `agile_manager` | Agile team lead | ~20 |
-| `ai_developer` | Now Assist/AI developer | ~25 |
+| `system_administrator` | SysAdmin | ~60 |
+| `platform_developer` | Platform developer | ~45 |
+| `itom_engineer` | ITOM/CMDB engineer | ~15 |
+| `agile_manager` | Agile team lead | ~15 |
+| `ai_developer` | Now Assist/AI developer | ~15 |
+| `portal_developer` | Portal/UI Builder developer | ~35 |
+| `integration_engineer` | Integration specialist | ~30 |
+| `devops_engineer` | DevOps/pipeline engineer | ~25 |
+| `itam_analyst` | IT Asset Management analyst | ~15 |
 
 ## Usage
 
@@ -35,7 +39,7 @@ MCP_TOOL_PACKAGE=service_desk node dist/server.js
 ## Package Definitions
 
 ### full
-All 112 tools. Default when `MCP_TOOL_PACKAGE` is not set.
+All tools (270+). Default when `MCP_TOOL_PACKAGE` is not set.
 
 ### service_desk
 Tools for IT help desk agents handling incidents, requests, and approvals.
@@ -76,25 +80,56 @@ Includes:
 - Core read tools
 
 ### system_administrator
-Tools for system administrators managing users, groups, and schedules.
+Tools for system administrators managing users, groups, schedules, and security.
 
 Includes:
 - Full user and group management
-- Reporting and analytics
-- Scheduled jobs
+- Reporting, analytics, and scheduled job management (create/update/trigger)
+- Notifications and email log
+- Attachment management (upload, list, delete)
+- ACL management
+- Performance Analytics and data quality checks
+- OAuth applications and credential aliases
 - System log
-- Changeset management
 - Core read tools
 
 ### platform_developer
-Tools for platform developers managing scripts and automation.
+Tools for platform developers managing scripts, automations, and security rules.
 
 Includes:
 - Full scripting tools (business rules, script includes, client scripts)
+- UI Policies and UI Actions (create/update)
+- ACL rule management
 - Changeset management
 - ATF testing tools
 - Core read tools
 - Requires: `SCRIPTING_ENABLED=true`, `ATF_ENABLED=true`
+
+### portal_developer
+Tools for Service Portal and UI Builder developers.
+
+Includes:
+- Full Service Portal tools (portals, pages, widgets CRUD)
+- Next Experience / UI Builder apps and pages
+- Portal themes
+- UI Policies and UI Actions
+- Client script management
+- Changeset management
+- Core read tools
+- Requires: `SCRIPTING_ENABLED=true` (for write tools)
+
+### integration_engineer
+Tools for integration and middleware specialists.
+
+Includes:
+- REST Message configuration (create/list)
+- Transform Map execution and field mapping
+- Import Set management
+- Event registry and event firing
+- OAuth and credential alias read tools
+- Changeset management
+- Core read tools
+- Requires: `WRITE_ENABLED=true`, `SCRIPTING_ENABLED=true` (for register_event)
 
 ### itom_engineer
 Tools for IT operations and CMDB engineers.
@@ -138,3 +173,5 @@ Includes:
 | `itom_engineer` | true | `CMDB_WRITE_ENABLED=true` |
 | `agile_manager` | true | — |
 | `ai_developer` | false | `NOW_ASSIST_ENABLED=true` |
+| `portal_developer` | true | `SCRIPTING_ENABLED=true` |
+| `integration_engineer` | true | `SCRIPTING_ENABLED=true` (for register_event) |

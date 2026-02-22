@@ -815,6 +815,60 @@ export class ServiceNowClient {
   }
 
   /**
+   * Upload a file attachment to a ServiceNow record via the Attachment API.
+   * Accepts base64-encoded content and uploads it as a multipart form.
+   */
+  async uploadAttachment(
+    table: string,
+    recordSysId: string,
+    fileName: string,
+    contentType: string,
+    contentBase64: string
+  ): Promise<any> {
+    await this.authenticate();
+
+    const url = `${this.baseUrl}/api/now/attachment/file?table_name=${encodeURIComponent(table)}&table_sys_id=${encodeURIComponent(recordSysId)}&file_name=${encodeURIComponent(fileName)}`;
+
+    logger.info(`Uploading attachment "${fileName}" to ${table}:${recordSysId}`);
+
+    try {
+      // Decode base64 to binary
+      const binary = Buffer.from(contentBase64, 'base64');
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': contentType,
+          'Authorization': this.getAuthHeader(),
+          'Accept': 'application/json',
+        },
+        body: binary,
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        try {
+          const errorJson = JSON.parse(errorText);
+          if (errorJson.error?.message) errorMessage = errorJson.error.message;
+        } catch {
+          // ignore parse error
+        }
+        throw new ServiceNowError(errorMessage, 'ATTACHMENT_UPLOAD_FAILED');
+      }
+
+      const data = await response.json() as any;
+      return data.result ?? data;
+    } catch (error) {
+      if (error instanceof ServiceNowError) throw error;
+      throw new ServiceNowError(
+        `Failed to upload attachment: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        'ATTACHMENT_UPLOAD_FAILED'
+      );
+    }
+  }
+
+  /**
    * Natural language update (simplified implementation)
    */
   async naturalLanguageUpdate(_instruction: string, _table: string): Promise<any> {

@@ -9,6 +9,31 @@ import { requireWrite } from '../utils/permissions.js';
 export function getChangeToolDefinitions() {
   return [
     {
+      name: 'create_change_request',
+      description: 'Create a new change request (requires WRITE_ENABLED=true)',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          short_description: { type: 'string', description: 'Brief description of the change' },
+          description: { type: 'string', description: 'Detailed description and justification' },
+          type: { type: 'string', description: 'Change type: "normal", "standard", "emergency"' },
+          category: { type: 'string', description: 'Change category (e.g. "Software", "Hardware", "Network")' },
+          risk: { type: 'string', description: 'Risk level: "1"=High, "2"=Medium, "3"=Low, "4"=Very Low' },
+          impact: { type: 'string', description: 'Impact: "1"=High, "2"=Medium, "3"=Low' },
+          priority: { type: 'string', description: 'Priority: "1"=Critical, "2"=High, "3"=Moderate, "4"=Low' },
+          assignment_group: { type: 'string', description: 'Assignment group name or sys_id' },
+          assigned_to: { type: 'string', description: 'Assignee username or sys_id' },
+          start_date: { type: 'string', description: 'Planned start date (ISO: YYYY-MM-DD HH:MM:SS)' },
+          end_date: { type: 'string', description: 'Planned end date (ISO: YYYY-MM-DD HH:MM:SS)' },
+          implementation_plan: { type: 'string', description: 'Step-by-step implementation plan' },
+          backout_plan: { type: 'string', description: 'Rollback plan if change fails' },
+          test_plan: { type: 'string', description: 'Testing and validation steps' },
+          cmdb_ci: { type: 'string', description: 'Affected CI sys_id' },
+        },
+        required: ['short_description', 'type'],
+      },
+    },
+    {
       name: 'get_change_request',
       description: 'Get full details of a change request by number (CHG...) or sys_id',
       inputSchema: {
@@ -77,6 +102,30 @@ export async function executeChangeToolCall(
   args: Record<string, any>
 ): Promise<any> {
   switch (name) {
+    case 'create_change_request': {
+      requireWrite();
+      if (!args.short_description || !args.type)
+        throw new ServiceNowError('short_description and type are required', 'INVALID_REQUEST');
+      const data: Record<string, any> = {
+        short_description: args.short_description,
+        type: args.type,
+      };
+      if (args.description) data.description = args.description;
+      if (args.category) data.category = args.category;
+      if (args.risk) data.risk = args.risk;
+      if (args.impact) data.impact = args.impact;
+      if (args.priority) data.priority = args.priority;
+      if (args.assignment_group) data.assignment_group = args.assignment_group;
+      if (args.assigned_to) data.assigned_to = args.assigned_to;
+      if (args.start_date) data.start_date = args.start_date;
+      if (args.end_date) data.end_date = args.end_date;
+      if (args.implementation_plan) data.implementation_plan = args.implementation_plan;
+      if (args.backout_plan) data.backout_plan = args.backout_plan;
+      if (args.test_plan) data.test_plan = args.test_plan;
+      if (args.cmdb_ci) data.cmdb_ci = args.cmdb_ci;
+      const result = await client.createRecord('change_request', data);
+      return { ...result, summary: `Created change request: ${result.number || result.sys_id}` };
+    }
     case 'get_change_request': {
       if (!args.number_or_sysid) throw new ServiceNowError('number_or_sysid is required', 'INVALID_REQUEST');
       if (/^[0-9a-f]{32}$/i.test(args.number_or_sysid)) {
