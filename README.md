@@ -154,35 +154,34 @@ Full TypeScript types, 120+ real-world examples, 9 reference guides, and beginne
 
 Domain modules covering the full ServiceNow platform:
 
-| Module | Key Capabilities | Tools |
-|--------|-----------------|------:|
-| Core & CMDB | Record query, schema discovery, CMDB CIs, ITOM Discovery, MID Servers, multi-instance management | 19 |
-| Incident Management | Create, update, resolve, close, work notes, comments | 7 |
-| Problem Management | Problem records, root cause analysis, known errors | 4 |
-| Change Management | Create, get, update, submit for approval, close change requests | 6 |
-| Task Management | Generic tasks, my-task lists, completions | 4 |
-| Knowledge Base | Search, create, update, publish KB articles | 6 |
-| Service Catalog & Approvals | Catalog browsing, order items, SLA tracking, approval workflows | 10 |
-| User & Group Management | Users, groups, membership, role assignments | 8 |
-| Reporting & Analytics | Aggregate queries, trend analysis, **scheduled job CRUD**, run history | 13 |
-| ATF Testing | Test suites, test execution, ATF Failure Insight | 9 |
-| Now Assist / AI | NLQ, AI Search, summaries, resolution suggestions, Agentic Playbooks | 10 |
-| Scripting | Business rules, script includes, **client script CRUD**, **UI Policies**, **UI Actions**, **ACL management**, changesets | 27 |
-| Agile / Scrum | Stories, epics, sprints, scrum tasks | 9 |
-| HR Service Delivery (HRSD) | HR cases, HR services, employee profiles, onboarding/offboarding | 12 |
-| Customer Service Management (CSM) | Customer cases, accounts, contacts, products, SLAs | 11 |
-| Security Operations & GRC | SecOps incidents, vulnerabilities, GRC risks, controls, threat intel | 11 |
-| Flow Designer & Process Automation | Flows, subflows, triggers, executions, Process Automation playbooks | 10 |
-| Service Portal & UI Builder | Portals, pages, **widgets (create/update/deploy)**, Next Experience apps/pages, themes | 14 |
-| Integration Hub | REST Messages, Transform Maps, Import Sets, **Event Registry**, OAuth apps, credential aliases | 19 |
-| Notifications & Attachments | Email notifications, email logs, **file attachments (upload/list/delete)**, templates, subscriptions | 12 |
-| Performance Analytics | PA indicators/scorecards, time-series, dashboards, PA jobs, **data quality checks** | 13 |
-| System Properties | Get, set, bulk operations, validate, export/import, audit history | 12 |
-| Update Set Management | Create, switch, preview, complete, export, auto-ensure active set | 8 |
-| Virtual Agent (VA) | Topic authoring, conversation history, categories, topic listing | 7 |
-| IT Asset Management (ITAM) | Assets, software licenses, contracts, compliance reporting | 8 |
-| DevOps & Pipeline Tracking | Pipelines, deployments, change governance, DORA metrics | 7 |
-| **Total** | | **276** |
+| Module | Key Capabilities |
+|--------|-----------------|
+| Core & CMDB | Record query, schema discovery, CMDB CIs, ITOM Discovery, MID Servers, multi-instance management |
+| Incident Management | Create, update, resolve, close, work notes, comments |
+| Problem Management | Problem records, root cause analysis, known errors |
+| Change Management | Create, get, update, submit for approval, close change requests |
+| Task Management | Generic tasks, my-task lists, completions |
+| Knowledge Base | Search, create, update, publish KB articles |
+| Service Catalog & Approvals | Catalog browsing, order items, SLA tracking, approval workflows |
+| User & Group Management | Users, groups, membership, role assignments |
+| Reporting & Analytics | Aggregate queries, trend analysis, scheduled job CRUD, run history |
+| ATF Testing | Test suites, test execution, ATF Failure Insight |
+| Now Assist / AI | NLQ, AI Search, summaries, resolution suggestions, Agentic Playbooks |
+| Scripting | Business rules, script includes, client script CRUD, UI Policies, UI Actions, ACL management, changesets |
+| Agile / Scrum | Stories, epics, sprints, scrum tasks |
+| HR Service Delivery (HRSD) | HR cases, HR services, employee profiles, onboarding/offboarding |
+| Customer Service Management (CSM) | Customer cases, accounts, contacts, products, SLAs |
+| Security Operations & GRC | SecOps incidents, vulnerabilities, GRC risks, controls, threat intel |
+| Flow Designer & Process Automation | Flows, subflows, triggers, executions, Process Automation playbooks |
+| Service Portal & UI Builder | Portals, pages, widgets (create/update/deploy), Next Experience apps/pages, themes |
+| Integration Hub | REST Messages, Transform Maps, Import Sets, Event Registry, OAuth apps, credential aliases |
+| Notifications & Attachments | Email notifications, email logs, file attachments (upload/list/delete), templates, subscriptions |
+| Performance Analytics | PA indicators/scorecards, time-series, dashboards, PA jobs, data quality checks |
+| System Properties | Get, set, bulk operations, validate, export/import, audit history |
+| Update Set Management | Create, switch, preview, complete, export, auto-ensure active set |
+| Virtual Agent (VA) | Topic authoring, conversation history, categories, topic listing |
+| IT Asset Management (ITAM) | Assets, software licenses, contracts, compliance reporting |
+| DevOps & Pipeline Tracking | Pipelines, deployments, change governance, DORA metrics |
 
 ---
 
@@ -466,7 +465,7 @@ Full guide → [clients/claude-desktop/SETUP.md](clients/claude-desktop/SETUP.md
 </details>
 
 <details>
-<summary><b>ChatGPT / OpenAI</b> — GPT-4o, o1, o3 (API)</summary>
+<summary><b>ChatGPT / OpenAI</b> (API)</summary>
 
 OpenAI supports MCP via the **Responses API** (`mcp` tool type) in the latest SDK (v1.50+):
 
@@ -875,7 +874,7 @@ See [Anthropic MCP Python SDK](https://github.com/modelcontextprotocol/python-sd
 | VS Code + Cline | IDE | Basic, OAuth | [Setup](docs/CLIENT_SETUP.md) |
 | JetBrains AI | IDE | Basic, OAuth | [Setup](docs/CLIENT_SETUP.md) |
 | Amazon Q Developer | IDE / CLI | Basic, OAuth | [Setup](docs/CLIENT_SETUP.md) |
-| ChatGPT / GPT-4o | API | Basic, OAuth | [Setup](clients/codex/SETUP.md) |
+| ChatGPT / OpenAI | API | Basic, OAuth | [Setup](clients/codex/SETUP.md) |
 | **Google AI Studio** | API / Agent | Basic, OAuth | [Setup](docs/CLIENT_SETUP.md) |
 | Google Gemini API | API | Basic, OAuth | [Setup](clients/gemini/SETUP.md) |
 | Grok (xAI) | API | Basic, OAuth | [Setup](docs/CLIENT_SETUP.md) |
