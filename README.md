@@ -1448,7 +1448,7 @@ If you discover a security vulnerability, please follow the responsible disclosu
 No. For beginners, you just connect your AI and ask questions in plain English. The kit handles all API calls automatically.
 
 **Which ServiceNow versions are supported?**
-All currently supported ServiceNow releases (Xanadu, Washingon DC, Vancouver, and later). The toolkit targets the latest available APIs.
+All actively supported ServiceNow releases. The toolkit targets the latest available APIs and has been tested on the three most recent releases — **Yokohama**, **Xanadu**, and **Washington DC** — and works on any currently supported instance.
 
 **Can I use this on a free Personal Developer Instance (PDI)?**
 Yes. Get a free PDI at [developer.servicenow.com](https://developer.servicenow.com) and connect in 5 minutes.

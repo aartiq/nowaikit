@@ -304,9 +304,9 @@ After OAuth is configured:
 
 ## Additional Resources
 
-- [ServiceNow OAuth 2.0 Documentation](https://docs.servicenow.com/bundle/washingtondc-platform-security/page/administer/security/concept/c_OAuthApplications.html)
+- [ServiceNow OAuth 2.0 Documentation](https://docs.servicenow.com/bundle/yokohama-platform-security/page/administer/security/concept/c_OAuthApplications.html)
 - [OAuth 2.0 Password Grant](https://oauth.net/2/grant-types/password/)
-- [ServiceNow REST API Explorer](https://developer.servicenow.com/dev.do#!/reference/api/washingtondc/rest)
+- [ServiceNow REST API Explorer](https://developer.servicenow.com/dev.do#!/reference/api/yokohama/rest)
 
 ---
 
@@ -322,4 +322,4 @@ If you encounter issues:
 ---
 
 **Last Updated**: February 2026
-**ServiceNow Versions Tested**: Vancouver, Washington, Xanadu
+**ServiceNow Versions Tested**: Washington DC, Xanadu, Yokohama (latest three releases)
