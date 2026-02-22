@@ -44,6 +44,42 @@ export function getCatalogToolDefinitions() {
       },
     },
     {
+      name: 'create_catalog_item',
+      description: 'Create a new service catalog item (requires WRITE_ENABLED=true)',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          name: { type: 'string', description: 'Catalog item display name' },
+          short_description: { type: 'string', description: 'One-line summary shown in search results' },
+          description: { type: 'string', description: 'Full HTML description of the item' },
+          category: { type: 'string', description: 'sys_id of the catalog category (sc_category)' },
+          price: { type: 'string', description: 'Price (e.g. "0", "99.99")' },
+          delivery_time: {
+            type: 'string',
+            description: 'Estimated delivery time ISO 8601 duration (e.g. "1 08:00:00" for 1 day 8 hours)',
+          },
+          active: { type: 'boolean', description: 'Make the item available in the catalog (default: true)' },
+          roles: { type: 'string', description: 'Comma-separated roles that can see the item' },
+        },
+        required: ['name', 'short_description'],
+      },
+    },
+    {
+      name: 'update_catalog_item',
+      description: 'Update an existing catalog item (requires WRITE_ENABLED=true)',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          sys_id: { type: 'string', description: 'Catalog item sys_id' },
+          fields: {
+            type: 'object',
+            description: 'Fields to update (name, short_description, price, active, category, etc.)',
+          },
+        },
+        required: ['sys_id', 'fields'],
+      },
+    },
+    {
       name: 'order_catalog_item',
       description: 'Order a service catalog item (requires WRITE_ENABLED=true)',
       inputSchema: {
@@ -57,6 +93,37 @@ export function getCatalogToolDefinitions() {
       },
     },
     // Approval tools
+    {
+      name: 'create_approval_rule',
+      description:
+        'Create an approval rule that automatically generates approval requests when a record matches given conditions (requires WRITE_ENABLED=true). ' +
+        'Uses the sysapproval_rule table.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          name: { type: 'string', description: 'Rule name' },
+          table: {
+            type: 'string',
+            description: 'Table this rule applies to (e.g. "sc_request", "change_request")',
+          },
+          approver_type: {
+            type: 'string',
+            description: '"user" | "group" — whether the approver is a user or a group',
+          },
+          approver: {
+            type: 'string',
+            description: 'sys_id of the approving user or group',
+          },
+          condition: {
+            type: 'string',
+            description: 'Encoded query that determines when the rule fires (leave blank for always)',
+          },
+          active: { type: 'boolean', description: 'Activate the rule immediately (default: true)' },
+          order: { type: 'number', description: 'Execution order relative to other rules (default: 100)' },
+        },
+        required: ['name', 'table', 'approver_type', 'approver'],
+      },
+    },
     {
       name: 'get_my_approvals',
       description: 'List approvals pending for the currently configured user',
@@ -158,6 +225,30 @@ export async function executeCatalogToolCall(
       if (resp.count === 0) throw new ServiceNowError(`Catalog item not found: ${args.sys_id_or_name}`, 'NOT_FOUND');
       return resp.records[0];
     }
+    case 'create_catalog_item': {
+      requireWrite();
+      if (!args.name || !args.short_description)
+        throw new ServiceNowError('name and short_description are required', 'INVALID_REQUEST');
+      const data: Record<string, any> = {
+        name: args.name,
+        short_description: args.short_description,
+        active: args.active !== false,
+      };
+      if (args.description) data.description = args.description;
+      if (args.category) data.category = args.category;
+      if (args.price !== undefined) data.price = args.price;
+      if (args.delivery_time) data.delivery_time = args.delivery_time;
+      if (args.roles) data.roles = args.roles;
+      const result = await client.createRecord('sc_cat_item', data);
+      return { ...result, summary: `Created catalog item "${args.name}"` };
+    }
+    case 'update_catalog_item': {
+      requireWrite();
+      if (!args.sys_id || !args.fields)
+        throw new ServiceNowError('sys_id and fields are required', 'INVALID_REQUEST');
+      const result = await client.updateRecord('sc_cat_item', args.sys_id, args.fields);
+      return { ...result, summary: `Updated catalog item ${args.sys_id}` };
+    }
     case 'order_catalog_item': {
       requireWrite();
       if (!args.sys_id) throw new ServiceNowError('sys_id is required', 'INVALID_REQUEST');
@@ -167,6 +258,29 @@ export async function executeCatalogToolCall(
         variables: args.variables || {},
       });
       return { ...result, summary: `Ordered catalog item ${args.sys_id}` };
+    }
+    case 'create_approval_rule': {
+      requireWrite();
+      if (!args.name || !args.table || !args.approver_type || !args.approver)
+        throw new ServiceNowError('name, table, approver_type, and approver are required', 'INVALID_REQUEST');
+      const data: Record<string, any> = {
+        name: args.name,
+        table: args.table,
+        approver_type: args.approver_type,
+        active: args.active !== false,
+        order: args.order ?? 100,
+      };
+      if (args.approver_type === 'group') {
+        data.approver_group = args.approver;
+      } else {
+        data.approver = args.approver;
+      }
+      if (args.condition) data.condition = args.condition;
+      const result = await client.createRecord('sysapproval_rule', data);
+      return {
+        ...result,
+        summary: `Created approval rule "${args.name}" for table "${args.table}" with ${args.approver_type} approver`,
+      };
     }
     case 'get_my_approvals': {
       const username = process.env.SERVICENOW_USERNAME || process.env.SERVICENOW_BASIC_USERNAME || '';

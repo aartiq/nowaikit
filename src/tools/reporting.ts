@@ -177,6 +177,46 @@ export function getReportingToolDefinitions() {
       },
     },
     {
+      name: 'create_report',
+      description: 'Create a new saved report on any table (requires WRITE_ENABLED=true)',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          title: { type: 'string', description: 'Report title displayed in the list' },
+          table: { type: 'string', description: 'Table to report on (e.g. "incident", "change_request")' },
+          type: {
+            type: 'string',
+            description:
+              'Report type: "bar", "column", "pie", "line", "list", "gauge", "single_score", "trend", "pivot", "calHeatmap"',
+          },
+          field: { type: 'string', description: 'Primary grouping field for the report' },
+          query: { type: 'string', description: 'Encoded query to filter report data' },
+          aggregate: {
+            type: 'string',
+            description: 'Aggregate function: COUNT (default), SUM, AVG, MIN, MAX',
+          },
+          group_by: { type: 'string', description: 'Secondary grouping field (stacked charts)' },
+          roles: { type: 'string', description: 'Comma-separated roles that can view the report' },
+        },
+        required: ['title', 'table', 'type'],
+      },
+    },
+    {
+      name: 'update_report',
+      description: 'Update an existing saved report definition (requires WRITE_ENABLED=true)',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          sys_id: { type: 'string', description: 'Report sys_id' },
+          fields: {
+            type: 'object',
+            description: 'Fields to update (title, type, query, field, aggregate, etc.)',
+          },
+        },
+        required: ['sys_id', 'fields'],
+      },
+    },
+    {
       name: 'list_job_run_history',
       description: 'List recent run history for scheduled jobs (success/failure log)',
       inputSchema: {
@@ -305,6 +345,30 @@ export async function executeReportingToolCall(
       const now = new Date().toISOString().replace('T', ' ').slice(0, 19);
       const result = await client.updateRecord('sysauto', args.sys_id, { next_action: now, active: true });
       return { ...result, summary: `Triggered scheduled job ${args.sys_id} — set next_action to now` };
+    }
+    case 'create_report': {
+      requireWrite();
+      if (!args.title || !args.table || !args.type)
+        throw new ServiceNowError('title, table, and type are required', 'INVALID_REQUEST');
+      const data: Record<string, any> = {
+        title: args.title,
+        table: args.table,
+        type: args.type,
+        aggregate: args.aggregate || 'COUNT',
+      };
+      if (args.field) data.field = args.field;
+      if (args.query) data.filter_fields = args.query;
+      if (args.group_by) data.group_by = args.group_by;
+      if (args.roles) data.roles = args.roles;
+      const result = await client.createRecord('sys_report', data);
+      return { ...result, summary: `Created report "${args.title}" (${args.type}) on table "${args.table}"` };
+    }
+    case 'update_report': {
+      requireWrite();
+      if (!args.sys_id || !args.fields)
+        throw new ServiceNowError('sys_id and fields are required', 'INVALID_REQUEST');
+      const result = await client.updateRecord('sys_report', args.sys_id, args.fields);
+      return { ...result, summary: `Updated report ${args.sys_id}` };
     }
     case 'list_job_run_history': {
       const parts: string[] = [];

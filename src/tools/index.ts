@@ -58,6 +58,8 @@ import { getVaToolDefinitions, executeVaToolCall } from './va.js';
 import { getItamToolDefinitions, executeItamToolCall } from './itam.js';
 // DevOps & pipeline tracking
 import { getDevopsToolDefinitions, executeDevopsToolCall } from './devops.js';
+// Scoped Application (App Studio)
+import { getAppStudioToolDefinitions, executeAppStudioToolCall } from './app-studio.js';
 
 // ─── Package Definitions ──────────────────────────────────────────────────────
 
@@ -77,7 +79,7 @@ const PACKAGE_TOOL_NAMES: Record<string, string[]> = {
   ],
   portal_developer: [
     'query_records', 'get_record', 'get_table_schema',
-    'list_portals', 'get_portal', 'list_portal_pages', 'get_portal_page',
+    'list_portals', 'get_portal', 'create_portal', 'list_portal_pages', 'get_portal_page', 'create_portal_page',
     'list_portal_widgets', 'get_portal_widget', 'create_portal_widget', 'update_portal_widget',
     'list_widget_instances',
     'list_ux_apps', 'get_ux_app', 'list_ux_pages',
@@ -126,13 +128,14 @@ const PACKAGE_TOOL_NAMES: Record<string, string[]> = {
   ],
   catalog_builder: [
     'query_records', 'get_record', 'get_user',
-    'list_catalog_items', 'search_catalog', 'get_catalog_item', 'order_catalog_item',
+    'list_catalog_items', 'search_catalog', 'get_catalog_item', 'create_catalog_item', 'update_catalog_item', 'order_catalog_item',
+    'create_approval_rule',
     'list_users', 'list_groups',
   ],
   system_administrator: [
     'query_records', 'get_record', 'get_user', 'get_group', 'get_table_schema',
     'list_users', 'create_user', 'update_user', 'list_groups', 'create_group', 'update_group', 'add_user_to_group', 'remove_user_from_group',
-    'list_reports', 'get_report', 'run_aggregate_query', 'trend_query', 'export_report_data', 'get_sys_log',
+    'list_reports', 'get_report', 'create_report', 'update_report', 'run_aggregate_query', 'trend_query', 'export_report_data', 'get_sys_log',
     'list_scheduled_jobs', 'get_scheduled_job', 'create_scheduled_job', 'update_scheduled_job', 'trigger_scheduled_job', 'list_job_run_history',
     'list_acls', 'get_acl', 'create_acl', 'update_acl',
     'list_notifications', 'get_notification', 'create_notification', 'update_notification',
@@ -140,7 +143,7 @@ const PACKAGE_TOOL_NAMES: Record<string, string[]> = {
     'list_attachments', 'get_attachment_metadata', 'upload_attachment', 'delete_attachment',
     'check_table_completeness', 'get_table_record_count', 'compare_record_counts',
     'list_pa_indicators', 'get_pa_indicator', 'get_pa_scorecard', 'get_pa_time_series',
-    'list_pa_dashboards', 'get_pa_dashboard',
+    'list_pa_dashboards', 'get_pa_dashboard', 'create_dashboard', 'update_dashboard',
     'list_oauth_applications', 'list_credential_aliases',
     'get_system_property', 'set_system_property', 'list_system_properties', 'search_system_properties',
     'bulk_get_properties', 'bulk_set_properties', 'list_property_categories',
@@ -149,6 +152,7 @@ const PACKAGE_TOOL_NAMES: Record<string, string[]> = {
   ],
   platform_developer: [
     'query_records', 'get_record', 'get_table_schema',
+    'list_scoped_apps', 'get_scoped_app', 'create_scoped_app', 'update_scoped_app',
     'list_business_rules', 'get_business_rule', 'create_business_rule', 'update_business_rule',
     'list_script_includes', 'get_script_include', 'create_script_include', 'update_script_include',
     'list_client_scripts', 'get_client_script', 'create_client_script', 'update_client_script',
@@ -208,6 +212,7 @@ const ALL_TOOLS = [
   ...getVaToolDefinitions(),
   ...getItamToolDefinitions(),
   ...getDevopsToolDefinitions(),
+  ...getAppStudioToolDefinitions(),
 ];
 
 // ─── Public API ───────────────────────────────────────────────────────────────
@@ -262,6 +267,7 @@ export async function executeTool(
     () => executeVaToolCall(client, name, args),
     () => executeItamToolCall(client, name, args),
     () => executeDevopsToolCall(client, name, args),
+    () => executeAppStudioToolCall(client, name, args),
   ];
 
   for (const handler of handlers) {

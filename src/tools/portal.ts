@@ -23,6 +23,42 @@ export function getPortalToolDefinitions() {
       },
     },
     {
+      name: 'create_portal',
+      description: 'Create a new Service Portal configuration (requires WRITE_ENABLED=true)',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          title: { type: 'string', description: 'Human-readable portal title' },
+          url_suffix: {
+            type: 'string',
+            description: 'URL path segment for the portal (e.g. "myportal" → /myportal)',
+          },
+          default_homepage: {
+            type: 'string',
+            description: 'sys_id of the default homepage sp_page record',
+          },
+          theme: { type: 'string', description: 'sys_id of the sp_theme to apply' },
+          logo: { type: 'string', description: 'sys_id of the logo attachment record' },
+          description: { type: 'string', description: 'Short description of the portal' },
+        },
+        required: ['title', 'url_suffix'],
+      },
+    },
+    {
+      name: 'create_portal_page',
+      description: 'Create a new page inside a Service Portal (requires WRITE_ENABLED=true)',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          title: { type: 'string', description: 'Page title' },
+          id: { type: 'string', description: 'Unique page ID used in the URL (e.g. "my-page")' },
+          portal_sys_id: { type: 'string', description: 'sys_id of the parent Service Portal' },
+          description: { type: 'string', description: 'Brief description of the page purpose' },
+        },
+        required: ['title', 'id', 'portal_sys_id'],
+      },
+    },
+    {
       name: 'get_portal',
       description: 'Get full configuration details of a Service Portal by sys_id or URL suffix',
       inputSchema: {
@@ -196,6 +232,34 @@ export async function executePortalToolCall(
 ): Promise<any> {
   switch (name) {
     // ── Service Portal ──────────────────────────────────────────────────────
+    case 'create_portal': {
+      requireWrite();
+      if (!args.title || !args.url_suffix)
+        throw new ServiceNowError('title and url_suffix are required', 'INVALID_REQUEST');
+      const data: Record<string, any> = {
+        title: args.title,
+        url_suffix: args.url_suffix,
+      };
+      if (args.default_homepage) data.default_homepage = args.default_homepage;
+      if (args.theme) data.theme = args.theme;
+      if (args.logo) data.logo = args.logo;
+      if (args.description) data.description = args.description;
+      const result = await client.createRecord('sp_portal', data);
+      return { ...result, summary: `Created portal "${args.title}" at /${args.url_suffix}` };
+    }
+    case 'create_portal_page': {
+      requireWrite();
+      if (!args.title || !args.id || !args.portal_sys_id)
+        throw new ServiceNowError('title, id, and portal_sys_id are required', 'INVALID_REQUEST');
+      const data: Record<string, any> = {
+        title: args.title,
+        id: args.id,
+        sp_portal: args.portal_sys_id,
+      };
+      if (args.description) data.description = args.description;
+      const result = await client.createRecord('sp_page', data);
+      return { ...result, summary: `Created portal page "${args.title}" (id: ${args.id})` };
+    }
     case 'list_portals': {
       const parts: string[] = [];
       if (args.query) parts.push(`titleCONTAINS${args.query}^ORurl_suffixCONTAINS${args.query}`);

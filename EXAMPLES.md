@@ -1,6 +1,6 @@
 # now-ai-kit — Usage Examples
 
-This document provides real-world examples of using the now-ai-kit ServiceNow MCP server (270+ tools across all ServiceNow modules).
+This document provides real-world examples of using the now-ai-kit ServiceNow MCP server (284+ tools across all ServiceNow modules).
 
 ## Table of Contents
 
@@ -37,6 +37,11 @@ This document provides real-world examples of using the now-ai-kit ServiceNow MC
 - [CSM Examples](#csm-examples)
 - [IT Asset Management Examples](#it-asset-management-examples)
 - [Virtual Agent Examples](#virtual-agent-examples)
+
+### App Studio & New Capabilities
+- [Scoped Application Examples](#scoped-application-examples)
+- [Report & Dashboard Creation Examples](#report--dashboard-creation-examples)
+- [Catalog Item & Approval Rule Examples](#catalog-item--approval-rule-examples)
 
 ### Advanced
 - [Advanced Workflows](#advanced-workflows)
@@ -104,7 +109,10 @@ This document provides real-world examples of using the now-ai-kit ServiceNow MC
 | list_catalog_items | Catalog | List catalog items | No | query, limit |
 | search_catalog | Catalog | Search catalog | No | query |
 | get_catalog_item | Catalog | Get item details | No | sys_id_or_name |
+| create_catalog_item | Catalog | Create a new catalog item | **Yes** | name, short_description |
+| update_catalog_item | Catalog | Update a catalog item | **Yes** | sys_id, fields |
 | order_catalog_item | Catalog | Place a catalog order | **Yes** | catalog_item_sys_id, variables |
+| create_approval_rule | Catalog | Create an approval rule | **Yes** | name, table, approver_type, approver |
 | **Users & Groups** | | | | |
 | list_users | User | List users | No | query, limit |
 | create_user | User | Create a user | **Yes** | user_name, email, first_name, last_name |
@@ -117,6 +125,8 @@ This document provides real-world examples of using the now-ai-kit ServiceNow MC
 | **Reporting & Scheduled Jobs** | | | | |
 | list_reports | Reporting | List saved reports | No | search, category |
 | get_report | Reporting | Get report details | No | sys_id_or_name |
+| create_report | Reporting | Create a new saved report | **Yes** | title, table, type |
+| update_report | Reporting | Update a saved report | **Yes** | sys_id, fields |
 | run_aggregate_query | Reporting | Run COUNT/SUM/AVG aggregation | No | table, group_by |
 | trend_query | Reporting | Time-bucketed trend data | No | table, date_field, group_by |
 | export_report_data | Reporting | Export table data as JSON | No | table, query, fields |
@@ -222,11 +232,13 @@ This document provides real-world examples of using the now-ai-kit ServiceNow MC
 | list_action_instances | Flow | List flow actions | No | query, category |
 | get_process_automation | Flow | Get Process Automation | No | name_or_sysid |
 | list_process_automations | Flow | List Process Automations | No | query, active |
-| **Service Portal & UI Builder** *(new)* | | | | |
+| **Service Portal & UI Builder** | | | | |
 | list_portals | Portal | List all portals | No | query, limit |
 | get_portal | Portal | Get portal config | No | id (url_suffix or sys_id) |
+| create_portal | Portal | Create a new Service Portal | **Yes** | title, url_suffix |
 | list_portal_pages | Portal | List portal pages | No | portal_sys_id |
 | get_portal_page | Portal | Get page details | No | sys_id |
+| create_portal_page | Portal | Create a new portal page | **Yes** | title, id, portal_sys_id |
 | list_portal_widgets | Portal | List portal widgets | No | query, limit |
 | get_portal_widget | Portal | Get widget source code | No | id_or_sysid |
 | create_portal_widget | Portal | Create new widget | **Yes** | name, id |
@@ -278,12 +290,19 @@ This document provides real-world examples of using the now-ai-kit ServiceNow MC
 | list_pa_breakdowns | Performance | List PA breakdowns/dimensions | No | query |
 | list_pa_dashboards | Performance | List PA dashboards | No | query |
 | get_pa_dashboard | Performance | Get PA dashboard | No | sys_id_or_name |
+| create_dashboard | Performance | Create a new PA dashboard | **Yes** | name |
+| update_dashboard | Performance | Update a PA dashboard | **Yes** | sys_id, fields |
 | list_homepages | Performance | List homepage dashboards | No | query |
 | list_pa_jobs | Performance | List PA collection jobs | No | active, query |
 | get_pa_job | Performance | Get PA job details | No | sys_id |
 | check_table_completeness | Performance | Data quality completeness audit | No | table, fields |
 | get_table_record_count | Performance | Count records in a table | No | table, query |
 | compare_record_counts | Performance | Compare counts across tables | No | tables |
+| **Scoped Applications (App Studio)** | | | | |
+| list_scoped_apps | AppStudio | List scoped applications | No | query, active, limit |
+| get_scoped_app | AppStudio | Get scoped app details | No | id (sys_id or scope) |
+| create_scoped_app | AppStudio | Create a new scoped application | **Yes** | name, scope |
+| update_scoped_app | AppStudio | Update a scoped application | **Yes** | sys_id, fields |
 
 ---
 
@@ -3476,3 +3495,373 @@ For complex filters, pass an encoded ServiceNow query string directly:
 }
 ```
 
+
+---
+
+## Scoped Application Examples
+
+### Example 120: List All Scoped Applications
+
+**Use Case:** Discover all custom scoped applications installed in the instance.
+
+**Tool Call:**
+```json
+{
+  "tool": "list_scoped_apps",
+  "arguments": {
+    "active": true,
+    "limit": 25
+  }
+}
+```
+
+**Expected Output:**
+```json
+{
+  "count": 4,
+  "records": [
+    { "sys_id": "a1b2c3…", "name": "IT Operations Dashboard", "scope": "x_myco_itops", "version": "1.2.0", "active": "true" },
+    { "sys_id": "d4e5f6…", "name": "HR Self-Service", "scope": "x_myco_hrss", "version": "2.0.1", "active": "true" }
+  ]
+}
+```
+
+---
+
+### Example 121: Get Scoped App Details
+
+**Use Case:** Inspect the configuration of a specific scoped app by scope name.
+
+**Tool Call:**
+```json
+{
+  "tool": "get_scoped_app",
+  "arguments": {
+    "id": "x_myco_itops"
+  }
+}
+```
+
+---
+
+### Example 122: Create a Scoped Application
+
+**Use Case:** Bootstrap a new scoped application for a custom asset tracking solution.
+
+**Tool Call:**
+```json
+{
+  "tool": "create_scoped_app",
+  "arguments": {
+    "name": "Custom Asset Tracker",
+    "scope": "x_myco_assettrk",
+    "version": "1.0.0",
+    "short_description": "Tracks custom hardware assets beyond default ITAM coverage",
+    "vendor": "My Company",
+    "active": true
+  }
+}
+```
+
+**Expected Output:**
+```json
+{
+  "sys_id": "abc123def456…",
+  "summary": "Created scoped app \"Custom Asset Tracker\" with scope \"x_myco_assettrk\""
+}
+```
+
+---
+
+### Example 123: Update a Scoped Application
+
+**Use Case:** Bump the version number of a scoped app after a release.
+
+**Tool Call:**
+```json
+{
+  "tool": "update_scoped_app",
+  "arguments": {
+    "sys_id": "abc123def456…",
+    "fields": {
+      "version": "1.1.0",
+      "short_description": "Tracks custom hardware assets — now with lifecycle reporting"
+    }
+  }
+}
+```
+
+---
+
+## Report & Dashboard Creation Examples
+
+### Example 124: Create a Bar Chart Report
+
+**Use Case:** Create a report showing incident counts grouped by priority.
+
+**Tool Call:**
+```json
+{
+  "tool": "create_report",
+  "arguments": {
+    "title": "Incidents by Priority",
+    "table": "incident",
+    "type": "bar",
+    "field": "priority",
+    "aggregate": "COUNT",
+    "query": "active=true"
+  }
+}
+```
+
+**Expected Output:**
+```json
+{
+  "sys_id": "rpt001abc…",
+  "summary": "Created report \"Incidents by Priority\" (bar) on table \"incident\""
+}
+```
+
+---
+
+### Example 125: Create a Trend Report
+
+**Use Case:** Create a line chart report to track monthly change request volumes.
+
+**Tool Call:**
+```json
+{
+  "tool": "create_report",
+  "arguments": {
+    "title": "Monthly Change Request Trend",
+    "table": "change_request",
+    "type": "line",
+    "field": "opened_at",
+    "aggregate": "COUNT"
+  }
+}
+```
+
+---
+
+### Example 126: Update an Existing Report
+
+**Use Case:** Add a query filter to an existing report to exclude resolved incidents.
+
+**Tool Call:**
+```json
+{
+  "tool": "update_report",
+  "arguments": {
+    "sys_id": "rpt001abc…",
+    "fields": {
+      "filter_fields": "active=true^state!=6",
+      "title": "Open Incidents by Priority"
+    }
+  }
+}
+```
+
+---
+
+### Example 127: Create a Performance Analytics Dashboard
+
+**Use Case:** Create a new PA dashboard for the ITSM team with role-based visibility.
+
+**Tool Call:**
+```json
+{
+  "tool": "create_dashboard",
+  "arguments": {
+    "name": "ITSM Operations Dashboard",
+    "description": "Key ITSM KPIs for the operations team",
+    "roles": "itil,itil_admin",
+    "active": true
+  }
+}
+```
+
+**Expected Output:**
+```json
+{
+  "sys_id": "dash001abc…",
+  "summary": "Created dashboard \"ITSM Operations Dashboard\""
+}
+```
+
+---
+
+### Example 128: Update a Dashboard
+
+**Use Case:** Rename a dashboard and open it up to all roles.
+
+**Tool Call:**
+```json
+{
+  "tool": "update_dashboard",
+  "arguments": {
+    "sys_id": "dash001abc…",
+    "fields": {
+      "name": "All-Staff Operations Overview",
+      "roles": ""
+    }
+  }
+}
+```
+
+---
+
+## Catalog Item & Approval Rule Examples
+
+### Example 129: Create a Catalog Item
+
+**Use Case:** Add a new "Request a Laptop" catalog item to the IT hardware category.
+
+**Tool Call:**
+```json
+{
+  "tool": "create_catalog_item",
+  "arguments": {
+    "name": "Request a Laptop",
+    "short_description": "Request a standard or developer laptop for a new or existing employee",
+    "description": "<p>Use this form to request a laptop. Standard laptops ship within 3 business days. Developer laptops may take up to 5 business days.</p>",
+    "category": "hardware_category_sys_id",
+    "price": "0",
+    "delivery_time": "3 00:00:00",
+    "active": true
+  }
+}
+```
+
+**Expected Output:**
+```json
+{
+  "sys_id": "cat001abc…",
+  "summary": "Created catalog item \"Request a Laptop\""
+}
+```
+
+---
+
+### Example 130: Update a Catalog Item
+
+**Use Case:** Update the price and delivery time of an existing catalog item.
+
+**Tool Call:**
+```json
+{
+  "tool": "update_catalog_item",
+  "arguments": {
+    "sys_id": "cat001abc…",
+    "fields": {
+      "price": "0",
+      "delivery_time": "2 00:00:00",
+      "short_description": "Request a standard or developer laptop — now delivered in 2 days"
+    }
+  }
+}
+```
+
+---
+
+### Example 131: Create an Approval Rule
+
+**Use Case:** Automatically route all new catalog requests (`sc_request`) to the IT Manager group for approval.
+
+**Tool Call:**
+```json
+{
+  "tool": "create_approval_rule",
+  "arguments": {
+    "name": "IT Manager Approval for All Requests",
+    "table": "sc_request",
+    "approver_type": "group",
+    "approver": "it_manager_group_sys_id",
+    "active": true,
+    "order": 100
+  }
+}
+```
+
+**Expected Output:**
+```json
+{
+  "sys_id": "apr001abc…",
+  "summary": "Created approval rule \"IT Manager Approval for All Requests\" for table \"sc_request\" with group approver"
+}
+```
+
+---
+
+### Example 132: Create a Conditional Approval Rule
+
+**Use Case:** Require VP approval only for high-cost catalog requests (price > $500).
+
+**Tool Call:**
+```json
+{
+  "tool": "create_approval_rule",
+  "arguments": {
+    "name": "VP Approval for High-Cost Requests",
+    "table": "sc_request",
+    "approver_type": "user",
+    "approver": "vp_user_sys_id",
+    "condition": "price>500",
+    "order": 200,
+    "active": true
+  }
+}
+```
+
+---
+
+### Example 133: Create a Portal for a New Department
+
+**Use Case:** Set up a dedicated Service Portal for the HR department.
+
+**Tool Call:**
+```json
+{
+  "tool": "create_portal",
+  "arguments": {
+    "title": "HR Self-Service Portal",
+    "url_suffix": "hrss",
+    "description": "Employee self-service portal for HR requests and information"
+  }
+}
+```
+
+**Expected Output:**
+```json
+{
+  "sys_id": "por001abc…",
+  "summary": "Created portal \"HR Self-Service Portal\" at /hrss"
+}
+```
+
+---
+
+### Example 134: Create a Portal Page
+
+**Use Case:** Add an "Employee Onboarding" page to the HR Self-Service Portal.
+
+**Tool Call:**
+```json
+{
+  "tool": "create_portal_page",
+  "arguments": {
+    "title": "Employee Onboarding",
+    "id": "onboarding",
+    "portal_sys_id": "por001abc…",
+    "description": "Guides new employees through required onboarding tasks"
+  }
+}
+```
+
+**Expected Output:**
+```json
+{
+  "sys_id": "pg001abc…",
+  "summary": "Created portal page \"Employee Onboarding\" (id: onboarding)"
+}
+```

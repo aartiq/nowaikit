@@ -18,7 +18,7 @@
 
 ## The Most Comprehensive ServiceNow AI Toolkit
 
-> **270+ tools · All ServiceNow modules · 5-minute setup · MIT licensed · Works with any AI**
+> **284+ tools · All ServiceNow modules · 5-minute setup · MIT licensed · Works with any AI**
 
 **now-ai-kit** is the most comprehensive, production-ready AI toolkit for ServiceNow — and the only one that truly does it all.
 
@@ -103,7 +103,7 @@ Your AI doesn't just answer questions — it *acts*. Create incidents, write and
 
 ### Unmatched Platform Coverage
 
-**270+ production-ready tools** across every ServiceNow domain — ITSM, ITOM, HRSD, CSM, SecOps, GRC, Agile, ATF, Flow Designer, Scripting, Now Assist, Service Portal, Integration Hub, Performance Analytics, System Properties, Update Sets, Virtual Agent, ITAM, and DevOps. Nothing else comes close.
+**284+ production-ready tools** across every ServiceNow domain — ITSM, ITOM, HRSD, CSM, SecOps, GRC, Agile, ATF, Flow Designer, Scripting, Now Assist, Service Portal, Integration Hub, Performance Analytics, System Properties, Update Sets, Virtual Agent, ITAM, and DevOps. Nothing else comes close.
 
 </td>
 </tr>
@@ -163,9 +163,9 @@ Domain modules covering the full ServiceNow platform:
 | Change Management | Create, get, update, submit for approval, close change requests |
 | Task Management | Generic tasks, my-task lists, completions |
 | Knowledge Base | Search, create, update, publish KB articles |
-| Service Catalog & Approvals | Catalog browsing, order items, SLA tracking, approval workflows |
+| Service Catalog & Approvals | Catalog browsing, create/update items, order items, SLA tracking, approval workflows, approval rules |
 | User & Group Management | Users, groups, membership, role assignments |
-| Reporting & Analytics | Aggregate queries, trend analysis, scheduled job CRUD, run history |
+| Reporting & Analytics | Aggregate queries, trend analysis, create/update reports, scheduled job CRUD, run history |
 | ATF Testing | Test suites, test execution, ATF Failure Insight |
 | Now Assist / AI | NLQ, AI Search, summaries, resolution suggestions, Agentic Playbooks |
 | Scripting | Business rules, script includes, client script CRUD, UI Policies, UI Actions, ACL management, changesets |
@@ -174,15 +174,16 @@ Domain modules covering the full ServiceNow platform:
 | Customer Service Management (CSM) | Customer cases, accounts, contacts, products, SLAs |
 | Security Operations & GRC | SecOps incidents, vulnerabilities, GRC risks, controls, threat intel |
 | Flow Designer & Process Automation | Flows, subflows, triggers, executions, Process Automation playbooks |
-| Service Portal & UI Builder | Portals, pages, widgets (create/update/deploy), Next Experience apps/pages, themes |
+| Service Portal & UI Builder | Create/list portals & pages, widgets (create/update/deploy), Next Experience apps/pages, themes |
 | Integration Hub | REST Messages, Transform Maps, Import Sets, Event Registry, OAuth apps, credential aliases |
 | Notifications & Attachments | Email notifications, email logs, file attachments (upload/list/delete), templates, subscriptions |
-| Performance Analytics | PA indicators/scorecards, time-series, dashboards, PA jobs, data quality checks |
+| Performance Analytics | PA indicators/scorecards, time-series, create/update dashboards, PA jobs, data quality checks |
 | System Properties | Get, set, bulk operations, validate, export/import, audit history |
 | Update Set Management | Create, switch, preview, complete, export, auto-ensure active set |
 | Virtual Agent (VA) | Topic authoring, conversation history, categories, topic listing |
 | IT Asset Management (ITAM) | Assets, software licenses, contracts, compliance reporting |
 | DevOps & Pipeline Tracking | Pipelines, deployments, change governance, DORA metrics |
+| Scoped Applications (App Studio) | List, get, create, and update scoped application records |
 
 ---
 
@@ -218,7 +219,7 @@ Set `MCP_TOOL_PACKAGE` to expose only the tools relevant to each persona:
 
 | Package | Persona | Tools Included |
 |---------|---------|---------------|
-| `full` | Administrators | All tools (270+) |
+| `full` | Administrators | All tools (284+) |
 | `service_desk` | L1/L2 Agents | Incidents, tasks, approvals, KB, SLA |
 | `change_coordinator` | Change Managers | Changes (create/approve/close), CAB, CMDB, approvals |
 | `knowledge_author` | KB Authors | Knowledge base create/publish |
@@ -892,6 +893,20 @@ See [Anthropic MCP Python SDK](https://github.com/modelcontextprotocol/python-sd
 
 ---
 
+## What's New in v2.3
+
+- **Scoped Application (App Studio) module** — `list_scoped_apps`, `get_scoped_app`, `create_scoped_app`, `update_scoped_app`
+- **Create/update reports** — `create_report`, `update_report` added to Reporting module
+- **Create/update dashboards** — `create_dashboard`, `update_dashboard` added to Performance Analytics
+- **Create portals & pages** — `create_portal`, `create_portal_page` added to Service Portal module
+- **Create/update catalog items** — `create_catalog_item`, `update_catalog_item` added to Catalog module
+- **Approval rules** — `create_approval_rule` for automated approval workflow setup
+- `platform_developer` package extended with scoped app tools
+- `portal_developer` package extended with portal/page creation tools
+- `catalog_builder` package extended with catalog item creation and approval rule tools
+- `system_administrator` package extended with report creation and dashboard creation tools
+- Version 2.3.0 — [full changelog](CHANGELOG.md)
+
 ## What's New in v2.2
 
 - **5 new modules**: System Properties, Update Set Management, Virtual Agent authoring, IT Asset Management, DevOps & Pipeline Tracking
@@ -1052,7 +1067,7 @@ Completely free and open-source under the MIT license.
 
 ### The only ServiceNow AI toolkit you'll ever need.
 
-270+ tools. All modules. Every AI platform. True multi-instance. Open-source forever.
+284+ tools. All modules. Every AI platform. True multi-instance. Open-source forever.
 
 **now-ai-kit** &bull; ServiceNow MCP Server &bull; ServiceNow AI Agent &bull; ServiceNow Claude Integration &bull; ServiceNow ChatGPT &bull; ServiceNow Cursor &bull; ServiceNow Gemini &bull; ServiceNow Automation &bull; ServiceNow Developer Tools &bull; ServiceNow Multi-Instance &bull; ServiceNow MSP
 

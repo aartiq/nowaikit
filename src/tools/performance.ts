@@ -5,6 +5,7 @@
  */
 import type { ServiceNowClient } from '../servicenow/client.js';
 import { ServiceNowError } from '../utils/errors.js';
+import { requireWrite } from '../utils/permissions.js';
 
 export function getPerformanceToolDefinitions() {
   return [
@@ -143,6 +144,40 @@ export function getPerformanceToolDefinitions() {
           sys_id: { type: 'string', description: 'PA job sys_id' },
         },
         required: ['sys_id'],
+      },
+    },
+    // ── Dashboard Management ─────────────────────────────────────────────────
+    {
+      name: 'create_dashboard',
+      description:
+        'Create a new Performance Analytics dashboard (requires WRITE_ENABLED=true)',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          name: { type: 'string', description: 'Dashboard name' },
+          description: { type: 'string', description: 'Brief description of the dashboard' },
+          roles: {
+            type: 'string',
+            description: 'Comma-separated roles that can view this dashboard (leave blank for all)',
+          },
+          active: { type: 'boolean', description: 'Activate the dashboard immediately (default: true)' },
+        },
+        required: ['name'],
+      },
+    },
+    {
+      name: 'update_dashboard',
+      description: 'Update an existing PA dashboard (requires WRITE_ENABLED=true)',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          sys_id: { type: 'string', description: 'Dashboard sys_id' },
+          fields: {
+            type: 'object',
+            description: 'Fields to update (name, description, roles, active, etc.)',
+          },
+        },
+        required: ['sys_id', 'fields'],
       },
     },
     // ── Data Quality ─────────────────────────────────────────────────────────
@@ -394,6 +429,25 @@ export async function executePerformanceToolCall(
         const resp = await client.queryRecords({ table: args.table, query: args.query, limit: 1 });
         return { table: args.table, query: args.query || 'all records', record_count: resp.count, note: 'Count may be approximate (aggregate API unavailable)' };
       }
+    }
+    case 'create_dashboard': {
+      requireWrite();
+      if (!args.name) throw new ServiceNowError('name is required', 'INVALID_REQUEST');
+      const data: Record<string, any> = {
+        name: args.name,
+        active: args.active !== false,
+      };
+      if (args.description) data.description = args.description;
+      if (args.roles) data.roles = args.roles;
+      const result = await client.createRecord('pa_dashboards', data);
+      return { ...result, summary: `Created dashboard "${args.name}"` };
+    }
+    case 'update_dashboard': {
+      requireWrite();
+      if (!args.sys_id || !args.fields)
+        throw new ServiceNowError('sys_id and fields are required', 'INVALID_REQUEST');
+      const result = await client.updateRecord('pa_dashboards', args.sys_id, args.fields);
+      return { ...result, summary: `Updated dashboard ${args.sys_id}` };
     }
     case 'compare_record_counts': {
       if (!args.tables || !Array.isArray(args.tables) || args.tables.length === 0) {
