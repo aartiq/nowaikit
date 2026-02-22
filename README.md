@@ -16,24 +16,25 @@
 
 # now-ai-kit
 
-## The Most Comprehensive ServiceNow AI Kit
+## The Most Comprehensive ServiceNow AI Toolkit
 
-> AI-powered &bull; Multi-agent &bull; Multi-provider &bull; 270+ tools &bull; All ServiceNow modules &bull; 5-minute setup &bull; MIT licensed
+> **270+ tools · All ServiceNow modules · 5-minute setup · MIT licensed · Works with any AI**
 
-**now-ai-kit** is the most comprehensive and easiest-to-set-up AI toolkit for ServiceNow.
-Connect Claude, ChatGPT, Gemini, Google AI Studio, Cursor, GitHub Copilot, or any MCP-compatible AI to your ServiceNow instance in **under 5 minutes** — and let your AI read, build, deploy, and automate across all ServiceNow modules.
+**now-ai-kit** is the most comprehensive, production-ready AI toolkit for ServiceNow — and the only one that truly does it all.
 
-Ask questions, write scripts, deploy portal widgets, trigger flows, manage incidents, automate HRSD and CSM workflows, run ATF tests, build integrations, and fire events — all from your AI chat window, in plain English.
+Connect **Claude**, **ChatGPT**, **Gemini**, **Cursor**, **GitHub Copilot**, or any MCP-compatible AI in under 5 minutes. Then let your AI read, build, deploy, and automate across every ServiceNow module — incidents, changes, scripts, flows, portals, integrations, HRSD, CSM, and more.
 
-**Works with any AI. Works on any instance. Works for everyone. 100% open-source.**
+Ask in plain English. Deploy business rules from chat. Run ATF suites on demand. Query dev, staging, and prod simultaneously. Automate across multiple customer tenants without switching tabs. **Your AI, your instance, your rules.**
+
+**Any AI. Any instance. Any scale. 100% open-source.**
 
 <br/>
 
 | | |
 |---|---|
-| **Beginners** | Connect in 5 minutes. Ask questions in plain English. No API knowledge needed. Free PDI at developer.servicenow.com. |
-| **Developers** | Write, deploy, test, and manage scripts, flows, widgets, and integrations at AI speed. |
-| **Architects** | Orchestrate multi-step autonomous workflows, multi-instance comparisons, and agentic AI automation. |
+| **Beginners** | Zero ServiceNow API knowledge needed. Connect in 5 minutes. Ask in plain English. Free PDI at developer.servicenow.com. |
+| **Developers** | Write, deploy, test, and manage scripts, flows, widgets, and integrations at AI speed — 10x faster. |
+| **Architects & MSPs** | Orchestrate multi-step autonomous workflows. Compare environments. Manage multiple customer tenants in one session. |
 
 <br/>
 
@@ -50,7 +51,7 @@ Ask questions, write scripts, deploy portal widgets, trigger flows, manage incid
 ### Beginners
 **Zero ServiceNow API knowledge required.**
 
-Connect Claude Desktop or Cursor to your ServiceNow PDI in 5 minutes. Ask plain English questions, browse incidents, search knowledge articles, place catalog orders, and monitor SLAs — all from your AI chat window. No code, no Postman, no documentation diving.
+Connect Claude Desktop or Cursor to your free PDI in 5 minutes. Ask questions in plain English, browse incidents, search KB articles, place catalog orders, monitor SLAs — all from your AI chat window. No code. No Postman. No documentation diving. Just ask.
 
 *Start here → [5-Minute Quickstart](#getting-started)*
 
@@ -58,19 +59,19 @@ Connect Claude Desktop or Cursor to your ServiceNow PDI in 5 minutes. Ask plain 
 <td width="33%" valign="top">
 
 ### Developers
-**Build faster with AI as your development partner.**
+**10x faster with AI as your development partner.**
 
-Let your AI write business rules, create client scripts, manage UI Policies and ACLs, deploy Service Portal widgets, configure REST Messages, and manage Transform Maps — all with full TypeScript types, changeset support, and ATF test integration. Role-based packages scope tools to exactly what you need.
+Write business rules, deploy client scripts, manage UI Policies and ACLs, create Service Portal widgets, configure REST Messages, manage Transform Maps, and update changesets — all in plain English. Full TypeScript types, ATF integration, and role-based packages built in.
 
 *Explore → [Platform Developer Package](#role-based-tool-packages)*
 
 </td>
 <td width="33%" valign="top">
 
-### Architects & Advanced Users
-**Autonomous multi-agent workflows across your full platform.**
+### Architects, Admins & MSPs
+**Autonomous workflows. Multi-instance. Multi-customer.**
 
-Trigger Agentic Playbooks, run predictive intelligence models, fire and monitor events, compare record counts across environments, audit data quality, and orchestrate multi-step ITSM/HRSD/CSM processes — all from a single AI session with multi-instance support.
+Trigger Agentic Playbooks, orchestrate multi-step ITSM/HRSD/CSM processes, compare environments side by side, manage dozens of customer tenants in one session, and run full data quality audits — at AI speed, across your entire ServiceNow estate.
 
 *Deep dive → [Now Assist & Agentic Guide](docs/NOW_ASSIST.md)*
 
@@ -86,46 +87,46 @@ Trigger Agentic Playbooks, run predictive intelligence models, fire and monitor 
 <tr>
 <td width="33%" valign="top">
 
-### Autonomous AI Operations
+### Fully Autonomous AI Operations
 
-Go beyond Q&A. Your AI agent can autonomously create incidents, write and deploy scripts, trigger flows, fire events, upload attachments, manage changesets, and run ATF test suites — completing multi-step tasks end-to-end without manual intervention. Supports Now Assist Agentic Playbooks for native ServiceNow AI automation.
-
-</td>
-<td width="33%" valign="top">
-
-### Multi-Provider, Any Agent
-
-Works with every major AI platform out of the box — **Claude**, **ChatGPT**, **Gemini**, **Grok**, **Cursor**, **Windsurf**, **GitHub Copilot**, **Continue.dev**, **Cline**, **Amazon Q**, **JetBrains AI**, **Zed**, **Ollama**. Any MCP-compatible agent or custom Python/TypeScript agent via the Anthropic Agent SDK. OAuth 2.0 and Basic Auth for every integration.
+Your AI doesn't just answer questions — it *acts*. Create incidents, write and deploy scripts, trigger flows, fire events, upload attachments, manage changesets, and run full ATF suites — end-to-end, without manual steps. Native Now Assist Agentic Playbook support for next-generation ServiceNow AI automation.
 
 </td>
 <td width="33%" valign="top">
 
-### Broadest Platform Coverage
+### Works With Every AI, Out of the Box
 
-270+ production-ready tools spanning every ServiceNow domain: ITSM, ITOM, HRSD, CSM, SecOps, GRC, Agile, ATF, Flow Designer, Scripting, Now Assist, Service Portal, Integration Hub, Notifications, Performance Analytics, and more — the most complete AI toolkit for ServiceNow available.
+**Claude, ChatGPT, Gemini, Grok, Cursor, Windsurf, GitHub Copilot, Amazon Q, JetBrains, Continue.dev, Cline, Zed, Google AI Studio, Ollama** — all supported out of the box. Any MCP-compatible client. Any custom Python or TypeScript agent. One toolkit, every AI platform, zero lock-in.
+
+</td>
+<td width="33%" valign="top">
+
+### Unmatched Platform Coverage
+
+**270+ production-ready tools** across every ServiceNow domain — ITSM, ITOM, HRSD, CSM, SecOps, GRC, Agile, ATF, Flow Designer, Scripting, Now Assist, Service Portal, Integration Hub, Performance Analytics, System Properties, Update Sets, Virtual Agent, ITAM, and DevOps. Nothing else comes close.
 
 </td>
 </tr>
 <tr>
 <td width="33%" valign="top">
 
-### Role-Based Intelligence
+### Role-Based Tool Intelligence
 
-Twelve pre-built persona packages — service desk, platform developer, portal developer, integration engineer, ITOM engineer, AI developer, and more. Each package exposes exactly the right 15–55 tools for that role, reducing noise and enforcing least-privilege access. Configure once per team.
-
-</td>
-<td width="33%" valign="top">
-
-### Safe by Default
-
-A five-tier permission model ensures every operation is explicitly authorised. Read is always on; write, CMDB, scripting, and Now Assist each require a dedicated opt-in flag. Your instance cannot be accidentally modified by an AI without deliberate configuration.
+Fourteen pre-built persona packages — service desk, platform developer, portal developer, integration engineer, ITOM engineer, AI developer, ITAM analyst, DevOps engineer, and more. Each exposes exactly the right tools for that role. Reduce noise, enforce least-privilege, and configure once per team.
 
 </td>
 <td width="33%" valign="top">
 
-### Production-Ready Documentation
+### Safe by Default, Powerful When Needed
 
-Full TypeScript types, 120+ real-world examples, 9 reference guides, and beginner + advanced setup instructions for every major AI client. Built on the latest ServiceNow APIs. Multi-instance support for prod/staging/dev from a single session.
+A five-tier permission model keeps your instance protected. **Read is always on.** Write, CMDB, Scripting, Now Assist, and ATF capabilities each require an explicit opt-in flag. No AI can accidentally modify your production data. Scale permissions as your confidence grows — without touching code.
+
+</td>
+<td width="33%" valign="top">
+
+### True Multi-Instance & Multi-Customer
+
+Connect to **unlimited ServiceNow instances** from one session — dev, staging, prod, *and* multiple customer tenants simultaneously. Pass `instance: "acme_prod"` on any tool call, or `switch_instance` globally. MSPs, consultants, and enterprise teams can compare, query, and automate across every environment at once. No other ServiceNow AI toolkit does this.
 
 </td>
 </tr>
@@ -351,7 +352,7 @@ Summarise the last 30 days of incident trends by category.
 Create a scheduled job that runs daily at 3am to archive closed incidents older than 90 days.
 ```
 
-For 100+ real-world examples with expected inputs, outputs, and advanced workflows, see [EXAMPLES.md](EXAMPLES.md).
+For 120+ real-world examples with inputs, outputs, and advanced workflows, see [EXAMPLES.md](EXAMPLES.md).
 
 ---
 
@@ -400,6 +401,14 @@ You: "Compare record counts between prod and dev for the incident table"
 You: "Check data completeness on the cmdb_ci_server table — which fields are mostly empty?"
 You: "Run the nightly sync transform map on the latest import set"
 You: "Create a scheduled job that emails the on-call team daily at 7am"
+```
+
+**Multi-instance & multi-customer:**
+```
+You: "List all configured instances"
+You: "Switch to customer_acme and show me their open P1 incidents"
+You: "Compare open change counts between prod and staging"
+You: "Get SLA breach risk from customer_globex prod instance"
 ```
 
 See [EXAMPLES.md](EXAMPLES.md) for 120+ real-world examples across all ServiceNow modules.
@@ -886,9 +895,11 @@ See [Anthropic MCP Python SDK](https://github.com/modelcontextprotocol/python-sd
 ## What's New in v2.2
 
 - **5 new modules**: System Properties, Update Set Management, Virtual Agent authoring, IT Asset Management, DevOps & Pipeline Tracking
-- **Multi-instance support** — connect to dev, staging, prod, or multiple customer tenants simultaneously
+- **True multi-instance & multi-customer support** — connect to unlimited instances (dev, staging, prod, customer tenants) simultaneously from one session
+- **Per-call instance routing** — pass `instance: "name"` to any tool, or `switch_instance` globally
 - **2 new role packages** — `devops_engineer`, `itam_analyst`
 - `system_administrator` package extended with system properties and update set tools
+- Version 2.2.0 — [full changelog](CHANGELOG.md)
 
 ### v2.1 highlights
 
@@ -1039,11 +1050,13 @@ Completely free and open-source under the MIT license.
 
 <div align="center">
 
-### The complete ServiceNow AI toolkit — for beginners, developers, and architects.
+### The only ServiceNow AI toolkit you'll ever need.
 
-**now-ai-kit** &bull; ServiceNow MCP Server &bull; ServiceNow AI Agent &bull; ServiceNow Claude Integration &bull; ServiceNow ChatGPT &bull; ServiceNow Cursor &bull; ServiceNow Automation &bull; ServiceNow Developer Tools
+270+ tools. All modules. Every AI platform. True multi-instance. Open-source forever.
 
-If now-ai-kit saves you time, please star the repository — it helps others find the project.
+**now-ai-kit** &bull; ServiceNow MCP Server &bull; ServiceNow AI Agent &bull; ServiceNow Claude Integration &bull; ServiceNow ChatGPT &bull; ServiceNow Cursor &bull; ServiceNow Gemini &bull; ServiceNow Automation &bull; ServiceNow Developer Tools &bull; ServiceNow Multi-Instance &bull; ServiceNow MSP
+
+If now-ai-kit saves you time, please ⭐ star the repository — it helps others find the project.
 
 [![GitHub Stars](https://img.shields.io/github/stars/aartiq/nowaikit?style=social)](../../stargazers)
 
