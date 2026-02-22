@@ -235,454 +235,40 @@ Set `MCP_TOOL_PACKAGE` to expose only the tools relevant to each persona:
 
 ## Getting Started
 
-### Prerequisites
-
-- **Node.js 20+** — [nodejs.org](https://nodejs.org)
-- A **ServiceNow instance** (free developer instance at [developer.servicenow.com](https://developer.servicenow.com))
-- An AI client: Claude Desktop, Claude Code, Cursor, VS Code, or any OpenAI/Gemini-compatible client
-
-### Install
-
 ```bash
-# Option A — npm (recommended)
+# Install (Node.js 20+ required)
 npm install -g now-ai-kit
 
-# Option B — clone from source
-git clone https://github.com/aartiq/nowaikit.git
-cd nowaikit
+# Or clone from source
+git clone https://github.com/aartiq/nowaikit.git && cd nowaikit
 npm install && npm run build
 ```
 
-### Configure
-
-```bash
-cp .env.example .env
-```
-
-Edit `.env`:
+Configure your `.env` (copy from `.env.example`):
 
 ```env
-# ServiceNow instance URL (no trailing slash)
 SERVICENOW_INSTANCE_URL=https://yourinstance.service-now.com
-
-# Auth method: basic or oauth
 SERVICENOW_AUTH_METHOD=basic
 SERVICENOW_BASIC_USERNAME=your.username
 SERVICENOW_BASIC_PASSWORD=your_password
-
-# Permission gates (start with all off for safety)
-WRITE_ENABLED=false
-CMDB_WRITE_ENABLED=false
-SCRIPTING_ENABLED=false
-NOW_ASSIST_ENABLED=false
-
-# Optional: limit tools to a role package
-# MCP_TOOL_PACKAGE=service_desk
+WRITE_ENABLED=false   # set true to allow create/update operations
 ```
 
-### Step 1: Get a ServiceNow Instance
+Then point your AI client at `dist/server.js` — see the [Supported AI Clients](#supported-ai-clients) section below.
 
-If you don't have a ServiceNow instance, get a free Personal Developer Instance (PDI):
+> **No ServiceNow instance?** Get a free Personal Developer Instance at [developer.servicenow.com](https://developer.servicenow.com) — ready in minutes.
 
-1. Go to [developer.servicenow.com](https://developer.servicenow.com)
-2. Click **"Sign up and Start Building"** and create a free account
-3. Request a PDI instance — it will be provisioned in minutes
-4. Note your instance URL: `https://devXXXXXX.service-now.com`
-
-### Step 2: Build now-ai-kit
-
-```bash
-git clone https://github.com/aartiq/nowaikit.git
-cd nowaikit
-npm install
-npm run build
-# Built files are in ./dist/
-```
-
-Or install globally:
-
-```bash
-npm install -g now-ai-kit
-# Find the binary: which now-ai-kit
-```
+**Full installation guide → [docs/INSTALLATION.md](docs/INSTALLATION.md)**
 
 ---
 
 ## Client Setup Guides
 
-### Claude Desktop (Beginner)
+Step-by-step setup for every major AI client — Claude Desktop, Claude Code, Cursor, VS Code, Windsurf, Zed, GitHub Copilot, Continue.dev, Cline, JetBrains, Amazon Q, Google AI Studio, ChatGPT, Grok, Ollama, and more.
 
-**macOS/Linux:** Edit `~/Library/Application Support/Claude/claude_desktop_config.json`
-**Windows:** Edit `%APPDATA%\Claude\claude_desktop_config.json`
+**Full guide → [docs/CLIENT_SETUP.md](docs/CLIENT_SETUP.md)**
 
-```json
-{
-  "mcpServers": {
-    "now-ai-kit": {
-      "command": "node",
-      "args": ["/absolute/path/to/nowaikit/dist/server.js"],
-      "env": {
-        "SERVICENOW_INSTANCE_URL": "https://yourinstance.service-now.com",
-        "SERVICENOW_AUTH_METHOD": "basic",
-        "SERVICENOW_BASIC_USERNAME": "admin",
-        "SERVICENOW_BASIC_PASSWORD": "your_password",
-        "WRITE_ENABLED": "false"
-      }
-    }
-  }
-}
-```
-
-Restart Claude Desktop. The hammer icon in the bottom-left shows connected MCP servers.
-
-**Advanced (OAuth 2.0 + write access + role package):**
-
-```json
-{
-  "mcpServers": {
-    "now-ai-kit": {
-      "command": "node",
-      "args": ["/absolute/path/to/nowaikit/dist/server.js"],
-      "env": {
-        "SERVICENOW_INSTANCE_URL": "https://yourinstance.service-now.com",
-        "SERVICENOW_AUTH_METHOD": "oauth",
-        "SERVICENOW_CLIENT_ID": "your_oauth_client_id",
-        "SERVICENOW_CLIENT_SECRET": "your_oauth_client_secret",
-        "SERVICENOW_USERNAME": "svc_account",
-        "SERVICENOW_PASSWORD": "svc_password",
-        "WRITE_ENABLED": "true",
-        "SCRIPTING_ENABLED": "true",
-        "MCP_TOOL_PACKAGE": "platform_developer"
-      }
-    }
-  }
-}
-```
-
-See [docs/SERVICENOW_OAUTH_SETUP.md](docs/SERVICENOW_OAUTH_SETUP.md) to create an OAuth application in ServiceNow.
-
----
-
-### Claude Code / Claude CLI (Beginner)
-
-```bash
-# Add the MCP server (Basic Auth)
-claude mcp add now-ai-kit node /absolute/path/to/nowaikit/dist/server.js \
-  --env SERVICENOW_INSTANCE_URL=https://yourinstance.service-now.com \
-  --env SERVICENOW_AUTH_METHOD=basic \
-  --env SERVICENOW_BASIC_USERNAME=admin \
-  --env SERVICENOW_BASIC_PASSWORD=your_password
-
-# Verify it's registered
-claude mcp list
-```
-
-**Advanced (project-scoped .mcp.json):**
-
-Create `.mcp.json` in your project root to scope the server to that project:
-
-```json
-{
-  "mcpServers": {
-    "now-ai-kit": {
-      "command": "node",
-      "args": ["./dist/server.js"],
-      "env": {
-        "SERVICENOW_INSTANCE_URL": "https://yourinstance.service-now.com",
-        "SERVICENOW_AUTH_METHOD": "oauth",
-        "SERVICENOW_CLIENT_ID": "your_client_id",
-        "SERVICENOW_CLIENT_SECRET": "your_secret",
-        "SERVICENOW_USERNAME": "admin",
-        "SERVICENOW_PASSWORD": "password",
-        "WRITE_ENABLED": "true",
-        "SCRIPTING_ENABLED": "true",
-        "NOW_ASSIST_ENABLED": "true",
-        "ATF_ENABLED": "true"
-      }
-    }
-  }
-}
-```
-
----
-
-### Cursor (Beginner)
-
-Open Cursor → **Settings** → **MCP** → **Add Server**, or create `.cursor/mcp.json`:
-
-```json
-{
-  "mcpServers": {
-    "now-ai-kit": {
-      "command": "node",
-      "args": ["/absolute/path/to/nowaikit/dist/server.js"],
-      "env": {
-        "SERVICENOW_INSTANCE_URL": "https://yourinstance.service-now.com",
-        "SERVICENOW_AUTH_METHOD": "basic",
-        "SERVICENOW_BASIC_USERNAME": "admin",
-        "SERVICENOW_BASIC_PASSWORD": "your_password"
-      }
-    }
-  }
-}
-```
-
-Reload Cursor. The server appears under **Tools** in the Composer panel.
-
-**Advanced (developer package with scripting):**
-
-```json
-{
-  "mcpServers": {
-    "now-ai-kit": {
-      "command": "node",
-      "args": ["/absolute/path/to/nowaikit/dist/server.js"],
-      "env": {
-        "SERVICENOW_INSTANCE_URL": "https://yourinstance.service-now.com",
-        "SERVICENOW_AUTH_METHOD": "basic",
-        "SERVICENOW_BASIC_USERNAME": "admin",
-        "SERVICENOW_BASIC_PASSWORD": "your_password",
-        "WRITE_ENABLED": "true",
-        "SCRIPTING_ENABLED": "true",
-        "MCP_TOOL_PACKAGE": "portal_developer"
-      }
-    }
-  }
-}
-```
-
----
-
-### VS Code with GitHub Copilot (Beginner)
-
-Install the **GitHub Copilot** extension, then add to your VS Code `settings.json`:
-
-```json
-{
-  "github.copilot.chat.mcp.servers": {
-    "now-ai-kit": {
-      "command": "node",
-      "args": ["/absolute/path/to/nowaikit/dist/server.js"],
-      "env": {
-        "SERVICENOW_INSTANCE_URL": "https://yourinstance.service-now.com",
-        "SERVICENOW_AUTH_METHOD": "basic",
-        "SERVICENOW_BASIC_USERNAME": "admin",
-        "SERVICENOW_BASIC_PASSWORD": "your_password"
-      }
-    }
-  }
-}
-```
-
-Or create `.vscode/mcp.json` (workspace-scoped):
-
-```json
-{
-  "servers": {
-    "now-ai-kit": {
-      "type": "stdio",
-      "command": "node",
-      "args": ["/absolute/path/to/nowaikit/dist/server.js"],
-      "env": {
-        "SERVICENOW_INSTANCE_URL": "https://yourinstance.service-now.com",
-        "SERVICENOW_AUTH_METHOD": "basic",
-        "SERVICENOW_BASIC_USERNAME": "admin",
-        "SERVICENOW_BASIC_PASSWORD": "your_password",
-        "WRITE_ENABLED": "true"
-      }
-    }
-  }
-}
-```
-
----
-
-### VS Code with Continue.dev (Beginner)
-
-Install the **Continue** extension, then add to `~/.continue/config.json`:
-
-```json
-{
-  "mcpServers": [
-    {
-      "name": "now-ai-kit",
-      "command": "node",
-      "args": ["/absolute/path/to/nowaikit/dist/server.js"],
-      "env": {
-        "SERVICENOW_INSTANCE_URL": "https://yourinstance.service-now.com",
-        "SERVICENOW_AUTH_METHOD": "basic",
-        "SERVICENOW_BASIC_USERNAME": "admin",
-        "SERVICENOW_BASIC_PASSWORD": "your_password"
-      }
-    }
-  ]
-}
-```
-
----
-
-### Windsurf (Codeium) (Beginner)
-
-Open Windsurf → **Settings** → **AI** → **MCP Servers** → **Add Server**:
-
-```json
-{
-  "mcpServers": {
-    "now-ai-kit": {
-      "command": "node",
-      "args": ["/absolute/path/to/nowaikit/dist/server.js"],
-      "env": {
-        "SERVICENOW_INSTANCE_URL": "https://yourinstance.service-now.com",
-        "SERVICENOW_AUTH_METHOD": "basic",
-        "SERVICENOW_BASIC_USERNAME": "admin",
-        "SERVICENOW_BASIC_PASSWORD": "your_password"
-      }
-    }
-  }
-}
-```
-
----
-
-### ChatGPT / OpenAI (Advanced — Custom GPT or API)
-
-now-ai-kit exposes a standard MCP server over stdio. To connect to ChatGPT, use a bridge such as **mcp-proxy** to expose the server over HTTP/SSE, then register it as a ChatGPT plugin or connect via the OpenAI Assistants API with function calling.
-
-**Step 1: Run now-ai-kit as an HTTP server via mcp-proxy:**
-
-```bash
-npm install -g mcp-proxy
-mcp-proxy --port 3000 -- node /path/to/nowaikit/dist/server.js
-```
-
-**Step 2: Register as an OpenAI function tool (Assistants API):**
-
-```python
-from openai import OpenAI
-client = OpenAI()
-
-# Use the MCP tool descriptions as function schemas
-# See docs/CLIENT_SETUP.md for full OpenAI Assistants example
-assistant = client.beta.assistants.create(
-    model="gpt-4o",
-    tools=[{"type": "function", "function": now_ai_kit_tool_schema}]
-)
-```
-
-See [clients/openai/SETUP.md](clients/openai/SETUP.md) for the full bridge setup.
-
----
-
-### Google Gemini / Vertex AI (Advanced)
-
-Use the MCP-to-HTTP bridge pattern (same as ChatGPT above) to expose now-ai-kit over HTTP, then connect to the Gemini API via function calling:
-
-```python
-import google.generativeai as genai
-
-genai.configure(api_key="YOUR_API_KEY")
-model = genai.GenerativeModel(
-    model_name="gemini-1.5-pro",
-    tools=[now_ai_kit_tool_definition]
-)
-```
-
-See [clients/gemini/SETUP.md](clients/gemini/SETUP.md) for the full Vertex AI function calling setup.
-
----
-
-### OpenAI Codex (Advanced)
-
-Codex (via the OpenAI API) supports tool/function calling. Use the same bridge approach:
-
-```bash
-# Start now-ai-kit as HTTP/SSE proxy
-mcp-proxy --port 3000 -- node /path/to/nowaikit/dist/server.js
-
-# Then use the Responses API with tool definitions
-curl https://api.openai.com/v1/responses \
-  -H "Authorization: Bearer $OPENAI_API_KEY" \
-  -d '{"model":"o1","tools":[...]}'
-```
-
-See [clients/codex/SETUP.md](clients/codex/SETUP.md) for the full setup.
-
----
-
-### Cline (VS Code Extension) (Beginner)
-
-Install **Cline** from the VS Code marketplace, then in Cline settings → **MCP Servers**:
-
-```json
-{
-  "now-ai-kit": {
-    "command": "node",
-    "args": ["/absolute/path/to/nowaikit/dist/server.js"],
-    "env": {
-      "SERVICENOW_INSTANCE_URL": "https://yourinstance.service-now.com",
-      "SERVICENOW_AUTH_METHOD": "basic",
-      "SERVICENOW_BASIC_USERNAME": "admin",
-      "SERVICENOW_BASIC_PASSWORD": "your_password",
-      "WRITE_ENABLED": "true"
-    }
-  }
-}
-```
-
----
-
-### Amazon Q Developer (Advanced)
-
-Amazon Q Developer supports MCP via its agent SDK. Add now-ai-kit as an MCP server in your Q Developer workspace config. See [docs/CLIENT_SETUP.md](docs/CLIENT_SETUP.md) for the full setup.
-
----
-
-### JetBrains AI Assistant (Advanced)
-
-In JetBrains IDE (IntelliJ, PyCharm, etc.) → **Settings** → **AI Assistant** → **MCP Servers** → **Add**:
-
-```json
-{
-  "name": "now-ai-kit",
-  "command": "node",
-  "args": ["/absolute/path/to/nowaikit/dist/server.js"],
-  "env": {
-    "SERVICENOW_INSTANCE_URL": "https://yourinstance.service-now.com",
-    "SERVICENOW_AUTH_METHOD": "basic",
-    "SERVICENOW_BASIC_USERNAME": "admin",
-    "SERVICENOW_BASIC_PASSWORD": "your_password"
-  }
-}
-```
-
----
-
-### Docker (Any Client)
-
-```bash
-# Build image
-docker build -t now-ai-kit .
-
-# Run as stdio MCP server (pipe to your AI client)
-docker run --rm -i \
-  -e SERVICENOW_INSTANCE_URL=https://yourinstance.service-now.com \
-  -e SERVICENOW_AUTH_METHOD=basic \
-  -e SERVICENOW_BASIC_USERNAME=admin \
-  -e SERVICENOW_BASIC_PASSWORD=your_password \
-  -e WRITE_ENABLED=false \
-  now-ai-kit
-
-# Or run via mcp-proxy for HTTP access
-docker run --rm -p 3000:3000 \
-  -e SERVICENOW_INSTANCE_URL=https://yourinstance.service-now.com \
-  -e SERVICENOW_AUTH_METHOD=basic \
-  -e SERVICENOW_BASIC_USERNAME=admin \
-  -e SERVICENOW_BASIC_PASSWORD=your_password \
-  now-ai-kit mcp-proxy --port 3000 -- node dist/server.js
-```
-
-For full setup guides for every client (including OAuth 2.0 variants), see [docs/CLIENT_SETUP.md](docs/CLIENT_SETUP.md).
-
+For quick setup snippets, see the [Supported AI Clients](#supported-ai-clients) section below.
 ---
 
 ## Example Interactions
@@ -772,53 +358,12 @@ For 100+ real-world examples with expected inputs, outputs, and advanced workflo
 
 ## Advanced Configuration
 
-### OAuth 2.0
-
-```env
-SERVICENOW_AUTH_METHOD=oauth
-SERVICENOW_INSTANCE_URL=https://yourinstance.service-now.com
-SERVICENOW_CLIENT_ID=your_oauth_client_id
-SERVICENOW_CLIENT_SECRET=your_oauth_client_secret
-SERVICENOW_OAUTH_GRANT_TYPE=client_credentials
-```
-
-### Multi-Instance Setup
-
-Manage multiple ServiceNow environments with `instances.json`:
-
-```json
-{
-  "instances": [
-    {
-      "name": "production",
-      "url": "https://prod.service-now.com",
-      "authMethod": "oauth",
-      "clientId": "...",
-      "clientSecret": "..."
-    },
-    {
-      "name": "dev",
-      "url": "https://dev12345.service-now.com",
-      "authMethod": "basic",
-      "username": "admin",
-      "password": "..."
-    }
-  ]
-}
-```
-
-See [docs/MULTI_INSTANCE.md](docs/MULTI_INSTANCE.md) for full instructions.
-
-### Docker
-
-```bash
-docker build -t now-ai-kit .
-docker run -e SERVICENOW_INSTANCE_URL=https://yourinstance.service-now.com \
-           -e SERVICENOW_AUTH_METHOD=basic \
-           -e SERVICENOW_BASIC_USERNAME=admin \
-           -e SERVICENOW_BASIC_PASSWORD=password \
-           now-ai-kit
-```
+| Topic | Guide |
+|-------|-------|
+| OAuth 2.0 setup (ServiceNow OAuth app creation) | [docs/SERVICENOW_OAUTH_SETUP.md](docs/SERVICENOW_OAUTH_SETUP.md) |
+| Multi-instance / multi-customer (dev, staging, prod, tenants) | [docs/MULTI_INSTANCE.md](docs/MULTI_INSTANCE.md) |
+| Role-based tool packages | [docs/TOOL_PACKAGES.md](docs/TOOL_PACKAGES.md) |
+| All environment variables reference | [docs/INSTALLATION.md](docs/INSTALLATION.md) |
 
 ---
 
@@ -902,24 +447,33 @@ Full guide → [clients/claude-desktop/SETUP.md](clients/claude-desktop/SETUP.md
 <details>
 <summary><b>ChatGPT / OpenAI</b> — GPT-4o, o1, o3 (API)</summary>
 
-1. Start now-ai-kit as a local server or use the npm package
-2. In your OpenAI API code, configure the MCP tool endpoint:
+OpenAI supports MCP via the **Responses API** (`mcp` tool type) in the latest SDK (v1.50+):
 
 ```python
-# Python example using openai + now-ai-kit
-import subprocess, json
 from openai import OpenAI
+import os, subprocess
 
-# Start now-ai-kit (or run separately)
-proc = subprocess.Popen(["node", "/path/to/nowaikit/dist/server.js"],
-    env={**os.environ, "SERVICENOW_INSTANCE_URL": "https://yourinstance.service-now.com",
-         "SERVICENOW_AUTH_METHOD": "basic", "SERVICENOW_BASIC_USERNAME": "admin",
-         "SERVICENOW_BASIC_PASSWORD": "your_password"})
+# Start now-ai-kit as a subprocess MCP server
+proc = subprocess.Popen(
+    ["node", "/path/to/nowaikit/dist/server.js"],
+    stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+    env={**os.environ,
+         "SERVICENOW_INSTANCE_URL": "https://yourinstance.service-now.com",
+         "SERVICENOW_AUTH_METHOD": "basic",
+         "SERVICENOW_BASIC_USERNAME": "admin",
+         "SERVICENOW_BASIC_PASSWORD": "your_password"}
+)
+
+client = OpenAI()
+# Use with Responses API tool type "mcp" or via function calling
+response = client.responses.create(
+    model="gpt-4o",
+    tools=[{"type": "mcp", "server_label": "now-ai-kit"}],
+    input="Show me all open P1 incidents"
+)
 ```
 
-3. Use the tools via function calling in your GPT-4o requests
-
-Full guide → [clients/codex/SETUP.md](clients/codex/SETUP.md) | [docs/CLIENT_SETUP.md](docs/CLIENT_SETUP.md)
+Full guide → [docs/CLIENT_SETUP.md](docs/CLIENT_SETUP.md)
 </details>
 
 <details>
@@ -1309,33 +863,32 @@ See [Anthropic MCP Python SDK](https://github.com/modelcontextprotocol/python-sd
 
 ## What's New in v2.2
 
-- **270+ tools** across all ServiceNow modules (+42 from v2.1)
-- **5 new modules**: System Properties (12), Update Set Management (8), Virtual Agent authoring (7), IT Asset Management (8), DevOps & Pipeline Tracking (7)
+- **5 new modules**: System Properties, Update Set Management, Virtual Agent authoring, IT Asset Management, DevOps & Pipeline Tracking
+- **Multi-instance support** — connect to dev, staging, prod, or multiple customer tenants simultaneously
 - **2 new role packages** — `devops_engineer`, `itam_analyst`
 - `system_administrator` package extended with system properties and update set tools
 
 ### v2.1 highlights
 
 - **4 new modules**: Service Portal & UI Builder, Integration Hub, Notifications & Attachments, Performance Analytics
-- **Scripting enhancements** — UI Policies, UI Actions, ACL management (11 new tools)
-- **Reporting enhancements** — scheduled job CRUD + run history (5 new tools)
+- **Scripting enhancements** — UI Policies, UI Actions, ACL management
+- **Reporting enhancements** — scheduled job CRUD + run history
 - **Now Assist** — `generate_work_notes` AI-drafted work notes for any record
 - **2 new role packages** — `portal_developer`, `integration_engineer`
 - **Binary file upload** — `uploadAttachment()` via ServiceNow Attachment API
 
 ## What's New in v2.0
 
-- **154 tools** across 17 domain modules (up from 16 tools in v1.0)
 - **HRSD module** — HR cases, services, profiles, onboarding/offboarding workflows
 - **CSM module** — Customer cases, accounts, contacts, products, SLA tracking
 - **Security Operations & GRC** — SecOps incidents, vulnerabilities, risks, controls, threat intel
 - **Flow Designer** — List, inspect, trigger, and monitor flows and subflows
-- **OAuth 2.0** for all six AI clients
-- **Role-based tool packages** — 10 persona-specific packages
-- **Now Assist Agentic Playbooks** — latest release AI automation
-- **ATF Failure Insight** — latest release test failure diagnostics
+- **OAuth 2.0** for all AI clients
+- **Role-based tool packages** — persona-specific packages
+- **Now Assist Agentic Playbooks** — AI automation
+- **ATF Failure Insight** — test failure diagnostics
 - **61 unit tests** covering all permission tiers, routing, and domain handlers
-- **Complete documentation** — 8 reference guides in `docs/`
+- **Complete documentation** — reference guides in `docs/`
 
 ---
 
@@ -1359,23 +912,12 @@ See [Anthropic MCP Python SDK](https://github.com/modelcontextprotocol/python-sd
 ## Development
 
 ```bash
-# Install dependencies
-npm install
-
-# Run in development mode (hot reload)
-npm run dev
-
-# Build
-npm run build
-
-# Run all tests
-npm test
-
-# Type check
-npm run type-check
-
-# Lint
-npm run lint
+npm install          # install dependencies
+npm run build        # compile TypeScript → dist/
+npm test             # run unit tests
+npm run dev          # watch mode (hot reload)
+npm run type-check   # TypeScript type check only
+npm run lint         # lint
 ```
 
 ### Project Structure
@@ -1384,45 +926,44 @@ npm run lint
 src/
   server.ts              — MCP server entry point
   servicenow/
-    client.ts            — ServiceNow REST API client (Basic + OAuth + Attachment API)
-    types.ts             — Full TypeScript type definitions
+    client.ts            — ServiceNow REST API client (Basic + OAuth)
+    instances.ts         — Multi-instance manager
+    types.ts             — TypeScript type definitions
   tools/
-    index.ts             — Tool router & role-based package system (12 packages)
-    core.ts              — Core platform & CMDB (16 tools)
-    incident.ts          — Incident management (9 tools)
-    problem.ts           — Problem management (4 tools)
-    change.ts            — Change management (6 tools)
-    task.ts              — Task management (4 tools)
-    knowledge.ts         — Knowledge base (6 tools)
-    catalog.ts           — Service catalog & approvals (10 tools)
-    user.ts              — User & group management (8 tools)
-    reporting.ts         — Reporting, analytics & scheduled jobs (13 tools)
-    atf.ts               — ATF testing (9 tools)
-    now-assist.ts        — Now Assist / AI (10 tools)
-    script.ts            — Scripting, UI Policies, UI Actions, ACLs (28 tools)
-    agile.ts             — Agile / Scrum (9 tools)
-    hrsd.ts              — HR Service Delivery (12 tools)
-    csm.ts               — Customer Service Management (11 tools)
-    security.ts          — Security Operations & GRC (11 tools)
-    flow.ts              — Flow Designer & Process Automation (10 tools)
-    portal.ts            — Service Portal & UI Builder (14 tools) ★ new
-    integration.ts       — REST Messages, Transform Maps, Events (18 tools) ★ new
-    notification.ts      — Notifications, Email, Attachments (12 tools) ★ new
-    performance.ts       — Performance Analytics & Data Quality (13 tools) ★ new
+    index.ts             — Tool router & role-based package system
+    core.ts              — Core platform, CMDB, multi-instance tools
+    incident.ts          — Incident management
+    problem.ts           — Problem management
+    change.ts            — Change management
+    task.ts              — Task management
+    knowledge.ts         — Knowledge base
+    catalog.ts           — Service catalog & approvals
+    user.ts              — User & group management
+    reporting.ts         — Reporting, analytics & scheduled jobs
+    atf.ts               — ATF testing
+    now-assist.ts        — Now Assist / AI
+    script.ts            — Scripting, UI Policies, UI Actions, ACLs
+    agile.ts             — Agile / Scrum
+    hrsd.ts              — HR Service Delivery
+    csm.ts               — Customer Service Management
+    security.ts          — Security Operations & GRC
+    flow.ts              — Flow Designer & Process Automation
+    portal.ts            — Service Portal & UI Builder
+    integration.ts       — REST Messages, Transform Maps, Events
+    notification.ts      — Notifications, Email, Attachments
+    performance.ts       — Performance Analytics & Data Quality
+    sys-properties.ts    — System Properties
+    updateset.ts         — Update Set Management
+    va.ts                — Virtual Agent authoring
+    itam.ts              — IT Asset Management
+    devops.ts            — DevOps & Pipeline Tracking
   utils/
     permissions.ts       — Five-tier permission gate functions
     errors.ts            — Typed error classes
     logging.ts           — Structured logger
 tests/
   tools/                 — Unit tests
-docs/                    — Reference documentation (8 guides)
-clients/                 — Per-client setup and config files
-  claude-desktop/
-  claude-code/
-  cursor/
-  vscode/
-  codex/
-  gemini/
+docs/                    — Reference documentation
 ```
 
 ---
@@ -1449,7 +990,7 @@ If you discover a security vulnerability, please follow the responsible disclosu
 No. For beginners, you just connect your AI and ask questions in plain English. The kit handles all API calls automatically.
 
 **Which ServiceNow versions are supported?**
-All actively supported ServiceNow releases. The toolkit targets the latest available APIs and has been tested on the three most recent releases — **Yokohama**, **Xanadu**, and **Washington DC** — and works on any currently supported instance.
+All actively supported ServiceNow releases. The toolkit targets the latest available APIs and has been tested on the three most recent releases — **Zurich**, **Yokohama**, and **Xanadu** — and works on any currently supported instance.
 
 **Can I use this on a free Personal Developer Instance (PDI)?**
 Yes. Get a free PDI at [developer.servicenow.com](https://developer.servicenow.com) and connect in 5 minutes.
