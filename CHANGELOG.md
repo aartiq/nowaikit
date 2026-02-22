@@ -6,6 +6,48 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ---
 
+## [2.1.0] — 2026-02-21
+
+### Added
+
+#### New Tool Modules (102 new tools)
+- **HR Service Delivery** (12 tools): `create_hr_case`, `get_hr_case`, `update_hr_case`, `list_hr_cases`, `close_hr_case`, `list_hr_services`, `get_hr_service`, `get_hr_profile`, `update_hr_profile`, `list_hr_tasks`, `create_hr_task`, `get_hr_case_activity`
+- **Customer Service Management** (11 tools): `create_csm_case`, `get_csm_case`, `update_csm_case`, `list_csm_cases`, `close_csm_case`, `get_csm_account`, `list_csm_accounts`, `get_csm_contact`, `list_csm_contacts`, `get_csm_case_sla`, `list_csm_products`
+- **Security Operations & GRC** (11 tools): `create_security_incident`, `get_security_incident`, `update_security_incident`, `list_security_incidents`, `list_vulnerabilities`, `get_vulnerability`, `update_vulnerability`, `list_grc_risks`, `get_grc_risk`, `list_grc_controls`, `get_threat_intelligence`
+- **Flow Designer & Process Automation** (10 tools): `list_flows`, `get_flow`, `trigger_flow`, `get_flow_execution`, `list_flow_executions`, `list_subflows`, `get_subflow`, `list_action_instances`, `get_process_automation`, `list_process_automations`
+- **Service Portal & UI Builder** (14 tools): `list_portals`, `get_portal`, `list_portal_pages`, `get_portal_page`, `list_portal_widgets`, `get_portal_widget`, `create_portal_widget`, `update_portal_widget`, `list_widget_instances`, `list_ux_apps`, `get_ux_app`, `list_ux_pages`, `list_portal_themes`, `get_portal_theme`
+- **Integration & Middleware** (19 tools): REST Messages, Transform Maps, Import Sets, Event Registry, OAuth/Credentials
+- **Notifications & Attachments** (12 tools): `list_notifications`, `get_notification`, `create_notification`, `update_notification`, `list_email_logs`, `get_email_log`, `list_attachments`, `get_attachment_metadata`, `delete_attachment`, `upload_attachment`, `list_email_templates`, `list_notification_subscriptions`
+- **Performance Analytics & Data Quality** (13 tools): PA indicators, scorecards, time-series, dashboards, data completeness checks
+
+#### Enhancements to Existing Modules (16 tools)
+- **Scripting** (+11 tools): `list_ui_policies`, `get_ui_policy`, `create_ui_policy`, `list_ui_actions`, `get_ui_action`, `create_ui_action`, `update_ui_action`, `list_acls`, `get_acl`, `create_acl`, `update_acl`
+- **Reporting** (+5 tools): `get_scheduled_job`, `create_scheduled_job`, `update_scheduled_job`, `trigger_scheduled_job`, `list_job_run_history`
+- **Now Assist** (+1 tool): `generate_work_notes` — AI-drafted work notes for any record
+
+#### New Role-Based Tool Packages
+- `portal_developer` — Service Portal / UI Builder focused (~35 tools)
+- `integration_engineer` — REST Messages, Transform Maps, Events (~30 tools)
+
+#### ServiceNow Client Enhancements
+- `uploadAttachment(table, recordSysId, fileName, contentType, contentBase64)` — Binary upload to Attachment API (`/api/now/attachment/file`)
+
+#### Documentation
+- Expanded `README.md` with beginner and advanced setup guides for 12 AI clients (Claude Desktop, Claude Code, Cursor, VS Code, Windsurf, ChatGPT, Gemini, Codex, Cline, Amazon Q, JetBrains AI, Docker)
+- Updated `docs/TOOLS.md` — full 230-tool reference
+- Updated `docs/TOOL_PACKAGES.md` — 12-package documentation
+- Updated `docs/SCRIPTING.md` — UI Policies, UI Actions, ACL management guide
+- Updated `docs/REPORTING.md` — Scheduled job CRUD and execution history
+- Updated `EXAMPLES.md` — 120+ usage examples with new module examples
+
+### Changed
+- `src/server.ts` MCP server version bumped to `2.1.0`
+- `src/tools/index.ts` expanded with 4 new module imports and 2 new packages
+- Total tools: 112 → 230 (+118 net, includes HRSD/CSM/Security/Flow from imported modules)
+- Total modules: 17 → 21
+
+---
+
 ## [2.0.0] — 2025-02-20
 
 ### Added

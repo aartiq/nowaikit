@@ -15,10 +15,10 @@ Copy the appropriate config file into your project:
 mkdir -p .cursor
 
 # Basic Auth
-cp /path/to/servicenow-mcp/clients/cursor/.cursor/mcp.basic.json .cursor/mcp.json
+cp /path/to/nowaikit/clients/cursor/.cursor/mcp.basic.json .cursor/mcp.json
 
 # OR: OAuth
-cp /path/to/servicenow-mcp/clients/cursor/.cursor/mcp.oauth.json .cursor/mcp.json
+cp /path/to/nowaikit/clients/cursor/.cursor/mcp.oauth.json .cursor/mcp.json
 ```
 
 ## Step 2: Edit the Config
@@ -74,7 +74,7 @@ Edit `.cursor/mcp.json`:
 Copy the `.cursorrules` file to help Cursor understand when to use ServiceNow tools:
 
 ```bash
-cp /path/to/servicenow-mcp/clients/cursor/.cursorrules .cursorrules
+cp /path/to/nowaikit/clients/cursor/.cursorrules .cursorrules
 ```
 
 This instructs Cursor to use ServiceNow tools when you ask about incidents, changes, knowledge, or IT operations.

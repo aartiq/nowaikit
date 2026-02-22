@@ -1,7 +1,7 @@
 {
   "name": "now-ai-kit",
-  "version": "2.0.0",
-  "description": "The most advanced & comprehensive ServiceNow MCP server — 150+ tools across 17 modules, full ServiceNow API coverage, integrates with Claude, GPT-4o, Gemini, Cursor, VS Code, and Codex",
+  "version": "2.1.0",
+  "description": "The most advanced & comprehensive ServiceNow MCP server — 220+ tools across 21 modules, full ServiceNow API coverage, integrates with Claude, GPT-4o, Gemini, Cursor, VS Code, Codex, and more",
   "main": "dist/server.js",
   "type": "module",
   "engines": {
@@ -33,7 +33,8 @@
     "now-assist",
     "atf",
     "flow-designer",
-    
+    "service-portal",
+    "performance-analytics",
     "ai",
     "llm",
     "claude",
@@ -42,14 +43,14 @@
     "typescript",
     "automation"
   ],
-  "author": "habenani-p",
-  "homepage": "https://github.com/habenani-p/servicenow-mcp#readme",
+  "author": "aartiq",
+  "homepage": "https://github.com/aartiq/nowaikit#readme",
   "repository": {
     "type": "git",
-    "url": "https://github.com/habenani-p/servicenow-mcp.git"
+    "url": "https://github.com/aartiq/nowaikit.git"
   },
   "bugs": {
-    "url": "https://github.com/habenani-p/servicenow-mcp/issues"
+    "url": "https://github.com/aartiq/nowaikit/issues"
   },
   "license": "MIT",
   "dependencies": {

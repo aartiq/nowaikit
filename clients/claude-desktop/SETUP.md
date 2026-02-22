@@ -11,8 +11,8 @@ Configure the ServiceNow MCP server with Claude Desktop.
 ## Step 1: Build the Server
 
 ```bash
-git clone https://github.com/habenani-p/servicenow-mcp.git
-cd servicenow-mcp
+git clone https://github.com/aartiq/nowaikit.git
+cd nowaikit
 npm install
 npm run build
 ```

@@ -20,7 +20,7 @@ Claude Code discovers MCP servers via the `claude mcp add` command.
 
 ```bash
 claude mcp add servicenow \
-  --command "node /absolute/path/to/servicenow-mcp/dist/server.js" \
+  --command "node /absolute/path/to/nowaikit/dist/server.js" \
   --env SERVICENOW_INSTANCE_URL=https://yourinstance.service-now.com \
   --env SERVICENOW_AUTH_METHOD=basic \
   --env SERVICENOW_BASIC_USERNAME=your_username \
@@ -32,7 +32,7 @@ claude mcp add servicenow \
 
 ```bash
 claude mcp add servicenow \
-  --command "node /absolute/path/to/servicenow-mcp/dist/server.js" \
+  --command "node /absolute/path/to/nowaikit/dist/server.js" \
   --env SERVICENOW_INSTANCE_URL=https://yourinstance.service-now.com \
   --env SERVICENOW_AUTH_METHOD=oauth \
   --env SERVICENOW_OAUTH_CLIENT_ID=your_client_id \
@@ -70,7 +70,7 @@ See full guide: [clients/claude-code/SETUP.md](../clients/claude-code/SETUP.md)
   "mcpServers": {
     "servicenow": {
       "command": "node",
-      "args": ["/absolute/path/to/servicenow-mcp/dist/server.js"],
+      "args": ["/absolute/path/to/nowaikit/dist/server.js"],
       "env": {
         "SERVICENOW_INSTANCE_URL": "https://yourinstance.service-now.com",
         "SERVICENOW_AUTH_METHOD": "basic",
@@ -91,7 +91,7 @@ See full guide: [clients/claude-code/SETUP.md](../clients/claude-code/SETUP.md)
   "mcpServers": {
     "servicenow": {
       "command": "node",
-      "args": ["/absolute/path/to/servicenow-mcp/dist/server.js"],
+      "args": ["/absolute/path/to/nowaikit/dist/server.js"],
       "env": {
         "SERVICENOW_INSTANCE_URL": "https://yourinstance.service-now.com",
         "SERVICENOW_AUTH_METHOD": "oauth",
@@ -197,7 +197,7 @@ Copy the appropriate config file to your project's `.cursor/` directory:
 
 ```bash
 mkdir -p .cursor
-cp /path/to/servicenow-mcp/clients/cursor/.cursor/mcp.basic.json .cursor/mcp.json
+cp /path/to/nowaikit/clients/cursor/.cursor/mcp.basic.json .cursor/mcp.json
 ```
 
 Edit `.cursor/mcp.json`:
@@ -206,7 +206,7 @@ Edit `.cursor/mcp.json`:
   "mcpServers": {
     "servicenow": {
       "command": "node",
-      "args": ["/absolute/path/to/servicenow-mcp/dist/server.js"],
+      "args": ["/absolute/path/to/nowaikit/dist/server.js"],
       "env": {
         "SERVICENOW_INSTANCE_URL": "https://yourinstance.service-now.com",
         "SERVICENOW_AUTH_METHOD": "basic",
@@ -222,7 +222,7 @@ Edit `.cursor/mcp.json`:
 ### OAuth Config
 
 ```bash
-cp /path/to/servicenow-mcp/clients/cursor/.cursor/mcp.oauth.json .cursor/mcp.json
+cp /path/to/nowaikit/clients/cursor/.cursor/mcp.oauth.json .cursor/mcp.json
 ```
 
 **Verify**: Open Cursor → Settings → MCP → `servicenow` should appear in the list.
@@ -241,7 +241,7 @@ Copy the MCP config to your workspace `.vscode/` directory:
 
 ```bash
 mkdir -p .vscode
-cp /path/to/servicenow-mcp/clients/vscode/.vscode/mcp.basic.json .vscode/mcp.json
+cp /path/to/nowaikit/clients/vscode/.vscode/mcp.basic.json .vscode/mcp.json
 ```
 
 Edit `.vscode/mcp.json`:
@@ -251,7 +251,7 @@ Edit `.vscode/mcp.json`:
     "servicenow": {
       "type": "stdio",
       "command": "node",
-      "args": ["${workspaceFolder}/../../servicenow-mcp/dist/server.js"],
+      "args": ["${workspaceFolder}/../../nowaikit/dist/server.js"],
       "env": {
         "SERVICENOW_INSTANCE_URL": "https://yourinstance.service-now.com",
         "SERVICENOW_AUTH_METHOD": "basic",

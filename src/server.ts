@@ -44,7 +44,7 @@ const client = new ServiceNowClient({
 const server = new Server(
   {
     name: 'servicenow-mcp',
-    version: '1.0.0',
+    version: '2.1.0',
   },
   {
     capabilities: {
