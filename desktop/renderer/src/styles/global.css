@@ -56,7 +56,7 @@ body {
 }
 
 .sidebar-logo {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 10px;
   padding: 0 20px 20px;
@@ -64,9 +64,9 @@ body {
 }
 
 .sidebar-logo .logo-icon {
-  width: 32px;
-  height: 32px;
-  border-radius: 7px;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
   background: linear-gradient(135deg, #0ea5e9 0%, #6366f1 50%, #8b5cf6 100%);
   display: flex;
   align-items: center;
@@ -75,10 +75,10 @@ body {
 }
 
 .sidebar-logo .logo-text {
-  font-size: 18px;
+  font-size: 1.4rem;
   font-weight: 700;
   color: var(--text);
-  letter-spacing: -0.3px;
+  letter-spacing: -0.5px;
 }
 
 .sidebar-logo .logo-accent {
@@ -89,7 +89,7 @@ body {
   font-weight: 800;
 }
 
-.sidebar-logo .logo-version { color: var(--text-muted); font-weight: 400; font-size: 12px; }
+.sidebar-logo .logo-version { color: var(--text-muted); font-weight: 400; font-size: 11px; margin-left: 2px; }
 
 .sidebar-nav {
   flex: 1;
