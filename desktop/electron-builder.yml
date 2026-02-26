@@ -1,0 +1,67 @@
+appId: com.nowaikit.desktop
+productName: nowaikit
+copyright: Copyright © 2024 aartiq
+
+directories:
+  output: release
+  buildResources: resources
+
+files:
+  - dist/**/*
+  - renderer/dist/**/*
+  - "!node_modules/**/*"
+  - node_modules/electron-store/**/*
+  - node_modules/electron-updater/**/*
+
+extraResources:
+  - from: ../dist
+    to: server
+    filter:
+      - "**/*"
+  - from: ../node_modules
+    to: server-modules
+    filter:
+      - "@modelcontextprotocol/**"
+      - "@inquirer/**"
+      - "chalk/**"
+      - "commander/**"
+      - "dotenv/**"
+      - "ora/**"
+      - "zod/**"
+
+win:
+  target:
+    - target: nsis
+      arch: [x64, arm64]
+  icon: resources/icon.ico
+  artifactName: nowaikit-Setup-${version}.${ext}
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: NowAIKit
+
+mac:
+  target:
+    - target: dmg
+      arch: [x64, arm64]
+  icon: resources/icon.icns
+  category: public.app-category.developer-tools
+  artifactName: nowaikit-${version}.${ext}
+
+linux:
+  target:
+    - target: AppImage
+      arch: [x64]
+    - target: deb
+      arch: [x64]
+  icon: resources/icon.png
+  category: Development
+  artifactName: nowaikit-${version}.${ext}
+
+publish:
+  provider: github
+  owner: aartiq
+  repo: nowaikit

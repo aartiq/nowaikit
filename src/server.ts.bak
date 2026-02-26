@@ -1,0 +1,145 @@
+#!/usr/bin/env node
+import { Server } from '@modelcontextprotocol/sdk/server/index.js';
+import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import {
+  CallToolRequestSchema,
+  ListResourcesRequestSchema,
+  ListToolsRequestSchema,
+  ReadResourceRequestSchema,
+} from '@modelcontextprotocol/sdk/types.js';
+import dotenv from 'dotenv';
+import { ServiceNowClient } from './servicenow/client.js';
+import { getTools } from './tools/index.js';
+import { getResources, readResource } from './resources/index.js';
+import { logger } from './utils/logging.js';
+import { ServiceNowError } from './utils/errors.js';
+
+dotenv.config();
+
+const requiredEnvVars = ['SERVICENOW_INSTANCE_URL', 'SERVICENOW_AUTH_METHOD'];
+const missing = requiredEnvVars.filter(v => !process.env[v]);
+if (missing.length > 0) {
+  logger.error(`Missing required environment variables: \${missing.join(', ')}`);
+  process.exit(1);
+}
+
+const client = new ServiceNowClient({
+  instanceUrl: process.env.SERVICENOW_INSTANCE_URL!,
+  authMethod: process.env.SERVICENOW_AUTH_METHOD as 'oauth' | 'basic',
+  oauth: {
+    clientId: process.env.SERVICENOW_CLIENT_ID,
+    clientSecret: process.env.SERVICENOW_CLIENT_SECRET,
+    username: process.env.SERVICENOW_USERNAME,
+    password: process.env.SERVICENOW_PASSWORD,
+  },
+  basic: {
+    username: process.env.SERVICENOW_BASIC_USERNAME,
+    password: process.env.SERVICENOW_BASIC_PASSWORD,
+  },
+  maxRetries: parseInt(process.env.MAX_RETRIES || '3', 10),
+  retryDelayMs: parseInt(process.env.RETRY_DELAY_MS || '1000', 10),
+  requestTimeoutMs: parseInt(process.env.REQUEST_TIMEOUT_MS || '30000', 10),
+});
+
+const server = new Server(
+  {
+    name: 'servicenow-mcp',
+    version: '1.0.0',
+  },
+  {
+    capabilities: {
+      tools: {},
+      resources: {},
+    },
+  }
+);
+
+const tools = getTools();
+
+server.setRequestHandler(ListToolsRequestSchema, async () => {
+  return { tools };
+});
+
+server.setRequestHandler(CallToolRequestSchema, async (request) => {
+  const { name, arguments: args } = request.params;
+  
+  logger.info(`Tool called: \${name}`);
+  
+  try {
+    const tool = tools.find(t => t.name === name);
+    if (!tool) {
+      throw new ServiceNowError(`Unknown tool: \${name}`, 'UNKNOWN_TOOL');
+    }
+
+    const { executeTool } = await import('./tools/index.js');
+    const result = await executeTool(client, name, args || {});
+
+    return {
+      content: [
+        {
+          type: 'text',
+          text: typeof result === 'string' ? result : JSON.stringify(result, null, 2),
+        },
+      ],
+    };
+  } catch (error) {
+    logger.error(`Tool execution error: \${name}`, error);
+    
+    if (error instanceof ServiceNowError) {
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `Error: \${error.message} (Code: \${error.code})`,
+          },
+        ],
+        isError: true,
+      };
+    }
+    
+    return {
+      content: [
+        {
+          type: 'text',
+          text: `Error executing tool: \${error instanceof Error ? error.message : 'Unknown error'}`,
+        },
+      ],
+      isError: true,
+    };
+  }
+});
+
+server.setRequestHandler(ListResourcesRequestSchema, async () => {
+  return { resources: getResources() };
+});
+
+server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
+  const { uri } = request.params;
+  
+  try {
+    const content = await readResource(client, uri);
+    return {
+      contents: [
+        {
+          uri,
+          mimeType: 'application/json',
+          text: JSON.stringify(content, null, 2),
+        },
+      ],
+    };
+  } catch (error) {
+    logger.error(`Resource read error: \${uri}`, error);
+    throw error;
+  }
+});
+
+async function main() {
+  const transport = new StdioServerTransport();
+  await server.connect(transport);
+  logger.info('ServiceNow MCP server running on stdio');
+}
+
+main().catch((error) => {
+  logger.error('Server startup failed', error);
+  process.exit(1);
+});
