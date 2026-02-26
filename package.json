@@ -1,5 +1,5 @@
 {
-  "name": "now-ai-kit",
+  "name": "nowaikit",
   "version": "2.3.0",
   "description": "ServiceNow MCP server — 284+ tools across all ServiceNow modules. Model Context Protocol (MCP) integration for Claude, ChatGPT, Gemini, Cursor, GitHub Copilot and any LLM. ITSM, ITOM, HRSD, CSM, Flow Designer, Service Portal, Performance Analytics, Scripting, App Studio and more. MIT licensed.",
   "main": "dist/server.js",
@@ -37,7 +37,7 @@
     "mcp",
     "mcp-server",
     "model-context-protocol",
-    "now-ai-kit",
+    "nowaikit",
     "itsm",
     "itom",
     "hrsd",

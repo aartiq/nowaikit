@@ -76,7 +76,7 @@ async function ensureGlobalCommand(): Promise<void> {
       console.log('');
       console.log(chalk.dim('  Fix options (choose one):'));
       console.log(chalk.cyan(`    sudo npm link`)                          + chalk.dim('  # if using system Node'));
-      console.log(chalk.cyan(`    npm install -g now-ai-kit`)              + chalk.dim('  # install from npm registry'));
+      console.log(chalk.cyan(`    npm install -g nowaikit`)              + chalk.dim('  # install from npm registry'));
       console.log(chalk.cyan(`    npx nowaikit instances list`)            + chalk.dim('  # use npx instead of global command'));
     }
   }

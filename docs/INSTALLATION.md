@@ -32,7 +32,7 @@ The fastest way to get started — no config file editing required.
 
 ```bash
 # Install globally (Node.js 20+ required)
-npm install -g now-ai-kit
+npm install -g nowaikit
 
 # Run the wizard
 npx nowaikit setup
@@ -128,7 +128,7 @@ Add to your AI client config (`dist/server.js` is the MCP entry point):
 ```json
 {
   "mcpServers": {
-    "now-ai-kit": {
+    "nowaikit": {
       "command": "node",
       "args": ["/absolute/path/to/nowaikit/dist/server.js"],
       "env": {

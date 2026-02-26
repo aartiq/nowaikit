@@ -1,4 +1,4 @@
-<!-- now-ai-kit v2.5 banner — 400+ tools, all ServiceNow modules, 15+ AI clients -->
+<!-- NowAIKit v2.5 banner — 400+ tools, all ServiceNow modules, 15+ AI clients -->
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 340" width="1200" height="340">
   <defs>
     <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -57,7 +57,7 @@
   <text x="52" y="210" font-family="'Courier New', monospace" font-size="140" fill="#0ea5e9" opacity="0.08" font-weight="bold">{</text>
   <text x="1095" y="210" font-family="'Courier New', monospace" font-size="140" fill="#8b5cf6" opacity="0.08" font-weight="bold">}</text>
 
-  <!-- Main logo text: now-ai-kit -->
+  <!-- Main logo text: NowAIKit -->
   <text
     x="600" y="148"
     font-family="'SF Pro Display', 'Segoe UI', system-ui, -apple-system, sans-serif"
@@ -65,9 +65,10 @@
     font-weight="700"
     letter-spacing="-2"
     text-anchor="middle"
-    fill="url(#textGrad)"
     filter="url(#glow)"
-  >now-ai-kit</text>
+  >
+    <tspan fill="#e2e8f0">Now</tspan><tspan fill="url(#textGrad)">AI</tspan><tspan fill="#e2e8f0">Kit</tspan>
+  </text>
 
   <!-- Accent underline -->
   <rect x="340" y="163" width="520" height="2.5" fill="url(#accentGrad)" rx="2" opacity="0.7"/>

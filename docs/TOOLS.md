@@ -1,4 +1,4 @@
-# Tool Reference — now-ai-kit v2.3 (Latest Release)
+# Tool Reference — NowAIKit v2.3 (Latest Release)
 
 Complete reference for all tools across all ServiceNow modules. All tools accept a `table` parameter override where applicable.
 

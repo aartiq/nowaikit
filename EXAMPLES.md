@@ -1,6 +1,6 @@
-# now-ai-kit — Usage Examples
+# NowAIKit — Usage Examples
 
-This document provides real-world examples of using the now-ai-kit ServiceNow MCP server (284+ tools across all ServiceNow modules).
+This document provides real-world examples of using the NowAIKit ServiceNow MCP server (284+ tools across all ServiceNow modules).
 
 ## Table of Contents
 

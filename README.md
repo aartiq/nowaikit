@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="docs/assets/banner.svg" alt="now-ai-kit — The Complete ServiceNow AI Kit" width="100%"/>
+<img src="docs/assets/banner.svg" alt="NowAIKit — The Complete ServiceNow AI Kit" width="100%"/>
 
 <br/>
 
@@ -14,13 +14,13 @@
 
 <br/>
 
-# now-ai-kit
+# NowAIKit
 
 ## The Most Comprehensive ServiceNow AI Toolkit
 
 > **400+ tools · 31+ ServiceNow modules · 5-minute setup · MIT licensed · Works with any AI**
 
-**now-ai-kit** is the most comprehensive, production-ready AI toolkit for ServiceNow — and the only one that truly does it all.
+**NowAIKit** is the most comprehensive, production-ready AI toolkit for ServiceNow — and the only one that truly does it all.
 
 Connect **Claude**, **ChatGPT**, **Gemini**, **Cursor**, **GitHub Copilot**, or any MCP-compatible AI in under 5 minutes. Then let your AI read, build, deploy, and automate across every ServiceNow module — incidents, changes, scripts, flows, portals, integrations, HRSD, CSM, and more.
 
@@ -83,7 +83,7 @@ Trigger Agentic Playbooks, orchestrate multi-step ITSM/HRSD/CSM processes, compa
 
 ---
 
-## Why now-ai-kit
+## Why NowAIKit
 
 <table>
 <tr>
@@ -245,7 +245,7 @@ Set `MCP_TOOL_PACKAGE` to expose only the tools relevant to each persona:
 
 ```bash
 # Install globally (Node.js 20+ required)
-npm install -g now-ai-kit
+npm install -g nowaikit
 
 # Run the wizard — detects your AI clients and writes config automatically
 npx nowaikit setup
@@ -450,7 +450,7 @@ Learn more at [nowaikit.com/#pricing](https://nowaikit.com/#pricing).
 
 ## See It In Action
 
-These are real interactions you can have with your AI once now-ai-kit is connected:
+These are real interactions you can have with your AI once NowAIKit is connected:
 
 **Operations — plain English:**
 ```
@@ -498,7 +498,7 @@ See [EXAMPLES.md](EXAMPLES.md) for 120+ real-world examples across all ServiceNo
 
 ## Supported AI Clients
 
-**Any MCP-compatible AI works.** now-ai-kit has been tested with every major AI assistant, editor, and agent framework. Pick yours and follow the 3-step setup below.
+**Any MCP-compatible AI works.** NowAIKit has been tested with every major AI assistant, editor, and agent framework. Pick yours and follow the 3-step setup below.
 
 ### AI Assistants & Chat
 
@@ -514,7 +514,7 @@ See [EXAMPLES.md](EXAMPLES.md) for 120+ real-world examples across all ServiceNo
 ```json
 {
   "mcpServers": {
-    "now-ai-kit": {
+    "nowaikit": {
       "command": "node",
       "args": ["/absolute/path/to/nowaikit/dist/server.js"],
       "env": {
@@ -534,7 +534,7 @@ Or use **multi-instance** (dev + staging + prod, or multiple customer tenants):
 ```json
 {
   "mcpServers": {
-    "now-ai-kit": {
+    "nowaikit": {
       "command": "node",
       "args": ["/absolute/path/to/nowaikit/dist/server.js"],
       "env": {
@@ -563,7 +563,7 @@ OpenAI supports MCP via the **Responses API** (`mcp` tool type) in the latest SD
 from openai import OpenAI
 import os, subprocess
 
-# Start now-ai-kit as a subprocess MCP server
+# Start NowAIKit as a subprocess MCP server
 proc = subprocess.Popen(
     ["node", "/path/to/nowaikit/dist/server.js"],
     stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
@@ -578,7 +578,7 @@ client = OpenAI()
 # Use with Responses API tool type "mcp" or via function calling
 response = client.responses.create(
     model="gpt-4o",
-    tools=[{"type": "mcp", "server_label": "now-ai-kit"}],
+    tools=[{"type": "mcp", "server_label": "nowaikit"}],
     input="Show me all open P1 incidents"
 )
 ```
@@ -589,7 +589,7 @@ Full guide → [docs/CLIENT_SETUP.md](docs/CLIENT_SETUP.md)
 <details>
 <summary><b>Google Gemini / Vertex AI</b> (API)</summary>
 
-1. Install now-ai-kit: `npm install -g now-ai-kit`
+1. Install NowAIKit: `npm install -g nowaikit`
 2. Use the Python client in `clients/gemini/`:
 
 ```bash
@@ -606,11 +606,11 @@ Full guide → [clients/gemini/SETUP.md](clients/gemini/SETUP.md)
 Google AI Studio supports MCP servers via its agent execution environment (currently in preview).
 
 1. Go to [aistudio.google.com](https://aistudio.google.com) and open **Build → Agent**
-2. In the **Tools** panel, add an MCP Server and point it to your now-ai-kit instance:
+2. In the **Tools** panel, add an MCP Server and point it to your NowAIKit instance:
 
 ```json
 {
-  "name": "now-ai-kit",
+  "name": "nowaikit",
   "transport": "stdio",
   "command": "node",
   "args": ["/absolute/path/to/nowaikit/dist/server.js"],
@@ -624,13 +624,13 @@ Google AI Studio supports MCP servers via its agent execution environment (curre
 }
 ```
 
-3. Alternatively, use the **Gemini API** directly with function calling by mapping now-ai-kit tool definitions:
+3. Alternatively, use the **Gemini API** directly with function calling by mapping NowAIKit tool definitions:
 
 ```python
 import google.generativeai as genai
 import subprocess, json, os
 
-# Start now-ai-kit MCP server
+# Start NowAIKit MCP server
 proc = subprocess.Popen(
     ["node", "/path/to/nowaikit/dist/server.js"],
     stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
@@ -643,7 +643,7 @@ proc = subprocess.Popen(
 
 genai.configure(api_key=os.environ["GOOGLE_API_KEY"])
 model = genai.GenerativeModel("gemini-3.1-pro")  # or gemini-3-flash, gemini-2.5-flash
-# Use model.generate_content() with tools= mapped from now-ai-kit definitions
+# Use model.generate_content() with tools= mapped from NowAIKit definitions
 ```
 
 Full guide → [docs/CLIENT_SETUP.md](docs/CLIENT_SETUP.md)
@@ -671,7 +671,7 @@ Full guide → [docs/CLIENT_SETUP.md](docs/CLIENT_SETUP.md)
 ```json
 {
   "mcpServers": {
-    "now-ai-kit": {
+    "nowaikit": {
       "command": "node",
       "args": ["/absolute/path/to/nowaikit/dist/server.js"],
       "env": {
@@ -712,7 +712,7 @@ Full guide → [docs/CLIENT_SETUP.md](docs/CLIENT_SETUP.md)
 ```json
 {
   "context_servers": {
-    "now-ai-kit": {
+    "nowaikit": {
       "command": { "path": "node", "args": ["/path/to/nowaikit/dist/server.js"] },
       "settings": {
         "SERVICENOW_INSTANCE_URL": "https://yourinstance.service-now.com",
@@ -743,7 +743,7 @@ VS Code 1.99 and later includes built-in MCP support — no extension or subscri
 ```json
 {
   "servers": {
-    "now-ai-kit": {
+    "nowaikit": {
       "type": "stdio",
       "command": "node",
       "args": ["/absolute/path/to/nowaikit/dist/server.js"],
@@ -761,7 +761,7 @@ VS Code 1.99 and later includes built-in MCP support — no extension or subscri
 ```
 
 3. Open the Command Palette (`Cmd/Ctrl+Shift+P`) → **MCP: List Servers** to verify the connection
-4. Open Copilot Chat (or any AI assistant in VS Code) and use `@now-ai-kit` or just ask naturally
+4. Open Copilot Chat (or any AI assistant in VS Code) and use `@nowaikit` or just ask naturally
 
 > **Tip:** Add `.vscode/mcp.json` to `.gitignore` if it contains credentials, or use environment variables from a `.env` file.
 
@@ -777,7 +777,7 @@ Full guide → [clients/vscode/SETUP.md](clients/vscode/SETUP.md)
 ```json
 {
   "servers": {
-    "now-ai-kit": {
+    "nowaikit": {
       "type": "stdio",
       "command": "node",
       "args": ["${workspaceFolder}/../../nowaikit/dist/server.js"],
@@ -791,7 +791,7 @@ Full guide → [clients/vscode/SETUP.md](clients/vscode/SETUP.md)
   }
 }
 ```
-3. Open Copilot Chat → Agent mode → `@now-ai-kit`
+3. Open Copilot Chat → Agent mode → `@nowaikit`
 
 Full guide → [clients/vscode/SETUP.md](clients/vscode/SETUP.md)
 </details>
@@ -806,7 +806,7 @@ Full guide → [clients/vscode/SETUP.md](clients/vscode/SETUP.md)
 {
   "mcpServers": [
     {
-      "name": "now-ai-kit",
+      "name": "nowaikit",
       "command": "node",
       "args": ["/path/to/nowaikit/dist/server.js"],
       "env": {
@@ -853,7 +853,7 @@ Full guide → [docs/CLIENT_SETUP.md](docs/CLIENT_SETUP.md)
 ```json
 {
   "mcpServers": {
-    "now-ai-kit": {
+    "nowaikit": {
       "command": "node",
       "args": ["/path/to/nowaikit/dist/server.js"],
       "env": {
@@ -881,8 +881,8 @@ Full guide → [docs/CLIENT_SETUP.md](docs/CLIENT_SETUP.md)
 # Install Claude Code
 npm install -g @anthropic-ai/claude-code
 
-# Register now-ai-kit as an MCP server
-claude mcp add now-ai-kit node /absolute/path/to/nowaikit/dist/server.js \
+# Register NowAIKit as an MCP server
+claude mcp add nowaikit node /absolute/path/to/nowaikit/dist/server.js \
   --env SERVICENOW_INSTANCE_URL=https://yourinstance.service-now.com \
   --env SERVICENOW_AUTH_METHOD=basic \
   --env SERVICENOW_BASIC_USERNAME=admin \
@@ -931,7 +931,7 @@ Full guide → [clients/codex/SETUP.md](clients/codex/SETUP.md)
 ```python
 import anthropic, subprocess, json
 
-# Start now-ai-kit subprocess
+# Start NowAIKit subprocess
 proc = subprocess.Popen(
     ["node", "/path/to/nowaikit/dist/server.js"],
     stdin=subprocess.PIPE, stdout=subprocess.PIPE,
@@ -1205,7 +1205,7 @@ Yes. Get a free PDI at [developer.servicenow.com](https://developer.servicenow.c
 Yes. The permission system is read-only by default. Write, scripting, and Now Assist capabilities must each be explicitly enabled with environment variables. Use role packages to limit the tool surface.
 
 **Can I use multiple AI providers at the same time?**
-Yes. Each AI client gets its own MCP config pointing at the same (or different) now-ai-kit instance. Run Claude Desktop and Cursor side by side against the same ServiceNow environment. In the nowaikit Desktop app you can switch between Claude, ChatGPT, and Gemini with one click inside the Chat page.
+Yes. Each AI client gets its own MCP config pointing at the same (or different) NowAIKit instance. Run Claude Desktop and Cursor side by side against the same ServiceNow environment. In the nowaikit Desktop app you can switch between Claude, ChatGPT, and Gemini with one click inside the Chat page.
 
 **Does it support multi-instance / multiple customers?**
 Yes. Configure any number of instances (prod, staging, dev, or multiple customer tenants) via `instances.json` or environment variables. Use `list_instances`, `switch_instance`, and `get_current_instance` tools to manage them, or pass `instance: "name"` to any individual tool call. See [docs/MULTI_INSTANCE.md](docs/MULTI_INSTANCE.md).
@@ -1227,9 +1227,9 @@ Completely free and open-source under the MIT license.
 
 400+ tools. 31+ modules. Every AI platform. True multi-instance. Open-source forever.
 
-**now-ai-kit** &bull; ServiceNow MCP Server &bull; ServiceNow AI Agent &bull; ServiceNow Claude Integration &bull; ServiceNow ChatGPT &bull; ServiceNow Cursor &bull; ServiceNow Gemini &bull; ServiceNow Automation &bull; ServiceNow Developer Tools &bull; ServiceNow Multi-Instance &bull; ServiceNow MSP
+**NowAIKit** &bull; ServiceNow MCP Server &bull; ServiceNow AI Agent &bull; ServiceNow Claude Integration &bull; ServiceNow ChatGPT &bull; ServiceNow Cursor &bull; ServiceNow Gemini &bull; ServiceNow Automation &bull; ServiceNow Developer Tools &bull; ServiceNow Multi-Instance &bull; ServiceNow MSP
 
-If now-ai-kit saves you time, please ⭐ star the repository — it helps others find the project.
+If NowAIKit saves you time, please ⭐ star the repository — it helps others find the project.
 
 [![GitHub Stars](https://img.shields.io/github/stars/aartiq/nowaikit?style=social)](../../stargazers)
 

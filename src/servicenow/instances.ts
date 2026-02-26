@@ -1,5 +1,5 @@
 /**
- * Multi-instance manager for now-ai-kit.
+ * Multi-instance manager for NowAIKit.
  *
  * Supports connecting to multiple ServiceNow instances (e.g. dev, staging, prod,
  * or multiple customers) from a single MCP session.
