@@ -1,6 +1,6 @@
 import { ChildProcess, spawn } from 'child_process';
 import { join } from 'path';
-import { existsSync } from 'fs';
+import { existsSync, readFileSync } from 'fs';
 import type { InstanceConfig } from './index';
 
 interface ServerStatus {
@@ -14,7 +14,7 @@ interface ServerStatus {
 export class ServerManager {
   private process: ChildProcess | null = null;
   private status: ServerStatus = { running: false };
-  private tools: Array<{ name: string; description: string }> = [];
+  private tools: Array<{ name: string; description: string; inputSchema?: Record<string, unknown> }> = [];
 
   /**
    * Resolve the path to the MCP server entry point.
@@ -157,27 +157,26 @@ export class ServerManager {
   }
 
   /**
-   * List available tools (reads from the compiled tool definitions).
+   * List available tools from the pre-built manifest.
    */
-  async listTools(): Promise<Array<{ name: string; description: string }>> {
-    // Return cached tools if available
+  async listTools(): Promise<Array<{ name: string; description: string; inputSchema?: Record<string, unknown> }>> {
     if (this.tools.length > 0) return this.tools;
 
     try {
-      // Dynamically load tool definitions from the server module
+      // Read the static tools manifest generated at build time
       const serverPath = this.getServerPath();
-      const toolsModulePath = serverPath.replace('server.js', join('tools', 'index.js'));
+      const manifestPath = serverPath.replace('server.js', 'tools-manifest.json');
 
-      if (existsSync(toolsModulePath)) {
-        // We can't easily import ESM from CJS, so return a static list
-        // The actual tool list is loaded when the server starts
-        return [{ name: 'loading...', description: 'Start the server to see all tools' }];
+      if (existsSync(manifestPath)) {
+        const raw = readFileSync(manifestPath, 'utf8');
+        this.tools = JSON.parse(raw);
+        return this.tools;
       }
     } catch {
       // Fallback
     }
 
-    return [{ name: 'loading...', description: 'Start the server to see all tools' }];
+    return [];
   }
 
   /**

@@ -34,4 +34,7 @@ contextBridge.exposeInMainWorld('api', {
   openExternal: (url: string) => ipcRenderer.invoke('system:openExternal', url),
   selectDirectory: () => ipcRenderer.invoke('system:selectDirectory'),
   getServerPath: () => ipcRenderer.invoke('system:getServerPath'),
+
+  // ── AI Chat ──
+  sendChat: (params: unknown) => ipcRenderer.invoke('chat:send', params),
 });

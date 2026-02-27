@@ -157,10 +157,102 @@ const SUGGESTIONS = [
   'What problems have been open for more than 30 days?',
 ];
 
-// ── Tool type (for slash-command picker) ──────────────────────────────────────
+// ── Tool type (for slash-command picker + API calls) ─────────────────────────
 interface ToolDef {
   name: string;
   description: string;
+  inputSchema?: Record<string, unknown>;
+}
+
+// ── Chat via IPC — with full tool execution loop ────────────────────────────
+// Flow: send messages + tool defs → AI responds → if tool_use → execute tools →
+//       send results back → AI responds again → repeat until no more tool calls.
+const MAX_TOOL_ROUNDS = 8; // safety limit
+
+async function callProviderApi(
+  provider: string,
+  apiKey: string,
+  model: string,
+  messages: ChatMessage[],
+  tools: ToolDef[],
+  onUpdate: (msgs: ChatMessage[]) => void,
+): Promise<{ messages?: ChatMessage[]; error?: string }> {
+  if (!apiKey) return { error: 'No API key configured. Go to Settings to add one.' };
+
+  const a = typeof window !== 'undefined' ? window.api : undefined;
+  if (!a) return { error: 'Desktop app required for AI chat' };
+
+  let currentMessages = [...messages];
+
+  try {
+    for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
+      // Build message array preserving full content structure for the API
+      const apiMessages = currentMessages.map(m => ({
+        role: m.role,
+        content: m.content,
+      }));
+
+      const result = await a.sendChat({
+        provider, apiKey, model,
+        messages: apiMessages,
+        tools: tools.length > 0 ? tools : undefined,
+      });
+
+      if (result.error) return { error: result.error };
+
+      // Parse response content (may include text + tool_use blocks)
+      const rawContent = result.content ?? [];
+      const assistantParts: ContentPart[] = rawContent.map(c => {
+        if (c.type === 'tool_use') {
+          return { type: 'tool_use', id: c.id ?? `toolu_${Date.now()}`, name: c.name ?? '', input: (c.input ?? {}) as Record<string, unknown> } as CPTool;
+        }
+        return { type: 'text' as const, text: c.text ?? '' } as CPText;
+      });
+
+      currentMessages = [...currentMessages, { role: 'assistant', content: assistantParts }];
+      onUpdate(currentMessages);
+
+      // Check if AI wants to call tools
+      const toolUses = assistantParts.filter((p): p is CPTool => p.type === 'tool_use');
+      if (toolUses.length === 0 || result.stop_reason !== 'tool_use') {
+        // No tool calls — done
+        return { messages: currentMessages };
+      }
+
+      // Execute each tool call and collect results
+      const toolResults: CPResult[] = [];
+      for (const tu of toolUses) {
+        try {
+          const execResult = await a.executeTool(tu.name, tu.input);
+          const resultText = execResult.success
+            ? (typeof execResult.result === 'string' ? execResult.result : JSON.stringify(execResult.result, null, 2))
+            : `Error: ${execResult.error ?? 'Tool execution failed'}`;
+
+          toolResults.push({
+            type: 'tool_result',
+            tool_use_id: tu.id,
+            content: resultText,
+            is_error: !execResult.success,
+          });
+        } catch (err) {
+          toolResults.push({
+            type: 'tool_result',
+            tool_use_id: tu.id,
+            content: `Error: ${err instanceof Error ? err.message : 'Unknown error'}`,
+            is_error: true,
+          });
+        }
+      }
+
+      // Add tool results as a user message and loop
+      currentMessages = [...currentMessages, { role: 'user', content: toolResults }];
+      onUpdate(currentMessages);
+    }
+
+    return { messages: currentMessages, error: 'Tool execution limit reached. The AI made too many consecutive tool calls.' };
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : 'Request failed' };
+  }
 }
 
 // ── Main component ────────────────────────────────────────────────────────────
@@ -188,21 +280,24 @@ export default function Chat({ settings, serverUrl, instances }: Props): React.R
   const inputRef  = useRef<HTMLTextAreaElement>(null);
   const slashRef  = useRef<HTMLDivElement>(null);
 
-  // Sync model when provider changes (pick first model of provider)
+  // Sync model when provider changes — also start a fresh chat
   useEffect(() => {
     const models = MODELS_BY_PROVIDER[provider];
     const firstModel = models[0].value;
     // If current model doesn't belong to this provider, switch to first
     if (!models.find(m => m.value === model)) setModel(firstModel);
+    // Clear conversation when switching providers so user starts fresh
+    setMessages([]);
+    setError('');
   }, [provider]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, loading]);
 
   // Load tool list for slash-command picker
   useEffect(() => {
-    const bridge = (window as unknown as { nowaikit?: { tools: () => Promise<{ tools: ToolDef[] }> } }).nowaikit;
-    if (!bridge) return;
-    bridge.tools().then(d => setAllTools(d.tools ?? [])).catch(() => {});
+    const a = typeof window !== 'undefined' ? window.api : undefined;
+    if (!a) return;
+    a.listTools().then(d => setAllTools(d ?? [])).catch(() => {});
   }, []);
 
   // Close slash popup on outside click
@@ -260,7 +355,7 @@ export default function Chat({ settings, serverUrl, instances }: Props): React.R
     setError('');
     setSlashOpen(false);
 
-    // Expand /toolname shortcuts → natural language request
+    // Expand /toolname shortcuts → hint for the AI
     const expandedText = userText.replace(/\/([\w_]+)/g, (_match, name) => {
       const found = allTools.find(t => t.name === name);
       return found ? `(use tool: ${name})` : _match;
@@ -270,20 +365,18 @@ export default function Chat({ settings, serverUrl, instances }: Props): React.R
     setMessages(newMessages);
     setLoading(true);
 
-    const bridge = (window as unknown as { nowaikit?: { sendChat: (p: Record<string, unknown>) => Promise<{ messages?: ChatMessage[]; error?: string }> } }).nowaikit;
-    if (!bridge) { setError('Desktop bridge unavailable'); setLoading(false); return; }
-
-    const result = await bridge.sendChat({
-      messages: newMessages,
-      apiKey: activeProvider?.apiKey ?? '',
-      model,
-      serverUrl,
-      provider,
-    });
-
-    setLoading(false);
-    if (result.error) { setError(result.error); return; }
-    if (result.messages) setMessages(result.messages);
+    try {
+      const result = await callProviderApi(
+        provider, activeProvider?.apiKey ?? '', model, newMessages, allTools,
+        (updatedMsgs) => setMessages(updatedMsgs), // live update as tools execute
+      );
+      setLoading(false);
+      if (result.error) { setError(result.error); return; }
+      if (result.messages) setMessages(result.messages);
+    } catch (err) {
+      setLoading(false);
+      setError(err instanceof Error ? err.message : 'Chat request failed');
+    }
   }
 
   function handleKey(e: React.KeyboardEvent<HTMLTextAreaElement>) {
@@ -311,7 +404,10 @@ export default function Chat({ settings, serverUrl, instances }: Props): React.R
       {/* Header */}
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16, gap:12, flexWrap:'wrap' }}>
         <div style={{ minWidth:0 }}>
-          <h2 className="page-title">AI Chat</h2>
+          <h2 className="page-title" style={{ display:'flex', alignItems:'center', gap:10 }}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+            AI Chat
+          </h2>
           {active && <div style={{ fontSize:'0.78rem', color:'var(--dim)', marginTop:2, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>Instance: {active.name} · {active.url}</div>}
         </div>
         <div style={{ display:'flex', alignItems:'center', gap:8, flexShrink:0, flexWrap:'wrap' }}>

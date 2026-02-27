@@ -58,9 +58,10 @@ interface ThemeCtx { mode: ThemeMode; accent: ThemeAccent; setMode: (m: ThemeMod
 export const ThemeContext = createContext<ThemeCtx>({ mode: 'dark', accent: 'blue', setMode: () => {}, setAccent: () => {} });
 export const useTheme = () => useContext(ThemeContext);
 
-// ── Bridge type ───────────────────────────────────────────────────────────────
-type Bridge = Record<string, (...a: unknown[]) => Promise<unknown>>;
-function nw() { return (window as unknown as { nowaikit?: Bridge }).nowaikit; }
+// ── Electron API helper ──────────────────────────────────────────────────────
+function api(): ElectronAPI | undefined {
+  return typeof window !== 'undefined' ? window.api : undefined;
+}
 
 // Apply theme to <html> and persist
 function applyTheme(mode: ThemeMode, accent: ThemeAccent) {
@@ -91,54 +92,54 @@ export default function App(): React.ReactElement {
   const [firstRun,    setFirstRun]    = useState(false);
 
   const checkHealth = useCallback(async () => {
-    const bridge = nw();
-    if (!bridge) return;
+    const a = api();
+    if (!a) return;
     try {
-      const h = await (bridge.health() as Promise<{ status: string }>);
-      setServerOnline(h?.status === 'ok');
+      const status = await a.getServerStatus();
+      setServerOnline(status?.running ?? false);
     } catch { setServerOnline(false); }
   }, []);
 
   const loadData = useCallback(async () => {
-    const bridge = nw();
-    if (!bridge) return;
+    const a = api();
+    if (!a) return;
     try {
-      const [cfgRes, ver, sets, urlRes] = await Promise.all([
-        bridge.listInstances() as Promise<{ data: { defaultInstance: string; instances: Record<string, Record<string, unknown>> } }>,
-        bridge.getAppVersion() as Promise<string>,
-        bridge.getSettings()   as Promise<Record<string, unknown>>,
-        bridge.getServerUrl()  as Promise<string>,
+      const [instanceList, versionInfo, allConfig] = await Promise.all([
+        a.listInstances(),
+        a.getVersion(),
+        a.getAllConfig(),
       ]);
-      setAppVersion(ver);
-      setServerUrl(urlRes ?? 'http://localhost:3100');
+      setAppVersion(versionInfo.app);
+      setServerUrl('http://localhost:3100');
 
-      // Migrate legacy settings format → new multi-provider format
-      const raw = sets as Record<string, unknown>;
+      // Settings: check if stored under 'settings' key or at top level
+      const raw = allConfig as Record<string, unknown>;
+      const settingsRaw = (raw['settings'] ?? raw) as Record<string, unknown>;
       let parsed: AppSettings = DEFAULT_SETTINGS;
-      if (raw['providers']) {
-        parsed = raw as unknown as AppSettings;
-      } else if (raw['anthropicApiKey']) {
-        // Legacy: { anthropicApiKey, model }
+      if (settingsRaw['providers']) {
+        parsed = settingsRaw as unknown as AppSettings;
+      } else if (settingsRaw['anthropicApiKey']) {
         parsed = {
           ...DEFAULT_SETTINGS,
           providers: {
             ...DEFAULT_SETTINGS.providers,
-            anthropic: { apiKey: raw['anthropicApiKey'] as string, authMethod: 'apiKey' },
+            anthropic: { apiKey: settingsRaw['anthropicApiKey'] as string, authMethod: 'apiKey' },
           },
-          model: (raw['model'] as string) || DEFAULT_SETTINGS.model,
+          model: (settingsRaw['model'] as string) || DEFAULT_SETTINGS.model,
         };
       }
       setSettings(parsed);
 
-      const def  = cfgRes.data?.defaultInstance ?? '';
-      const inst = Object.values(cfgRes.data?.instances ?? {}).map(i => ({
-        name: i['name'] as string, url: i['instanceUrl'] as string,
-        active: (i['name'] as string) === def,
-        group: (i['group'] as string) || 'Default',
-        environment: (i['environment'] as string) || '',
-        toolPackage: (i['toolPackage'] as string) || 'full',
-        writeEnabled: Boolean(i['writeEnabled']),
-        authMethod: ((i['authMethod'] as string) || 'basic') as 'basic' | 'oauth',
+      const activeInstanceName = (raw['activeInstance'] as string) ?? '';
+      const inst = instanceList.map((i: InstanceConfig) => ({
+        name: i.name,
+        url: i.instanceUrl,
+        active: i.name === activeInstanceName,
+        group: (i as Record<string, unknown>)['group'] as string || 'Default',
+        environment: (i as Record<string, unknown>)['environment'] as string || '',
+        toolPackage: i.toolPackage || 'full',
+        writeEnabled: Boolean(i.writeEnabled),
+        authMethod: (i.authMethod || 'basic') as 'basic' | 'oauth',
       }));
       setInstances(inst);
       if (inst.length === 0) setFirstRun(true);
@@ -147,8 +148,8 @@ export default function App(): React.ReactElement {
   }, [checkHealth]);
 
   useEffect(() => {
-    const bridge = nw();
-    if (!bridge) { setLoading(false); return; }
+    const a = api();
+    if (!a) { setLoading(false); return; }
     loadData().finally(() => setLoading(false));
 
     // Poll server health every 15 seconds so "offline" auto-recovers
@@ -167,7 +168,7 @@ export default function App(): React.ReactElement {
     <ThemeContext.Provider value={{ mode, accent, setMode, setAccent }}>
       <Setup
         onComplete={() => { setFirstRun(false); loadData(); }}
-        onClose={instances.length > 0 ? () => setFirstRun(false) : undefined}
+        onClose={() => setFirstRun(false)}
         existingGroups={[...new Set(instances.map(i => i.group).filter(Boolean))]}
       />
     </ThemeContext.Provider>
@@ -200,9 +201,15 @@ export default function App(): React.ReactElement {
           {page === 'instances' && (
             <Instances
               instances={instances}
-              onRemove={async name => { await nw()?.removeInstance(name); loadData(); }}
-              onSetDefault={async name => { await nw()?.setDefaultInstance(name); loadData(); }}
-              onTest={name => (nw()?.testInstance(name) as Promise<{ ok: boolean; message: string }>) ?? Promise.resolve({ ok: false, message: 'Bridge unavailable' })}
+              onRemove={async name => { await api()?.removeInstance(name); loadData(); }}
+              onSetDefault={async name => { await api()?.setConfig('activeInstance', name); loadData(); }}
+              onTest={async name => {
+                const inst = instances.find(i => i.name === name);
+                const a = api();
+                if (!inst || !a) return { ok: false, message: 'Not available' };
+                const r = await a.testInstance({ name: inst.name, instanceUrl: inst.url, authMethod: inst.authMethod } as InstanceConfig);
+                return { ok: r.success, message: r.success ? 'Connection successful' : (r.error ?? 'Failed') };
+              }}
               onAddInstance={() => setFirstRun(true)}
             />
           )}
@@ -214,7 +221,7 @@ export default function App(): React.ReactElement {
               onNavigate={setPage}
               onSave={async updated => {
                 setSettings(updated);
-                await nw()?.setSettings(updated as unknown as Record<string, unknown>);
+                await api()?.setConfig('settings', updated as unknown);
               }}
             />
           )}

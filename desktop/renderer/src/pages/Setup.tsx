@@ -30,7 +30,7 @@ interface FormState {
 }
 
 const PACKAGES = [
-  { value: 'full', label: 'Full — all 284+ tools' },
+  { value: 'full', label: 'Full — all 400+ tools' },
   { value: 'service_desk', label: 'Service Desk' },
   { value: 'change_coordinator', label: 'Change Coordinator' },
   { value: 'platform_developer', label: 'Platform Developer' },
@@ -192,7 +192,19 @@ export default function Setup({ onComplete, onClose, existingGroups = [] }: Prop
           <>
             <h2 style={styles.title}>ServiceNow Instance</h2>
             <label style={styles.label}>Instance URL</label>
-            <input style={styles.input} value={form.instanceUrl} onChange={e => update('instanceUrl', e.target.value)} placeholder="https://yourcompany.service-now.com" />
+            <div style={{ display:'flex', alignItems:'center', marginBottom:16 }}>
+              <span style={{ background:'var(--surface2)', border:'1px solid var(--border)', borderRight:'none', borderRadius:'6px 0 0 6px', padding:'10px 10px', fontSize:'0.9rem', color:'var(--dim)', whiteSpace:'nowrap' }}>https://</span>
+              <input
+                style={{ ...styles.input, marginBottom:0, borderRadius:0, flex:1 }}
+                value={form.instanceUrl.replace(/^https?:\/\//, '').replace(/\.service-now\.com$/, '')}
+                onChange={e => {
+                  const company = e.target.value.replace(/[^a-zA-Z0-9-]/g, '');
+                  update('instanceUrl', `https://${company}.service-now.com`);
+                }}
+                placeholder="yourcompany"
+              />
+              <span style={{ background:'var(--surface2)', border:'1px solid var(--border)', borderLeft:'none', borderRadius:'0 6px 6px 0', padding:'10px 10px', fontSize:'0.9rem', color:'var(--dim)', whiteSpace:'nowrap' }}>.service-now.com</span>
+            </div>
             <label style={styles.label}>Short name (e.g. prod, dev)</label>
             <input style={styles.input} value={form.instanceName} onChange={e => update('instanceName', e.target.value)} placeholder="default" />
 

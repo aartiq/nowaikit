@@ -30,6 +30,10 @@ interface ServerStatus {
 interface ToolDef {
   name: string;
   description: string;
+  inputSchema?: {
+    properties?: Record<string, { type: string; description?: string; enum?: string[] }>;
+    required?: string[];
+  };
 }
 
 interface AuditEntry {
@@ -61,6 +65,13 @@ interface ElectronAPI {
   openExternal: (url: string) => Promise<void>;
   selectDirectory: () => Promise<string | null>;
   getServerPath: () => Promise<string>;
+  sendChat: (params: {
+    provider: string;
+    apiKey: string;
+    model: string;
+    messages: Array<{ role: string; content: unknown }>;
+    tools?: Array<{ name: string; description: string; inputSchema?: Record<string, unknown> }>;
+  }) => Promise<{ content?: Array<{ type: string; text?: string; id?: string; name?: string; input?: Record<string, unknown> }>; stop_reason?: string; error?: string }>;
 }
 
 declare global {

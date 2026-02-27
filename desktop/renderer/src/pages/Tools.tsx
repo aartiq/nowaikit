@@ -46,8 +46,8 @@ function RunDrawer({ tool, onClose }: { tool: ToolDef; serverUrl: string; onClos
 
   async function run() {
     setRunning(true); setResult(''); setError('');
-    const bridge = (window as unknown as { nowaikit?: { callTool: (t: string, p: Record<string, unknown>) => Promise<unknown> } }).nowaikit;
-    if (!bridge) { setError('Bridge unavailable'); setRunning(false); return; }
+    const a = typeof window !== 'undefined' ? window.api : undefined;
+    if (!a) { setError('Desktop app required'); setRunning(false); return; }
     try {
       const coerced: Record<string, unknown> = {};
       for (const [k, v] of Object.entries(params)) {
@@ -57,8 +57,9 @@ function RunDrawer({ tool, onClose }: { tool: ToolDef; serverUrl: string; onClos
         else if (t === 'boolean') coerced[k] = v === 'true';
         else coerced[k] = v;
       }
-      const res = await bridge.callTool(tool.name, coerced);
-      setResult(typeof res === 'string' ? res : JSON.stringify(res, null, 2));
+      const res = await a.executeTool(tool.name, coerced);
+      if (!res.success) { setError(res.error ?? 'Tool execution failed'); }
+      else { setResult(typeof res.result === 'string' ? res.result : JSON.stringify(res.result, null, 2)); }
     } catch (err) { setError(err instanceof Error ? err.message : 'Error'); }
     setRunning(false);
   }
@@ -112,9 +113,9 @@ export default function Tools({ activeToolPackage, serverOnline, serverUrl, onRe
   const [restarting, setRestarting] = useState(false);
 
   useEffect(() => {
-    const bridge = (window as unknown as { nowaikit?: { tools: () => Promise<{ tools: ToolDef[] }> } }).nowaikit;
-    if (!bridge) { setLoading(false); return; }
-    bridge.tools().then(d => setTools(d.tools ?? [])).catch(() => {}).finally(() => setLoading(false));
+    const a = typeof window !== 'undefined' ? window.api : undefined;
+    if (!a) { setLoading(false); return; }
+    a.listTools().then(d => setTools(d ?? [])).catch(() => {}).finally(() => setLoading(false));
   }, []);
 
   const filtered = tools.filter(t => {
@@ -127,7 +128,10 @@ export default function Tools({ activeToolPackage, serverOnline, serverUrl, onRe
     <div style={{ display:'flex', flexDirection:'column', height:'calc(100vh - 56px)' }}>
       <div className="page-header" style={{ marginBottom:16 }}>
         <div>
-          <h2 className="page-title">Tools</h2>
+          <h2 className="page-title" style={{ display:'flex', alignItems:'center', gap:10 }}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>
+            Tools
+          </h2>
           {!loading && <div style={{ fontSize:'0.78rem', color:'var(--dim)', marginTop:2 }}>{filtered.length} of {tools.length} tools · {activeToolPackage.replace(/_/g,' ')} package</div>}
         </div>
         <input className="input" placeholder="Search tools…" value={search} onChange={e => setSearch(e.target.value)} style={{ width:220 }} />
@@ -158,10 +162,10 @@ export default function Tools({ activeToolPackage, serverOnline, serverUrl, onRe
           <button
             disabled={restarting}
             onClick={async () => {
-              const bridge = (window as unknown as { nowaikit?: { restartServer: () => Promise<{ ok: boolean }> } }).nowaikit;
-              if (!bridge) return;
+              const a = typeof window !== 'undefined' ? window.api : undefined;
+              if (!a) return;
               setRestarting(true);
-              await bridge.restartServer();
+              await a.startServer();
               setRestarting(false);
               onRestart?.();
             }}

@@ -160,20 +160,16 @@ const ACCENTS: { id: ThemeAccent; color: string; label: string }[] = [
   { id: 'rose',    color: '#ef4444', label: 'Rose'    },
 ];
 
-type Bridge = {
-  openProviderSignIn?: (p: string) => Promise<{ ok: boolean }>;
-  testProviderKey?: (p: string, k: string) => Promise<{ ok: boolean; error?: string }>;
-  openUrl?: (u: string) => void;
-};
-function bridge(): Bridge {
-  return (window as unknown as { nowaikit?: Bridge }).nowaikit ?? {};
+function elApi(): ElectronAPI | undefined {
+  return typeof window !== 'undefined' ? window.api : undefined;
 }
 
 export default function Settings({ settings, onSave, activeInstance, onNavigate }: Props): React.ReactElement {
   const { mode, accent, setMode, setAccent } = useTheme();
 
   const [draft,      setDraft]      = useState<AppSettings>(settings);
-  const [tab,        setTab]        = useState<AiProviderId>('anthropic');
+  const [tab,        setTab]        = useState<AiProviderId>('' as AiProviderId);
+  const [snOpen,     setSnOpen]     = useState(false);
   const [showKey,    setShowKey]    = useState(false);
   const [saved,      setSaved]      = useState(false);
   const [busy,       setBusy]       = useState(false);
@@ -206,16 +202,14 @@ export default function Settings({ settings, onSave, activeInstance, onNavigate 
     setSignInMode('steps');
     setSigningIn(true);
     try {
-      const b = bridge();
-      if (b.openProviderSignIn) {
-        // Opens provider portal in the system browser
-        await b.openProviderSignIn(tab);
+      const a = elApi();
+      if (a) {
+        await a.openExternal(currentProvider.portalUrl);
       } else {
-        b.openUrl?.(currentProvider.portalUrl);
+        window.open(currentProvider.portalUrl, '_blank');
       }
     } finally {
       setSigningIn(false);
-      // Show paste-key step while user copies key from browser
       setSignInMode('paste');
     }
   }
@@ -226,15 +220,22 @@ export default function Settings({ settings, onSave, activeInstance, onNavigate 
     setTesting(true);
     setTestResult(null);
     try {
-      const b = bridge();
-      if (b.testProviderKey) {
-        const r = await b.testProviderKey(tab, key);
-        setTestResult(r.ok ? { ok: true, msg: 'Key verified ✓' } : { ok: false, msg: r.error ?? 'Invalid key' });
+      // Quick validation: check key prefix matches provider
+      const prefixes: Record<string, string[]> = {
+        anthropic: ['sk-ant-'],
+        openai: ['sk-'],
+        google: ['AIza'],
+        groq: ['gsk_'],
+        openrouter: ['sk-or-'],
+      };
+      const expected = prefixes[tab] ?? [];
+      if (expected.length > 0 && !expected.some(p => key.startsWith(p))) {
+        setTestResult({ ok: false, msg: `Key doesn't match expected format for ${tab}` });
       } else {
-        setTestResult({ ok: true, msg: 'Test not available in web mode' });
+        setTestResult({ ok: true, msg: 'Key format looks valid — save to use it' });
       }
     } catch {
-      setTestResult({ ok: false, msg: 'Connection error' });
+      setTestResult({ ok: false, msg: 'Validation error' });
     } finally {
       setTesting(false);
     }
@@ -262,48 +263,62 @@ export default function Settings({ settings, onSave, activeInstance, onNavigate 
   return (
     <div style={{ maxWidth: 680 }}>
       <div className="page-header">
-        <h2 className="page-title">Settings</h2>
+        <h2 className="page-title" style={{ display:'flex', alignItems:'center', gap:10 }}>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+          Settings
+        </h2>
         <button className="btn-primary" onClick={save} disabled={busy} style={{ opacity: busy ? 0.6 : 1 }}>
           {saved ? '✓ Saved' : busy ? 'Saving…' : 'Save Changes'}
         </button>
       </div>
 
-      {/* ── ServiceNow Connection ─────────────────────────────────────────── */}
-      {section('ServiceNow Connection', <>
-        {activeInstance ? (
-          <>
-            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'8px 24px', marginBottom:16 }}>
-              {[
-                ['Instance',    activeInstance.name],
-                ['URL',         activeInstance.url],
-                ['Auth Method', activeInstance.authMethod],
-                ['Tool Package',activeInstance.toolPackage.replace(/_/g,' ')],
-                ['Write Access',activeInstance.writeEnabled ? 'Enabled' : 'Read-only'],
-              ].map(([label, value]) => (
-                <div key={label} style={{ padding:'8px 0', borderBottom:'1px solid var(--border)' }}>
-                  <div style={{ fontSize:'0.72rem', color:'var(--dim)', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:3 }}>{label}</div>
-                  <div style={{ fontSize:'0.88rem', fontWeight:500, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{value}</div>
+      {/* ── ServiceNow Connection (collapsible) ─────────────────────────── */}
+      <div style={{ marginBottom: 28 }}>
+        <button onClick={() => setSnOpen(o => !o)} style={{
+          display:'flex', alignItems:'center', gap:8, width:'100%', background:'transparent', border:'none', cursor:'pointer', padding:0, marginBottom:12,
+        }}>
+          <div style={{ fontSize:'0.7rem', fontWeight:700, color:'var(--dim)', textTransform:'uppercase', letterSpacing:'0.08em' }}>ServiceNow Connection</div>
+          <span style={{ fontSize:'0.68rem', color:'var(--dim)', marginLeft:'auto' }}>{activeInstance ? activeInstance.name : 'Not configured'}</span>
+          <span style={{ fontSize:'0.7rem', color:'var(--dim)', transition:'transform .2s', transform: snOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}>▼</span>
+        </button>
+        {snOpen && (
+          <div className="card" style={{ padding:'20px 24px' }}>
+            {activeInstance ? (
+              <>
+                <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'8px 24px', marginBottom:16 }}>
+                  {[
+                    ['Instance',    activeInstance.name],
+                    ['URL',         activeInstance.url],
+                    ['Auth Method', activeInstance.authMethod],
+                    ['Tool Package',activeInstance.toolPackage.replace(/_/g,' ')],
+                    ['Write Access',activeInstance.writeEnabled ? 'Enabled' : 'Read-only'],
+                  ].map(([label, value]) => (
+                    <div key={label} style={{ padding:'8px 0', borderBottom:'1px solid var(--border)' }}>
+                      <div style={{ fontSize:'0.72rem', color:'var(--dim)', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:3 }}>{label}</div>
+                      <div style={{ fontSize:'0.88rem', fontWeight:500, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{value}</div>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-            <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
-              <button className="btn-primary" onClick={() => onNavigate?.('instances')} style={{ fontSize:'0.82rem', padding:'7px 14px' }}>
-                ⬡ Manage Instances
-              </button>
-              <button className="btn-ghost" onClick={() => onNavigate?.('instances')} style={{ fontSize:'0.82rem', padding:'7px 14px' }}>
-                + Add Instance
-              </button>
-            </div>
-          </>
-        ) : (
-          <div style={{ textAlign:'center', padding:'20px 0', color:'var(--dim)' }}>
-            <div style={{ fontSize:'0.88rem', marginBottom:12 }}>No ServiceNow instance configured yet.</div>
-            <button className="btn-primary" onClick={() => onNavigate?.('instances')} style={{ fontSize:'0.85rem' }}>
-              Configure ServiceNow Instance →
-            </button>
+                <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
+                  <button className="btn-primary" onClick={() => onNavigate?.('instances')} style={{ fontSize:'0.82rem', padding:'7px 14px' }}>
+                    Manage Instances
+                  </button>
+                  <button className="btn-ghost" onClick={() => onNavigate?.('instances')} style={{ fontSize:'0.82rem', padding:'7px 14px' }}>
+                    + Add Instance
+                  </button>
+                </div>
+              </>
+            ) : (
+              <div style={{ textAlign:'center', padding:'20px 0', color:'var(--dim)' }}>
+                <div style={{ fontSize:'0.88rem', marginBottom:12 }}>No ServiceNow instance configured yet.</div>
+                <button className="btn-primary" onClick={() => onNavigate?.('instances')} style={{ fontSize:'0.85rem' }}>
+                  Configure ServiceNow Instance
+                </button>
+              </div>
+            )}
           </div>
         )}
-      </>)}
+      </div>
 
       {/* ── AI Providers ─────────────────────────────────────────────────── */}
       <div style={{ marginBottom: 28 }}>
@@ -579,14 +594,14 @@ export default function Settings({ settings, onSave, activeInstance, onNavigate 
             <div>
               <span style={{ color:'var(--dim)', fontSize:'0.78rem', marginRight:8 }}>Email</span>
               <button
-                onClick={() => bridge().openUrl?.('mailto:support@nowaikit.com')}
+                onClick={() => elApi()?.openExternal('mailto:support@nowaikit.com')}
                 style={{ background:'none', border:'none', color:'var(--accent)', cursor:'pointer', padding:0, fontSize:'0.85rem' }}
               >support@nowaikit.com</button>
             </div>
             <div>
               <span style={{ color:'var(--dim)', fontSize:'0.78rem', marginRight:8 }}>Issues</span>
               <button
-                onClick={() => bridge().openUrl?.('https://github.com/aartiq/nowaikit/issues')}
+                onClick={() => elApi()?.openExternal('https://github.com/aartiq/nowaikit/issues')}
                 style={{ background:'none', border:'none', color:'var(--accent)', cursor:'pointer', padding:0, fontSize:'0.85rem' }}
               >GitHub Issues</button>
             </div>
@@ -597,28 +612,28 @@ export default function Settings({ settings, onSave, activeInstance, onNavigate 
       {/* ── About ────────────────────────────────────────────────────────────── */}
       {section('About', <>
         <div style={{ fontSize:'0.85rem', color:'var(--text2)', lineHeight:1.7 }}>
-          <div><strong>nowaikit</strong> — Open-source ServiceNow MCP toolkit</div>
+          <div><strong>nowaikit</strong> — Your AI companion for ServiceNow</div>
           <div>Config: <code style={{ fontSize:'0.8rem' }}>~/.config/nowaikit/</code></div>
           <div style={{ marginTop:8 }}>
             <button
-              onClick={() => bridge().openUrl?.('https://github.com/aartiq/nowaikit')}
+              onClick={() => elApi()?.openExternal('https://github.com/aartiq/nowaikit')}
               style={{ background:'none', border:'none', color:'var(--accent)', cursor:'pointer', padding:0, fontSize:'0.85rem' }}
             >GitHub</button>
             {' · '}
             <button
-              onClick={() => bridge().openUrl?.('https://nowaitkit.com')}
+              onClick={() => elApi()?.openExternal('https://nowaitkit.com')}
               style={{ background:'none', border:'none', color:'var(--accent)', cursor:'pointer', padding:0, fontSize:'0.85rem' }}
             >Website</button>
           </div>
           <div style={{ marginTop:12, fontSize:'0.72rem', color:'var(--dim)', lineHeight:1.6 }}>
             This software is provided "as is" under the{' '}
             <button
-              onClick={() => bridge().openUrl?.('https://github.com/aartiq/nowaikit/blob/main/LICENSE')}
+              onClick={() => elApi()?.openExternal('https://github.com/aartiq/nowaikit/blob/main/LICENSE')}
               style={{ background:'none', border:'none', color:'var(--dim)', cursor:'pointer', padding:0, fontSize:'0.72rem', textDecoration:'underline' }}
             >MIT License</button>
             , without warranty of any kind. Use at your own risk.{' '}
             <button
-              onClick={() => bridge().openUrl?.('https://github.com/aartiq/nowaikit/blob/main/TERMS.md')}
+              onClick={() => elApi()?.openExternal('https://github.com/aartiq/nowaikit/blob/main/TERMS.md')}
               style={{ background:'none', border:'none', color:'var(--dim)', cursor:'pointer', padding:0, fontSize:'0.72rem', textDecoration:'underline' }}
             >Terms &amp; Conditions</button>
           </div>
