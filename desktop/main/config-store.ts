@@ -53,34 +53,64 @@ export class ConfigStore {
   /**
    * Initialize the encryption key.
    * Uses Electron's safeStorage API to store a master key in the OS keychain.
-   * Falls back to a machine-derived key if safeStorage is unavailable.
+   * Falls back to a randomly generated key file with restrictive permissions.
    */
   private initEncryptionKey(): void {
+    const keyDir = join(this.configPath, '..');
+
     try {
       if (safeStorage.isEncryptionAvailable()) {
-        // Use safeStorage to encrypt/decrypt a stable seed
-        const keyPath = join(this.configPath, '..', '.keyring');
+        // Use safeStorage to encrypt/decrypt a stable seed in OS keychain
+        const keyPath = join(keyDir, '.keyring');
+        // Per-installation salt (generated once, stored alongside keyring)
+        const saltPath = join(keyDir, '.salt');
         let seed: Buffer;
+        let salt: Buffer;
+
+        // Load or generate salt
+        if (existsSync(saltPath)) {
+          salt = readFileSync(saltPath);
+        } else {
+          salt = randomBytes(16);
+          writeFileSync(saltPath, salt, { mode: 0o600 });
+        }
 
         if (existsSync(keyPath)) {
           const encrypted = readFileSync(keyPath);
-          seed = safeStorage.decryptString(encrypted) ? Buffer.from(safeStorage.decryptString(encrypted), 'hex') : randomBytes(32);
+          const decrypted = safeStorage.decryptString(encrypted);
+          seed = decrypted ? Buffer.from(decrypted, 'hex') : randomBytes(32);
         } else {
           seed = randomBytes(32);
           const encrypted = safeStorage.encryptString(seed.toString('hex'));
-          writeFileSync(keyPath, encrypted);
+          writeFileSync(keyPath, encrypted, { mode: 0o600 });
         }
 
-        this.encKey = scryptSync(seed, 'nowaikit-salt', 32);
+        this.encKey = scryptSync(seed, salt, 32);
       }
     } catch {
       // safeStorage not available (e.g., in tests or very early init)
     }
 
-    // Fallback: derive key from machine identifiers
+    // Fallback: use a randomly generated key file (not deterministic from env)
     if (!this.encKey) {
-      const fallbackSeed = `nowaikit-${process.env.USER || 'default'}-${process.arch}-${process.platform}`;
-      this.encKey = scryptSync(fallbackSeed, 'nowaikit-fallback-salt', 32);
+      const fallbackKeyPath = join(keyDir, '.enc_key');
+      try {
+        if (existsSync(fallbackKeyPath)) {
+          this.encKey = readFileSync(fallbackKeyPath);
+          if (this.encKey.length !== 32) {
+            this.encKey = randomBytes(32);
+            writeFileSync(fallbackKeyPath, this.encKey, { mode: 0o600 });
+          }
+        } else {
+          this.encKey = randomBytes(32);
+          writeFileSync(fallbackKeyPath, this.encKey, { mode: 0o600 });
+        }
+      } catch {
+        // Last resort: derive from machine identifiers (better than nothing)
+        const fallbackSeed = `nowaikit-${process.env.USER || 'default'}-${process.pid}-${Date.now()}`;
+        this.encKey = scryptSync(fallbackSeed, randomBytes(16), 32);
+        console.warn('[NowAIKit] WARNING: Using ephemeral encryption key. Credentials will not persist across restarts.');
+      }
     }
   }
 
@@ -93,8 +123,9 @@ export class ConfigStore {
       encrypted += cipher.final('hex');
       const tag = cipher.getAuthTag().toString('hex');
       return `${ENC_PREFIX}${iv.toString('hex')}:${tag}:${encrypted}`;
-    } catch {
-      return plaintext; // fallback to plaintext on error
+    } catch (err) {
+      console.warn('[NowAIKit] WARNING: Encryption failed, storing value in plaintext:', err instanceof Error ? err.message : 'unknown error');
+      return plaintext;
     }
   }
 
@@ -103,6 +134,10 @@ export class ConfigStore {
     try {
       const data = value.slice(ENC_PREFIX.length);
       const [ivHex, tagHex, encrypted] = data.split(':');
+      if (!ivHex || !tagHex || !encrypted) {
+        console.warn('[NowAIKit] WARNING: Malformed encrypted value, returning as-is');
+        return value;
+      }
       const iv = Buffer.from(ivHex, 'hex');
       const tag = Buffer.from(tagHex, 'hex');
       const decipher = createDecipheriv(ALGORITHM, this.encKey, iv);
@@ -110,8 +145,9 @@ export class ConfigStore {
       let decrypted = decipher.update(encrypted, 'hex', 'utf8');
       decrypted += decipher.final('utf8');
       return decrypted;
-    } catch {
-      return value; // return as-is if decryption fails (maybe old plaintext value)
+    } catch (err) {
+      console.warn('[NowAIKit] WARNING: Decryption failed (key may have changed or value is plaintext):', err instanceof Error ? err.message : 'unknown error');
+      return value;
     }
   }
 
@@ -255,11 +291,42 @@ export class ConfigStore {
 
   // ── Audit Log ──
 
+  private static readonly MAX_AUDIT_SIZE = 5 * 1024 * 1024; // 5MB
+
   appendAuditLog(entry: Record<string, unknown>): void {
     try {
+      // Sanitize error messages before writing to audit log
+      if (typeof entry.error === 'string') {
+        entry.error = entry.error
+          .replace(/sk-ant-[a-zA-Z0-9_-]+/g, 'sk-ant-***')
+          .replace(/sk-[a-zA-Z0-9_-]{20,}/g, 'sk-***')
+          .replace(/AIza[a-zA-Z0-9_-]+/g, 'AIza***')
+          .replace(/gsk_[a-zA-Z0-9_-]+/g, 'gsk_***')
+          .replace(/sk-or-[a-zA-Z0-9_-]+/g, 'sk-or-***')
+          .replace(/key=[^&\s]+/g, 'key=***');
+      }
       appendFileSync(this.auditPath, JSON.stringify(entry) + '\n', 'utf8');
+
+      // Rotate log if it exceeds max size
+      this.rotateAuditLogIfNeeded();
     } catch {
       // Ignore write errors
+    }
+  }
+
+  private rotateAuditLogIfNeeded(): void {
+    try {
+      const { statSync } = require('fs');
+      const stats = statSync(this.auditPath);
+      if (stats.size > ConfigStore.MAX_AUDIT_SIZE) {
+        // Keep the most recent half of the file
+        const content = readFileSync(this.auditPath, 'utf8');
+        const lines = content.trim().split('\n');
+        const keepFrom = Math.floor(lines.length / 2);
+        writeFileSync(this.auditPath, lines.slice(keepFrom).join('\n') + '\n', 'utf8');
+      }
+    } catch {
+      // Ignore rotation errors
     }
   }
 

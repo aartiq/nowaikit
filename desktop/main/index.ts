@@ -9,6 +9,44 @@ let mainWindow: BrowserWindow | null = null;
 const serverManager = new ServerManager();
 const configStore = new ConfigStore();
 
+// ─── Security helpers ────────────────────────────────────────────────────────
+
+/** Validate URL protocol for shell.openExternal */
+function isSafeExternalUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    return ['https:', 'http:', 'mailto:'].includes(parsed.protocol);
+  } catch {
+    return false;
+  }
+}
+
+/** Strip potential API key patterns from error messages */
+function sanitizeError(msg: string): string {
+  return msg
+    .replace(/sk-ant-[a-zA-Z0-9_-]+/g, 'sk-ant-***')
+    .replace(/sk-[a-zA-Z0-9_-]{20,}/g, 'sk-***')
+    .replace(/AIza[a-zA-Z0-9_-]+/g, 'AIza***')
+    .replace(/gsk_[a-zA-Z0-9_-]+/g, 'gsk_***')
+    .replace(/sk-or-[a-zA-Z0-9_-]+/g, 'sk-or-***')
+    .replace(/key=[^&\s]+/g, 'key=***');
+}
+
+/** Allowlist of config keys the renderer is permitted to set */
+const CONFIG_SET_ALLOWLIST = new Set([
+  'theme', 'telemetry', 'autoUpdate', 'windowBounds', 'settings', 'activeInstance',
+]);
+
+/** Validate ServiceNow instance URL */
+function isValidInstanceUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1200,
@@ -39,7 +77,9 @@ function createWindow() {
   }
 
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    shell.openExternal(url);
+    if (isSafeExternalUrl(url)) {
+      shell.openExternal(url);
+    }
     return { action: 'deny' };
   });
 
@@ -73,6 +113,9 @@ function registerIpcHandlers() {
   });
 
   ipcMain.handle('config:set', (_event, key: string, value: unknown) => {
+    if (!CONFIG_SET_ALLOWLIST.has(key)) {
+      return { success: false, error: `Config key "${key}" is not settable` };
+    }
     configStore.set(key, value);
   });
 
@@ -86,6 +129,10 @@ function registerIpcHandlers() {
   });
 
   ipcMain.handle('instances:add', (_event, instance: InstanceConfig) => {
+    // Validate instance URL requires HTTPS
+    if (instance.instanceUrl && !isValidInstanceUrl(instance.instanceUrl)) {
+      return { success: false, error: 'Instance URL must use HTTPS' };
+    }
     return configStore.addInstance(instance);
   });
 
@@ -178,6 +225,9 @@ function registerIpcHandlers() {
   });
 
   ipcMain.handle('system:openExternal', (_event, url: string) => {
+    if (!isSafeExternalUrl(url)) {
+      return { success: false, error: 'Only https, http, and mailto URLs are allowed' };
+    }
     shell.openExternal(url);
   });
 
@@ -281,7 +331,7 @@ Set the limit parameter to match what user asks for (e.g. "5 most recent" → li
           body: JSON.stringify(body),
         });
         if (!res.ok) {
-          const errText = `API error ${res.status}: ${await res.text()}`;
+          const errText = sanitizeError(`API error ${res.status}: ${await res.text()}`);
           configStore.appendAuditLog({ ts: new Date().toISOString(), event: 'chat:send', provider, model, toolCount, success: false, durationMs: Date.now() - chatStart, error: errText });
           return { error: errText };
         }
@@ -321,7 +371,7 @@ Set the limit parameter to match what user asks for (e.g. "5 most recent" → li
 
         const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
         if (!res.ok) {
-          const errText = `Google AI error ${res.status}: ${await res.text()}`;
+          const errText = sanitizeError(`Google AI error ${res.status}: ${await res.text()}`);
           configStore.appendAuditLog({ ts: new Date().toISOString(), event: 'chat:send', provider, model, toolCount, success: false, durationMs: Date.now() - chatStart, error: errText });
           return { error: errText };
         }
@@ -391,7 +441,7 @@ Set the limit parameter to match what user asks for (e.g. "5 most recent" → li
           body: JSON.stringify(body),
         });
         if (!res.ok) {
-          const errText = `API error ${res.status}: ${await res.text()}`;
+          const errText = sanitizeError(`API error ${res.status}: ${await res.text()}`);
           configStore.appendAuditLog({ ts: new Date().toISOString(), event: 'chat:send', provider, model, toolCount, success: false, durationMs: Date.now() - chatStart, error: errText });
           return { error: errText };
         }
@@ -414,7 +464,7 @@ Set the limit parameter to match what user asks for (e.g. "5 most recent" → li
         return { content, stop_reason: hasToolUse ? 'tool_use' : 'end_turn' };
       }
     } catch (err) {
-      const errMsg = err instanceof Error ? err.message : 'Request failed';
+      const errMsg = sanitizeError(err instanceof Error ? err.message : 'Request failed');
       configStore.appendAuditLog({
         ts: new Date().toISOString(),
         event: 'chat:send',

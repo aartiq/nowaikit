@@ -10,6 +10,38 @@ import type {
 import { ServiceNowError } from '../utils/errors.js';
 import { logger } from '../utils/logging.js';
 
+// ─── Input validation helpers ────────────────────────────────────────────────
+
+/** Validate and sanitize ServiceNow table names (alphanumeric + underscores only) */
+function validateTableName(table: string): string {
+  if (!table || !/^[a-zA-Z][a-zA-Z0-9_]*$/.test(table)) {
+    throw new ServiceNowError(`Invalid table name: "${table}". Must contain only letters, numbers, and underscores.`, 'VALIDATION_ERROR');
+  }
+  return table;
+}
+
+/** Validate ServiceNow sys_id format (32-char hex string) */
+function validateSysId(sysId: string): string {
+  if (!sysId || !/^[0-9a-f]{32}$/i.test(sysId)) {
+    throw new ServiceNowError(`Invalid sys_id: "${sysId}". Must be a 32-character hex string.`, 'VALIDATION_ERROR');
+  }
+  return sysId;
+}
+
+/** Validate and sanitize ServiceNow encoded query strings */
+function validateQuery(query: string): string {
+  if (!query) return query;
+  // Reject embedded JavaScript (ServiceNow evaluates javascript: prefixed values server-side)
+  if (/javascript:/i.test(query) && !query.includes('gs.getUserID()')) {
+    throw new ServiceNowError('Query contains unsafe JavaScript expression. Only gs.getUserID() is allowed.', 'VALIDATION_ERROR');
+  }
+  // Enforce max query length
+  if (query.length > 4096) {
+    throw new ServiceNowError('Query string exceeds maximum length of 4096 characters.', 'VALIDATION_ERROR');
+  }
+  return query;
+}
+
 export class ServiceNowClient {
   private baseUrl: string;
   private authMethod: 'oauth' | 'basic';
@@ -267,6 +299,10 @@ export class ServiceNowClient {
    * Query records from a ServiceNow table
    */
   async queryRecords(params: QueryRecordsParams): Promise<QueryRecordsResponse> {
+    // Validate inputs
+    validateTableName(params.table);
+    if (params.query) validateQuery(params.query);
+
     // Authenticate before making API calls
     await this.authenticate();
 
@@ -379,6 +415,8 @@ export class ServiceNowClient {
    * Get a single record by sys_id
    */
   async getRecord(table: string, sysId: string, fields?: string): Promise<ServiceNowRecord> {
+    validateTableName(table);
+    validateSysId(sysId);
     await this.authenticate();
 
     const queryParams = new URLSearchParams();
@@ -751,6 +789,7 @@ export class ServiceNowClient {
    * Create a record in any ServiceNow table
    */
   async createRecord(table: string, data: Record<string, any>): Promise<ServiceNowRecord> {
+    validateTableName(table);
     await this.authenticate();
     logger.info(`Creating record in ${table}`);
     const url = `${this.baseUrl}/api/now/table/${table}`;
@@ -773,6 +812,8 @@ export class ServiceNowClient {
    * Update a record in any ServiceNow table
    */
   async updateRecord(table: string, sysId: string, data: Record<string, any>): Promise<ServiceNowRecord> {
+    validateTableName(table);
+    validateSysId(sysId);
     await this.authenticate();
     logger.info(`Updating record ${sysId} in ${table}`);
     const url = `${this.baseUrl}/api/now/table/${table}/${sysId}`;
@@ -795,6 +836,8 @@ export class ServiceNowClient {
    * Delete a record from any ServiceNow table
    */
   async deleteRecord(table: string, sysId: string): Promise<void> {
+    validateTableName(table);
+    validateSysId(sysId);
     await this.authenticate();
     logger.info(`Deleting record ${sysId} from ${table}`);
     const url = `${this.baseUrl}/api/now/table/${table}/${sysId}`;

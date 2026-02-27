@@ -253,6 +253,16 @@ const webApi: ElectronAPI = {
     // These are handled by: Vite dev server (dev), serve.js (preview/production), or reverse proxy (nginx etc.)
     // Google Gemini also supports direct CORS calls as fallback.
 
+    // Sanitize error messages to prevent credential leakage
+    const sanitizeError = (msg: string): string =>
+      msg
+        .replace(/sk-ant-[a-zA-Z0-9_-]+/g, 'sk-ant-***')
+        .replace(/sk-[a-zA-Z0-9_-]{20,}/g, 'sk-***')
+        .replace(/AIza[a-zA-Z0-9_-]+/g, 'AIza***')
+        .replace(/gsk_[a-zA-Z0-9_-]+/g, 'gsk_***')
+        .replace(/sk-or-[a-zA-Z0-9_-]+/g, 'sk-or-***')
+        .replace(/key=[^&\s]+/g, 'key=***');
+
     try {
       if (provider === 'anthropic') {
         const anthropicTools = toolDefs?.map(t => ({
@@ -265,10 +275,10 @@ const webApi: ElectronAPI = {
 
         const res = await fetch('/api/ai/anthropic/v1/messages', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
+          headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'X-NowAIKit-Proxy': '1' },
           body: JSON.stringify(body),
         });
-        if (!res.ok) return { error: `API error ${res.status}: ${await res.text()}` };
+        if (!res.ok) return { error: sanitizeError(`API error ${res.status}: ${await res.text()}`) };
         const data = await res.json() as Record<string, unknown>;
         return { content: data.content as Array<{ type: string; text?: string; id?: string; name?: string; input?: Record<string, unknown> }>, stop_reason: data.stop_reason as string };
 
@@ -298,13 +308,13 @@ const webApi: ElectronAPI = {
         const directUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
         let res: Response;
         try {
-          res = await fetch(proxyUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+          res = await fetch(proxyUrl, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-NowAIKit-Proxy': '1' }, body: JSON.stringify(body) });
           // If proxy returns 404 or non-JSON, it means no proxy server — fall back to direct
           if (res.status === 404) throw new Error('proxy_not_available');
         } catch {
           res = await fetch(directUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
         }
-        if (!res.ok) return { error: `Google AI error ${res.status}: ${await res.text()}` };
+        if (!res.ok) return { error: sanitizeError(`Google AI error ${res.status}: ${await res.text()}`) };
         const data = await res.json() as { candidates?: Array<{ content?: { parts?: Array<{ text?: string; functionCall?: { name: string; args: Record<string, unknown> } }> } }> };
         const parts = data.candidates?.[0]?.content?.parts ?? [];
         const content: Array<{ type: string; text?: string; id?: string; name?: string; input?: Record<string, unknown> }> = [];
@@ -356,10 +366,10 @@ const webApi: ElectronAPI = {
 
         const res = await fetch(url, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}`, 'X-NowAIKit-Proxy': '1' },
           body: JSON.stringify(body),
         });
-        if (!res.ok) return { error: `API error ${res.status}: ${await res.text()}` };
+        if (!res.ok) return { error: sanitizeError(`API error ${res.status}: ${await res.text()}`) };
         const data = await res.json() as { choices?: Array<{ message?: { content?: string; tool_calls?: Array<{ id: string; function: { name: string; arguments: string } }> } }> };
         const msg = data.choices?.[0]?.message;
         const content: Array<{ type: string; text?: string; id?: string; name?: string; input?: Record<string, unknown> }> = [];

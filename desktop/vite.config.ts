@@ -12,7 +12,7 @@ export default defineConfig({
   },
   server: {
     port: 5173,
-    host: true,
+    host: '127.0.0.1',
     // Proxy AI provider API calls to bypass CORS in browser dev mode
     proxy: {
       '/api/ai/anthropic': {
@@ -44,7 +44,7 @@ export default defineConfig({
   },
   preview: {
     port: 4175,
-    host: true,
-    // Note: vite preview doesn't support proxy — use `npm run dev:web` for AI chat in browser
+    host: '127.0.0.1',
+    // Note: vite preview doesn't support proxy — use `npm run serve` for AI chat in browser
   },
 });
