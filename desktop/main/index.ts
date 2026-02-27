@@ -16,7 +16,7 @@ function createWindow() {
     minWidth: 900,
     minHeight: 600,
     title: 'NowAIKit',
-    icon: join(__dirname, '..', 'resources', 'icon.png'),
+    icon: join(__dirname, '..', '..', 'resources', 'icon.png'),
     webPreferences: {
       preload: join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -35,7 +35,7 @@ function createWindow() {
     mainWindow.loadURL('http://localhost:5173');
     mainWindow.webContents.openDevTools({ mode: 'detach' });
   } else {
-    mainWindow.loadFile(join(__dirname, '..', 'renderer', 'dist', 'index.html'));
+    mainWindow.loadFile(join(__dirname, '..', '..', 'renderer', 'dist', 'index.html'));
   }
 
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {

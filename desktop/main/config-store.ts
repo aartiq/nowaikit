@@ -50,11 +50,11 @@ export class ConfigStore {
   }
 
   get(key: string): unknown {
-    return (this.config as Record<string, unknown>)[key];
+    return (this.config as unknown as Record<string, unknown>)[key];
   }
 
   set(key: string, value: unknown): void {
-    (this.config as Record<string, unknown>)[key] = value;
+    (this.config as unknown as Record<string, unknown>)[key] = value;
     this.save();
   }
 
