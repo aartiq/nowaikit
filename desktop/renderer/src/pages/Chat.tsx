@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import type { AppInstance, AppSettings, AiProviderId } from '../App.js';
 import { PROVIDER_ICONS } from '../components/ProviderIcons.js';
+import { api as unifiedApi } from '../api.js';
 
 // ── Message types (Anthropic format, used across all providers) ───────────────
 type CPText   = { type: 'text'; text: string };
@@ -164,6 +165,37 @@ interface ToolDef {
   inputSchema?: Record<string, unknown>;
 }
 
+// ── Smart tool selection (max 128 to stay within provider limits) ────────────
+const MAX_TOOLS = 128;
+
+function selectRelevantTools(allTools: ToolDef[], userMessage: string): ToolDef[] {
+  if (allTools.length <= MAX_TOOLS) return allTools;
+
+  const q = userMessage.toLowerCase();
+  const words = q.split(/\s+/).filter(w => w.length > 2);
+
+  // Score each tool by relevance to the user's message
+  const scored = allTools.map(t => {
+    let score = 0;
+    const name = t.name.toLowerCase();
+    const desc = (t.description || '').toLowerCase();
+
+    for (const w of words) {
+      if (name.includes(w)) score += 3;
+      if (desc.includes(w)) score += 1;
+    }
+
+    // Boost common/essential tools
+    if (name.startsWith('list_') || name.startsWith('get_') || name.startsWith('search_')) score += 1;
+
+    return { tool: t, score };
+  });
+
+  // Sort by score desc, take top MAX_TOOLS
+  scored.sort((a, b) => b.score - a.score);
+  return scored.slice(0, MAX_TOOLS).map(s => s.tool);
+}
+
 // ── Chat via IPC — with full tool execution loop ────────────────────────────
 // Flow: send messages + tool defs → AI responds → if tool_use → execute tools →
 //       send results back → AI responds again → repeat until no more tool calls.
@@ -179,8 +211,7 @@ async function callProviderApi(
 ): Promise<{ messages?: ChatMessage[]; error?: string }> {
   if (!apiKey) return { error: 'No API key configured. Go to Settings to add one.' };
 
-  const a = typeof window !== 'undefined' ? window.api : undefined;
-  if (!a) return { error: 'Desktop app required for AI chat' };
+  const a = unifiedApi;
 
   let currentMessages = [...messages];
 
@@ -295,8 +326,7 @@ export default function Chat({ settings, serverUrl, instances }: Props): React.R
 
   // Load tool list for slash-command picker
   useEffect(() => {
-    const a = typeof window !== 'undefined' ? window.api : undefined;
-    if (!a) return;
+    const a = unifiedApi;
     a.listTools().then(d => setAllTools(d ?? [])).catch(() => {});
   }, []);
 
@@ -366,8 +396,11 @@ export default function Chat({ settings, serverUrl, instances }: Props): React.R
     setLoading(true);
 
     try {
+      // Select most relevant tools (max 128) based on user's query
+      const relevantTools = selectRelevantTools(allTools, userText);
+
       const result = await callProviderApi(
-        provider, activeProvider?.apiKey ?? '', model, newMessages, allTools,
+        provider, activeProvider?.apiKey ?? '', model, newMessages, relevantTools,
         (updatedMsgs) => setMessages(updatedMsgs), // live update as tools execute
       );
       setLoading(false);

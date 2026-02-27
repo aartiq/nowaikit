@@ -4,6 +4,7 @@
  * on the <html> element via data-theme / data-accent attributes.
  */
 import React, { useEffect, useState, useCallback, createContext, useContext } from 'react';
+import { api as getApi } from './api.js';
 import Setup     from './pages/Setup.js';
 import Dashboard from './pages/Dashboard.js';
 import Instances from './pages/Instances.js';
@@ -58,10 +59,8 @@ interface ThemeCtx { mode: ThemeMode; accent: ThemeAccent; setMode: (m: ThemeMod
 export const ThemeContext = createContext<ThemeCtx>({ mode: 'dark', accent: 'blue', setMode: () => {}, setAccent: () => {} });
 export const useTheme = () => useContext(ThemeContext);
 
-// ── Electron API helper ──────────────────────────────────────────────────────
-function api(): ElectronAPI | undefined {
-  return typeof window !== 'undefined' ? window.api : undefined;
-}
+// ── Unified API (Electron IPC or browser fallback) ──────────────────────────
+function api(): ElectronAPI { return getApi; }
 
 // Apply theme to <html> and persist
 function applyTheme(mode: ThemeMode, accent: ThemeAccent) {

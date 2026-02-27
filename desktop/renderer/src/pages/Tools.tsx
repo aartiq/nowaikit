@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { api as unifiedApi } from '../api.js';
 
 interface ToolDef {
   name: string;
@@ -46,7 +47,7 @@ function RunDrawer({ tool, onClose }: { tool: ToolDef; serverUrl: string; onClos
 
   async function run() {
     setRunning(true); setResult(''); setError('');
-    const a = typeof window !== 'undefined' ? window.api : undefined;
+    const a = unifiedApi;
     if (!a) { setError('Desktop app required'); setRunning(false); return; }
     try {
       const coerced: Record<string, unknown> = {};
@@ -113,7 +114,7 @@ export default function Tools({ activeToolPackage, serverOnline, serverUrl, onRe
   const [restarting, setRestarting] = useState(false);
 
   useEffect(() => {
-    const a = typeof window !== 'undefined' ? window.api : undefined;
+    const a = unifiedApi;
     if (!a) { setLoading(false); return; }
     a.listTools().then(d => setTools(d ?? [])).catch(() => {}).finally(() => setLoading(false));
   }, []);
@@ -162,7 +163,7 @@ export default function Tools({ activeToolPackage, serverOnline, serverUrl, onRe
           <button
             disabled={restarting}
             onClick={async () => {
-              const a = typeof window !== 'undefined' ? window.api : undefined;
+              const a = unifiedApi;
               if (!a) return;
               setRestarting(true);
               await a.startServer();

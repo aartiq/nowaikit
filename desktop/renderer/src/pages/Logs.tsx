@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { api as getApi } from '../api.js';
 
 interface LogEntry {
   ts?: string;
@@ -20,9 +21,7 @@ interface LogEntry {
 
 const PAGE_SIZE = 15;
 
-function api(): ElectronAPI | undefined {
-  return typeof window !== 'undefined' ? window.api : undefined;
-}
+function api(): ElectronAPI { return getApi; }
 
 export default function Logs(): React.ReactElement {
   const [allEntries, setAllEntries] = useState<LogEntry[]>([]);

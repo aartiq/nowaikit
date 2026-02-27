@@ -68,8 +68,11 @@ export class ServerManager {
     try {
       const env = { ...process.env, ...this.buildEnv(instance) };
 
-      this.process = spawn('node', [serverPath], {
-        env,
+      // In packaged Electron, 'node' may not be in PATH.
+      // Use ELECTRON_RUN_AS_NODE=1 with process.execPath to run the
+      // Electron binary as a regular Node.js process.
+      this.process = spawn(process.execPath, [serverPath], {
+        env: { ...env, ELECTRON_RUN_AS_NODE: '1' },
         stdio: ['pipe', 'pipe', 'pipe'],
         windowsHide: true,
       });

@@ -230,6 +230,106 @@ const webApi: ElectronAPI = {
   getServerPath: async () => {
     return 'N/A (browser mode — use desktop app or CLI for MCP server)';
   },
+
+  // ── AI Chat (direct fetch in browser — may hit CORS for some providers) ──
+  sendChat: async (params: {
+    provider: string;
+    apiKey: string;
+    model: string;
+    messages: Array<{ role: string; content: unknown }>;
+    tools?: Array<{ name: string; description: string; inputSchema?: Record<string, unknown> }>;
+  }) => {
+    const { provider, apiKey, model, messages, tools: toolDefs } = params;
+    if (!apiKey) return { error: 'No API key configured' };
+
+    const systemPrompt = toolDefs && toolDefs.length > 0
+      ? 'You are NowAIKit, an AI assistant for ServiceNow. You have access to tools that can query and modify a ServiceNow instance. When the user asks about incidents, changes, users, CIs, or any ServiceNow data, ALWAYS use the appropriate tools to fetch real data from their instance. Never make up data — use the tools provided.'
+      : undefined;
+
+    try {
+      if (provider === 'anthropic') {
+        const anthropicTools = toolDefs?.map(t => ({
+          name: t.name, description: t.description,
+          input_schema: t.inputSchema || { type: 'object', properties: {} },
+        }));
+        const body: Record<string, unknown> = { model, max_tokens: 4096, messages };
+        if (systemPrompt) body.system = systemPrompt;
+        if (anthropicTools && anthropicTools.length > 0) body.tools = anthropicTools;
+        const res = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
+          body: JSON.stringify(body),
+        });
+        if (!res.ok) return { error: `API error ${res.status}: ${await res.text()}` };
+        const data = await res.json() as Record<string, unknown>;
+        return { content: data.content as Array<{ type: string; text?: string; id?: string; name?: string; input?: Record<string, unknown> }>, stop_reason: data.stop_reason as string };
+      } else if (provider === 'google') {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+        const contents = messages.map((m: { role: string; content: unknown }) => ({
+          role: m.role === 'assistant' ? 'model' : 'user',
+          parts: [{ text: typeof m.content === 'string' ? m.content :
+            (m.content as Array<{ type: string; text?: string }>).filter(c => c.type === 'text').map(c => c.text).join('\n') }],
+        }));
+        const body: Record<string, unknown> = { contents };
+        if (systemPrompt) body.systemInstruction = { parts: [{ text: systemPrompt }] };
+        if (toolDefs && toolDefs.length > 0) {
+          body.tools = [{ functionDeclarations: toolDefs.map(t => ({ name: t.name, description: t.description, parameters: t.inputSchema || { type: 'object', properties: {} } })) }];
+        }
+        const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+        if (!res.ok) return { error: `Google AI error ${res.status}: ${await res.text()}` };
+        const data = await res.json() as { candidates?: Array<{ content?: { parts?: Array<{ text?: string; functionCall?: { name: string; args: Record<string, unknown> } }> } }> };
+        const parts = data.candidates?.[0]?.content?.parts ?? [];
+        const content: Array<{ type: string; text?: string; id?: string; name?: string; input?: Record<string, unknown> }> = [];
+        for (const p of parts) {
+          if (p.text) content.push({ type: 'text', text: p.text });
+          if (p.functionCall) content.push({ type: 'tool_use', id: `toolu_${Date.now()}`, name: p.functionCall.name, input: p.functionCall.args });
+        }
+        return { content, stop_reason: content.some(c => c.type === 'tool_use') ? 'tool_use' : 'end_turn' };
+      } else {
+        // OpenAI-compatible
+        const endpoints: Record<string, string> = {
+          openai: 'https://api.openai.com/v1/chat/completions',
+          groq: 'https://api.groq.com/openai/v1/chat/completions',
+          openrouter: 'https://openrouter.ai/api/v1/chat/completions',
+        };
+        const url = endpoints[provider];
+        if (!url) return { error: `Unknown provider: ${provider}` };
+        const oaiMessages: Array<Record<string, unknown>> = [];
+        if (systemPrompt) oaiMessages.push({ role: 'system', content: systemPrompt });
+        for (const m of messages) {
+          if (typeof m.content === 'string') oaiMessages.push({ role: m.role, content: m.content });
+          else oaiMessages.push({ role: m.role, content: (m.content as Array<{ type: string; text?: string }>).filter(c => c.type === 'text').map(c => c.text).join('\n') });
+        }
+        const body: Record<string, unknown> = { model, messages: oaiMessages };
+        if (toolDefs && toolDefs.length > 0) {
+          body.tools = toolDefs.map(t => ({ type: 'function', function: { name: t.name, description: t.description, parameters: t.inputSchema || { type: 'object', properties: {} } } }));
+        }
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+          body: JSON.stringify(body),
+        });
+        if (!res.ok) return { error: `API error ${res.status}: ${await res.text()}` };
+        const data = await res.json() as { choices?: Array<{ message?: { content?: string; tool_calls?: Array<{ id: string; function: { name: string; arguments: string } }> } }> };
+        const msg = data.choices?.[0]?.message;
+        const content: Array<{ type: string; text?: string; id?: string; name?: string; input?: Record<string, unknown> }> = [];
+        if (msg?.content) content.push({ type: 'text', text: msg.content });
+        if (msg?.tool_calls) {
+          for (const tc of msg.tool_calls) {
+            let args: Record<string, unknown> = {};
+            try { args = JSON.parse(tc.function.arguments); } catch { /* empty */ }
+            content.push({ type: 'tool_use', id: tc.id, name: tc.function.name, input: args });
+          }
+        }
+        return { content, stop_reason: content.some(c => c.type === 'tool_use') ? 'tool_use' : 'end_turn' };
+      }
+    } catch (err) {
+      if (err instanceof TypeError && String(err).includes('fetch')) {
+        return { error: 'CORS error: AI chat requests are blocked in the browser. Use the desktop app for AI chat, or use a provider that supports browser CORS (e.g., Google Gemini).' };
+      }
+      return { error: err instanceof Error ? err.message : 'Request failed' };
+    }
+  },
 };
 
 // ─── Export ──────────────────────────────────────────────────────────────────

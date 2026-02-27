@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import type { AppSettings, AiProviderId, ThemeMode, ThemeAccent, AppInstance, Page } from '../App.js';
 import { useTheme } from '../App.js';
 import { PROVIDER_ICONS } from '../components/ProviderIcons.js';
+import { api as unifiedApi } from '../api.js';
 
 interface Props {
   settings: AppSettings;
@@ -160,9 +161,7 @@ const ACCENTS: { id: ThemeAccent; color: string; label: string }[] = [
   { id: 'rose',    color: '#ef4444', label: 'Rose'    },
 ];
 
-function elApi(): ElectronAPI | undefined {
-  return typeof window !== 'undefined' ? window.api : undefined;
-}
+function elApi(): ElectronAPI { return unifiedApi; }
 
 export default function Settings({ settings, onSave, activeInstance, onNavigate }: Props): React.ReactElement {
   const { mode, accent, setMode, setAccent } = useTheme();

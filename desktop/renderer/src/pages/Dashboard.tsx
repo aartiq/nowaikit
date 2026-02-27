@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import type { AppInstance, Page } from '../App.js';
+import { api as getApi } from '../api.js';
 
 const PACKAGE_COUNTS: Record<string, string> = {
   full: '400+', service_desk: '47', change_coordinator: '32',
   platform_developer: '51', system_administrator: '38', itom_engineer: '29',
 };
 
-function api(): ElectronAPI | undefined {
-  return typeof window !== 'undefined' ? window.api : undefined;
-}
+function api(): ElectronAPI { return getApi; }
 
 interface Props {
   instances: AppInstance[];

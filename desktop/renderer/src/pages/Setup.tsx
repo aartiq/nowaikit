@@ -3,6 +3,7 @@
  * Multi-step form: URL → Auth → Credentials → Test → Role → Client selection → Done.
  */
 import React, { useState } from 'react';
+import { api as unifiedApi } from '../api.js';
 
 interface Props {
   onComplete: () => void;
@@ -74,10 +75,7 @@ export default function Setup({ onComplete, onClose, existingGroups = [] }: Prop
   const update = (key: keyof FormState, val: string | boolean) =>
     setForm(f => ({ ...f, [key]: val }));
 
-  // Use the Electron API (window.api) or fall back gracefully
-  function getApi(): ElectronAPI | undefined {
-    return typeof window !== 'undefined' ? window.api : undefined;
-  }
+  function getApi(): ElectronAPI { return unifiedApi; }
 
   async function testConnection() {
     setTestStatus('testing');
