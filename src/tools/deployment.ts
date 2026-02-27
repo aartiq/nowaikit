@@ -101,7 +101,8 @@ export async function executeDeploymentToolCall(
       requireScripting();
       if (!args.table || !args.sys_id || !args.new_name) throw new ServiceNowError('table, sys_id, and new_name are required', 'INVALID_REQUEST');
       const source = await client.getRecord(args.table, args.sys_id);
-      const { sys_id: _, sys_created_on: _c, sys_updated_on: _u, sys_created_by: _cb, sys_updated_by: _ub, ...cloneData } = source;
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { sys_id: _sysId, sys_created_on: _created, sys_updated_on: _updated, sys_created_by: _createdBy, sys_updated_by: _updatedBy, ...cloneData } = source;
       cloneData.name = args.new_name;
       if (args.target_scope) cloneData.sys_scope = args.target_scope;
       const result = await client.createRecord(args.table, cloneData);

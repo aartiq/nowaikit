@@ -54,7 +54,7 @@ class InstanceManager {
         }
         if (this.instances.has(defaultName)) this.currentName = defaultName;
         return;
-      } catch (e) {
+      } catch {
         // fall through to env vars
       }
     }

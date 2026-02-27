@@ -1,4 +1,4 @@
-import { ChildProcess, spawn } from 'child_process';
+import { ChildProcess, spawn, execSync } from 'child_process';
 import { join } from 'path';
 import { existsSync, readFileSync } from 'fs';
 import type { InstanceConfig } from './index';
@@ -15,6 +15,30 @@ export class ServerManager {
   private process: ChildProcess | null = null;
   private status: ServerStatus = { running: false };
   private tools: Array<{ name: string; description: string; inputSchema?: Record<string, unknown> }> = [];
+
+  /**
+   * Try to find a system-installed Node.js binary.
+   * Returns the path if found, or null if not available.
+   */
+  private findSystemNode(): string | null {
+    const candidates = process.platform === 'win32'
+      ? ['node.exe']
+      : ['/usr/local/bin/node', '/opt/homebrew/bin/node', '/usr/bin/node'];
+
+    for (const candidate of candidates) {
+      if (existsSync(candidate)) return candidate;
+    }
+
+    // Try 'which node' as last resort
+    try {
+      const result = execSync('which node 2>/dev/null || where node 2>NUL', { encoding: 'utf8', timeout: 3000 }).trim();
+      if (result && existsSync(result)) return result;
+    } catch {
+      // Not found
+    }
+
+    return null;
+  }
 
   /**
    * Resolve the path to the MCP server entry point.
@@ -71,12 +95,17 @@ export class ServerManager {
       // Server directory — contains package.json ("type":"module") and node_modules
       const serverDir = join(serverPath, '..');
 
-      // In packaged Electron, 'node' may not be in PATH.
-      // Use ELECTRON_RUN_AS_NODE=1 with process.execPath to run the
-      // Electron binary as a regular Node.js process.
-      // Set cwd to the server directory so Node resolves package.json and modules.
-      this.process = spawn(process.execPath, [serverPath], {
-        env: { ...env, ELECTRON_RUN_AS_NODE: '1' },
+      // Resolve Node.js binary for the server process.
+      // The MCP server uses ESM (import syntax), so it needs a Node.js binary.
+      // Try system 'node' first (handles ESM better), fall back to Electron's node.
+      const systemNode = this.findSystemNode();
+      const nodeBin = systemNode || process.execPath;
+      const spawnEnv = systemNode
+        ? { ...env }
+        : { ...env, ELECTRON_RUN_AS_NODE: '1' };
+
+      this.process = spawn(nodeBin, [serverPath], {
+        env: spawnEnv,
         cwd: serverDir,
         stdio: ['pipe', 'pipe', 'pipe'],
         windowsHide: true,
