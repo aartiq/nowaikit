@@ -78,7 +78,7 @@ export async function executeProblemToolCall(
       if (/^[0-9a-f]{32}$/i.test(args.number_or_sysid)) {
         return await client.getRecord('problem', args.number_or_sysid);
       }
-      const resp = await client.queryRecords({ table: 'problem', query: `number=${args.number_or_sysid}`, limit: 1 });
+      const resp = await client.queryRecords({ table: 'problem', query: `number=${args.number_or_sysid}^ORsys_id=${args.number_or_sysid}`, limit: 1 });
       if (resp.count === 0) throw new ServiceNowError(`Problem not found: ${args.number_or_sysid}`, 'NOT_FOUND');
       return resp.records[0];
     }

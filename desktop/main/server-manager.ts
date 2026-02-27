@@ -273,18 +273,29 @@ export class ServerManager {
     });
 
     return new Promise((resolve) => {
-      const timeout = setTimeout(() => {
-        resolve({ success: false, error: 'Tool execution timed out (30s)' });
-      }, 30000);
+      let buffer = '';
+
+      const cleanup = () => {
+        clearTimeout(timer);
+        this.process?.stdout?.off('data', onData);
+      };
+
+      const timer = setTimeout(() => {
+        cleanup();
+        resolve({ success: false, error: `Tool execution timed out (90s). Tool: ${name}` });
+      }, 90000);
 
       const onData = (data: Buffer) => {
-        try {
-          const lines = data.toString().split('\n').filter(Boolean);
-          for (const line of lines) {
+        buffer += data.toString();
+        // Try to parse each complete line from the buffer
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || ''; // Keep incomplete last line in buffer
+        for (const line of lines) {
+          if (!line.trim()) continue;
+          try {
             const response = JSON.parse(line);
             if (response.id === id) {
-              clearTimeout(timeout);
-              this.process?.stdout?.off('data', onData);
+              cleanup();
               if (response.error) {
                 resolve({ success: false, error: response.error.message });
               } else {
@@ -292,9 +303,9 @@ export class ServerManager {
               }
               return;
             }
+          } catch {
+            // Not valid JSON, skip this line
           }
-        } catch {
-          // Partial JSON, wait for more data
         }
       };
 

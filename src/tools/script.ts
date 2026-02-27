@@ -451,7 +451,7 @@ export async function executeScriptToolCall(
       if (/^[0-9a-f]{32}$/i.test(args.sys_id_or_name)) {
         return await client.getRecord('sys_update_set', args.sys_id_or_name);
       }
-      const resp = await client.queryRecords({ table: 'sys_update_set', query: `name=${args.sys_id_or_name}`, limit: 1 });
+      const resp = await client.queryRecords({ table: 'sys_update_set', query: `name=${args.sys_id_or_name}^ORsys_id=${args.sys_id_or_name}`, limit: 1 });
       if (resp.count === 0) throw new ServiceNowError(`Changeset not found: ${args.sys_id_or_name}`, 'NOT_FOUND');
       return resp.records[0];
     }

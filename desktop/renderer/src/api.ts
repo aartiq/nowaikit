@@ -243,7 +243,7 @@ const webApi: ElectronAPI = {
     if (!apiKey) return { error: 'No API key configured' };
 
     const systemPrompt = toolDefs && toolDefs.length > 0
-      ? 'You are NowAIKit, an AI assistant for ServiceNow. You have access to tools that can query and modify a ServiceNow instance. When the user asks about incidents, changes, users, CIs, or any ServiceNow data, ALWAYS use the appropriate tools to fetch real data from their instance. Never make up data — use the tools provided.'
+      ? 'You are NowAIKit, an AI assistant for ServiceNow. Use tools to fetch real data — never make up data.\n\nUse "query_records" with correct table: incident, change_request, problem, task, sys_user, cmdb_ci.\nQuery syntax: active=true, priority=1, ORDERBYDESCsys_created_on, nameLIKEtext.\nIMPORTANT: Do NOT add assigned_to filter unless user explicitly says "my" or "assigned to me". Query ALL matching records by default.'
       : undefined;
 
     try {

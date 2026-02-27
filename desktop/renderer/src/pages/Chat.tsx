@@ -168,30 +168,109 @@ interface ToolDef {
 // ── Smart tool selection (max 128 to stay within provider limits) ────────────
 const MAX_TOOLS = 128;
 
+// Essential tools always included (generic querying, core operations)
+const ESSENTIAL_TOOLS = new Set([
+  'query_records', 'get_record', 'get_table_schema', 'get_user', 'get_group',
+  'get_incident', 'create_incident', 'update_incident', 'resolve_incident',
+  'get_change_request', 'list_change_requests', 'create_change_request', 'update_change_request',
+  'get_task', 'list_my_tasks', 'update_task',
+  'get_problem', 'create_problem', 'update_problem',
+  'search_knowledge', 'get_knowledge_article',
+  'add_work_note', 'add_comment',
+  'search_cmdb_ci', 'get_cmdb_ci',
+  'list_users', 'list_groups',
+  'natural_language_search',
+]);
+
+// Synonym mapping: user term → tool name fragments to boost
+const SYNONYMS: Record<string, string[]> = {
+  incident: ['incident', 'resolve_incident', 'close_incident', 'add_work_note', 'add_comment'],
+  incidents: ['incident', 'query_records'],
+  change: ['change_request', 'change'],
+  changes: ['change_request', 'query_records'],
+  problem: ['problem'],
+  problems: ['problem', 'query_records'],
+  task: ['task'],
+  tasks: ['task', 'query_records'],
+  user: ['user', 'get_user'],
+  users: ['user', 'list_users', 'query_records'],
+  group: ['group'],
+  groups: ['group', 'list_groups'],
+  knowledge: ['knowledge'],
+  kb: ['knowledge'],
+  ci: ['cmdb', 'ci'],
+  cmdb: ['cmdb', 'ci'],
+  server: ['cmdb', 'ci_server'],
+  catalog: ['catalog'],
+  flow: ['flow'],
+  report: ['report', 'aggregate', 'trend'],
+  sla: ['sla'],
+  approval: ['approval'],
+  hr: ['hr_'],
+  security: ['security'],
+  vulnerability: ['vulnerab'],
+  asset: ['asset'],
+  license: ['license'],
+  portal: ['portal'],
+  widget: ['widget'],
+  script: ['script', 'business_rule'],
+  acl: ['acl'],
+  notification: ['notification', 'email'],
+  atf: ['atf'],
+  test: ['atf', 'test'],
+};
+
+function stem(word: string): string {
+  // Simple stemming: remove trailing s, es, ing, ed
+  if (word.endsWith('ies')) return word.slice(0, -3) + 'y';
+  if (word.endsWith('ses') || word.endsWith('xes') || word.endsWith('zes')) return word.slice(0, -2);
+  if (word.endsWith('es')) return word.slice(0, -2);
+  if (word.endsWith('s') && !word.endsWith('ss')) return word.slice(0, -1);
+  if (word.endsWith('ing') && word.length > 5) return word.slice(0, -3);
+  if (word.endsWith('ed') && word.length > 4) return word.slice(0, -2);
+  return word;
+}
+
 function selectRelevantTools(allTools: ToolDef[], userMessage: string): ToolDef[] {
   if (allTools.length <= MAX_TOOLS) return allTools;
 
   const q = userMessage.toLowerCase();
-  const words = q.split(/\s+/).filter(w => w.length > 2);
+  const rawWords = q.split(/\s+/).filter(w => w.length > 2);
+  // Add stemmed variants
+  const words = [...new Set([...rawWords, ...rawWords.map(stem)])];
 
-  // Score each tool by relevance to the user's message
+  // Collect synonym boost fragments
+  const boostFragments: string[] = [];
+  for (const w of rawWords) {
+    const syns = SYNONYMS[w] || SYNONYMS[stem(w)];
+    if (syns) boostFragments.push(...syns);
+  }
+
   const scored = allTools.map(t => {
     let score = 0;
     const name = t.name.toLowerCase();
     const desc = (t.description || '').toLowerCase();
 
+    // Essential tools always get a base score
+    if (ESSENTIAL_TOOLS.has(t.name)) score += 5;
+
+    // Word matching (with stemmed variants)
     for (const w of words) {
       if (name.includes(w)) score += 3;
       if (desc.includes(w)) score += 1;
     }
 
-    // Boost common/essential tools
+    // Synonym boost
+    for (const frag of boostFragments) {
+      if (name.includes(frag)) score += 4;
+    }
+
+    // Boost common operation prefixes
     if (name.startsWith('list_') || name.startsWith('get_') || name.startsWith('search_')) score += 1;
 
     return { tool: t, score };
   });
 
-  // Sort by score desc, take top MAX_TOOLS
   scored.sort((a, b) => b.score - a.score);
   return scored.slice(0, MAX_TOOLS).map(s => s.tool);
 }
@@ -293,13 +372,39 @@ interface Props {
   instances: AppInstance[];
 }
 
+// ── Chat history persistence ─────────────────────────────────────────────────
+const CHAT_STORAGE_KEY = 'nowaikit_chat_history';
+
+function saveChatHistory(providerId: string, msgs: ChatMessage[]) {
+  try {
+    const all = JSON.parse(localStorage.getItem(CHAT_STORAGE_KEY) || '{}');
+    all[providerId] = msgs;
+    localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(all));
+  } catch { /* quota exceeded or other error — ignore */ }
+}
+
+function loadChatHistory(providerId: string): ChatMessage[] {
+  try {
+    const all = JSON.parse(localStorage.getItem(CHAT_STORAGE_KEY) || '{}');
+    return all[providerId] || [];
+  } catch { return []; }
+}
+
+function clearChatHistory(providerId: string) {
+  try {
+    const all = JSON.parse(localStorage.getItem(CHAT_STORAGE_KEY) || '{}');
+    delete all[providerId];
+    localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(all));
+  } catch { /* ignore */ }
+}
+
 export default function Chat({ settings, serverUrl, instances }: Props): React.ReactElement {
-  const [messages,  setMessages]  = useState<ChatMessage[]>([]);
+  const [provider,  setProvider]  = useState<AiProviderId>(settings.activeProvider || 'anthropic');
+  const [model,     setModel]     = useState(settings.model || 'claude-sonnet-4-6');
+  const [messages,  setMessages]  = useState<ChatMessage[]>(() => loadChatHistory(settings.activeProvider || 'anthropic'));
   const [input,     setInput]     = useState('');
   const [loading,   setLoading]   = useState(false);
   const [error,     setError]     = useState('');
-  const [provider,  setProvider]  = useState<AiProviderId>(settings.activeProvider || 'anthropic');
-  const [model,     setModel]     = useState(settings.model || 'claude-sonnet-4-6');
 
   // Slash-command tool picker
   const [allTools,    setAllTools]    = useState<ToolDef[]>([]);
@@ -311,14 +416,18 @@ export default function Chat({ settings, serverUrl, instances }: Props): React.R
   const inputRef  = useRef<HTMLTextAreaElement>(null);
   const slashRef  = useRef<HTMLDivElement>(null);
 
-  // Sync model when provider changes — also start a fresh chat
+  // Persist messages whenever they change
+  useEffect(() => {
+    saveChatHistory(provider, messages);
+  }, [messages, provider]);
+
+  // Sync model when provider changes — load saved history for that provider
   useEffect(() => {
     const models = MODELS_BY_PROVIDER[provider];
     const firstModel = models[0].value;
-    // If current model doesn't belong to this provider, switch to first
     if (!models.find(m => m.value === model)) setModel(firstModel);
-    // Clear conversation when switching providers so user starts fresh
-    setMessages([]);
+    // Load saved history for this provider (or empty if none)
+    setMessages(loadChatHistory(provider));
     setError('');
   }, [provider]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -466,9 +575,9 @@ export default function Chat({ settings, serverUrl, instances }: Props): React.R
           <select value={model} onChange={e => setModel(e.target.value)} style={selectStyle}>
             {MODELS_BY_PROVIDER[provider].map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
           </select>
-          {messages.length > 0 && (
-            <button className="btn-ghost" onClick={() => { setMessages([]); setError(''); }} style={{ padding:'6px 14px', fontSize:'0.8rem' }}>New Chat</button>
-          )}
+          {messages.length > 0 && (<>
+            <button className="btn-ghost" onClick={() => { clearChatHistory(provider); setMessages([]); setError(''); }} style={{ padding:'6px 14px', fontSize:'0.8rem' }}>New Chat</button>
+          </>)}
         </div>
       </div>
 

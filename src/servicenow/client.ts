@@ -410,8 +410,11 @@ export class ServiceNowClient {
   async getUser(userIdentifier: string): Promise<ServiceNowRecord> {
     await this.authenticate();
 
-    // Try both email and user_name
-    const query = `email=${userIdentifier}^ORemail=${userIdentifier}`;
+    // Try user_name, email, or sys_id
+    if (/^[0-9a-f]{32}$/i.test(userIdentifier)) {
+      return await this.getRecord('sys_user', userIdentifier);
+    }
+    const query = `user_name=${userIdentifier}^ORemail=${userIdentifier}`;
     const url = `${this.baseUrl}/api/now/table/sys_user?sysparm_query=${query}&sysparm_limit=1`;
 
     logger.info(`Looking up user: ${userIdentifier}`);
