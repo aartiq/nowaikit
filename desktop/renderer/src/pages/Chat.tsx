@@ -415,10 +415,14 @@ export default function Chat({ settings, serverUrl, instances }: Props): React.R
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef  = useRef<HTMLTextAreaElement>(null);
   const slashRef  = useRef<HTMLDivElement>(null);
+  const prevProviderRef = useRef(provider);
 
-  // Persist messages whenever they change
+  // Persist messages whenever they change — but NOT when provider just switched
+  // (otherwise old provider's messages get saved under new provider key)
   useEffect(() => {
-    saveChatHistory(provider, messages);
+    if (prevProviderRef.current === provider) {
+      saveChatHistory(provider, messages);
+    }
   }, [messages, provider]);
 
   // Sync model when provider changes — load saved history for that provider
@@ -429,6 +433,7 @@ export default function Chat({ settings, serverUrl, instances }: Props): React.R
     // Load saved history for this provider (or empty if none)
     setMessages(loadChatHistory(provider));
     setError('');
+    prevProviderRef.current = provider;
   }, [provider]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, loading]);
