@@ -23,13 +23,9 @@ extraResources:
   - from: ../node_modules
     to: server/node_modules
     filter:
-      - "@modelcontextprotocol/**"
-      - "@inquirer/**"
-      - "chalk/**"
-      - "commander/**"
-      - "dotenv/**"
-      - "ora/**"
-      - "zod/**"
+      - "**/*"
+      - "!.cache/**"
+      - "!.package-lock.json"
 
 win:
   target:
