@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { api } from '../api';
 
 export function Dashboard() {
   const [status, setStatus] = useState<ServerStatus>({ running: false });
@@ -14,9 +15,9 @@ export function Dashboard() {
 
   async function refresh() {
     const [s, i, l] = await Promise.all([
-      window.api.getServerStatus(),
-      window.api.listInstances(),
-      window.api.getAuditLogs(10),
+      api.getServerStatus(),
+      api.listInstances(),
+      api.getAuditLogs(10),
     ]);
     setStatus(s);
     setInstances(i);
@@ -26,9 +27,9 @@ export function Dashboard() {
   async function toggleServer() {
     setLoading(true);
     if (status.running) {
-      await window.api.stopServer();
+      await api.stopServer();
     } else {
-      await window.api.startServer();
+      await api.startServer();
     }
     await refresh();
     setLoading(false);

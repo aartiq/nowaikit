@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { api } from '../api';
 
 type Step = 'instance' | 'auth' | 'credentials' | 'test' | 'permissions' | 'client' | 'confirm' | 'done';
 
@@ -14,7 +15,7 @@ const STEPS: { key: Step; label: string }[] = [
 ];
 
 const TOOL_PACKAGES = [
-  { value: 'full', label: 'Full', desc: 'All 284+ tools' },
+  { value: 'full', label: 'Full', desc: 'All 350+ tools' },
   { value: 'service_desk', label: 'Service Desk', desc: 'Incidents, approvals, knowledge, SLA' },
   { value: 'platform_developer', label: 'Platform Developer', desc: 'Scripts, ACLs, ATF, changesets' },
   { value: 'system_administrator', label: 'System Admin', desc: 'Users, groups, reports, jobs' },
@@ -62,7 +63,7 @@ export function SetupWizard() {
   async function testConnection() {
     setTesting(true);
     setTestResult(null);
-    const result = await window.api.testInstance(form);
+    const result = await api.testInstance(form);
     setTestResult(result);
     setTesting(false);
   }
@@ -77,7 +78,7 @@ export function SetupWizard() {
       form.name = match ? match[1] : 'default';
     }
 
-    const result = await window.api.addInstance(form);
+    const result = await api.addInstance(form);
     if (!result.success) {
       setError(result.error || 'Failed to save');
       setSaving(false);
@@ -85,7 +86,7 @@ export function SetupWizard() {
     }
 
     // Start the server with the new instance
-    await window.api.startServer(form.name);
+    await api.startServer(form.name);
     setSaving(false);
     setStep('done');
   }

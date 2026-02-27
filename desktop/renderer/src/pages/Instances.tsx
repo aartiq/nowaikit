@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { api } from '../api';
 
 export function Instances() {
   const [instances, setInstances] = useState<InstanceConfig[]>([]);
@@ -6,23 +7,23 @@ export function Instances() {
   const [testResults, setTestResults] = useState<Record<string, { success: boolean; error?: string }>>({});
 
   useEffect(() => {
-    window.api.listInstances().then(setInstances);
+    api.listInstances().then(setInstances);
   }, []);
 
   async function testInstance(inst: InstanceConfig) {
     setTesting(inst.name);
-    const result = await window.api.testInstance(inst);
+    const result = await api.testInstance(inst);
     setTestResults(prev => ({ ...prev, [inst.name]: result }));
     setTesting(null);
   }
 
   async function removeInstance(name: string) {
-    await window.api.removeInstance(name);
+    await api.removeInstance(name);
     setInstances(prev => prev.filter(i => i.name !== name));
   }
 
   async function startWithInstance(name: string) {
-    await window.api.startServer(name);
+    await api.startServer(name);
   }
 
   return (

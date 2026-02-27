@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { api } from '../api';
 
 export function AuditLog() {
   const [logs, setLogs] = useState<AuditEntry[]>([]);
@@ -12,7 +13,7 @@ export function AuditLog() {
   }, []);
 
   async function refresh() {
-    const data = await window.api.getAuditLogs(500);
+    const data = await api.getAuditLogs(500);
     setLogs(data);
     setLoading(false);
   }

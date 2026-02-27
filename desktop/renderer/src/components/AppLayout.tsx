@@ -1,16 +1,17 @@
 import { NavLink, Outlet } from 'react-router-dom';
 import { useEffect, useState } from 'react';
+import { api } from '../api';
 
 export function AppLayout() {
   const [status, setStatus] = useState<ServerStatus>({ running: false });
   const [version, setVersion] = useState('');
 
   useEffect(() => {
-    window.api.getVersion().then(v => setVersion(v.app));
+    api.getVersion().then(v => setVersion(v.app));
     const poll = setInterval(() => {
-      window.api.getServerStatus().then(setStatus);
+      api.getServerStatus().then(setStatus);
     }, 3000);
-    window.api.getServerStatus().then(setStatus);
+    api.getServerStatus().then(setStatus);
     return () => clearInterval(poll);
   }, []);
 

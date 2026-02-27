@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
+import { api } from '../api';
 
 export function Settings() {
   const [version, setVersion] = useState<VersionInfo | null>(null);
   const [serverPath, setServerPath] = useState('');
 
   useEffect(() => {
-    window.api.getVersion().then(setVersion);
-    window.api.getServerPath().then(setServerPath);
+    api.getVersion().then(setVersion);
+    api.getServerPath().then(setServerPath);
   }, []);
 
   return (
@@ -36,16 +37,16 @@ export function Settings() {
           <span className="card-title">Links</span>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <button className="btn btn-secondary" onClick={() => window.api.openExternal('https://nowaitkit.com/docs')}>
+          <button className="btn btn-secondary" onClick={() => api.openExternal('https://nowaitkit.com/docs')}>
             Documentation
           </button>
-          <button className="btn btn-secondary" onClick={() => window.api.openExternal('https://github.com/aartiq/nowaikit')}>
+          <button className="btn btn-secondary" onClick={() => api.openExternal('https://github.com/aartiq/nowaikit')}>
             GitHub Repository
           </button>
-          <button className="btn btn-secondary" onClick={() => window.api.openExternal('https://github.com/aartiq/nowaikit/issues')}>
+          <button className="btn btn-secondary" onClick={() => api.openExternal('https://github.com/aartiq/nowaikit/issues')}>
             Report an Issue
           </button>
-          <button className="btn btn-secondary" onClick={() => window.api.openExternal('https://nowaitkit.com')}>
+          <button className="btn btn-secondary" onClick={() => api.openExternal('https://nowaitkit.com')}>
             Website
           </button>
         </div>

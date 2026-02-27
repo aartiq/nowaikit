@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { api } from '../api';
 
 const TOOL_CATEGORIES: Record<string, string> = {
   query_records: 'Core', get_record: 'Core', get_table_schema: 'Core', get_user: 'Core', get_group: 'Core',
@@ -42,7 +43,7 @@ export function ToolBrowser() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
   useEffect(() => {
-    window.api.listTools().then(setTools);
+    api.listTools().then(setTools);
   }, []);
 
   const filtered = tools.filter(t => {
