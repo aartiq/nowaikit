@@ -475,6 +475,21 @@ const webApi: ElectronAPI = {
     const { provider, apiKey, model, messages, tools: toolDefs } = params;
     if (!apiKey) return { error: 'No API key configured' };
 
+    const chatStart = Date.now();
+    const logChat = (prov: string, mdl: string, toolCount: number, success: boolean, durationMs: number, usage?: { inputTokens: number; outputTokens: number }, error?: string) => {
+      const all = loadJSON<Array<Record<string, unknown>>>('nowaikit:audit', []);
+      const entry: Record<string, unknown> = {
+        ts: new Date().toISOString(), event: 'chat:send',
+        provider: prov, model: mdl, toolCount, instance: serverInstance,
+        success, durationMs,
+      };
+      if (usage) { entry.inputTokens = usage.inputTokens; entry.outputTokens = usage.outputTokens; }
+      if (error) entry.error = error;
+      all.push(entry);
+      if (all.length > 2000) all.splice(0, all.length - 2000);
+      saveJSON('nowaikit:audit', all);
+    };
+
     const systemPrompt = toolDefs && toolDefs.length > 0
       ? 'You are NowAIKit, an AI assistant for ServiceNow. Use tools to fetch real data — never make up data.\n\nUse "query_records" with correct table: incident, change_request, problem, task, sys_user, cmdb_ci.\nQuery syntax: active=true, priority=1, ORDERBYDESCsys_created_on, nameLIKEtext.\nIMPORTANT: Do NOT add assigned_to filter unless user explicitly says "my" or "assigned to me". Query ALL matching records by default.'
       : undefined;
@@ -508,9 +523,12 @@ const webApi: ElectronAPI = {
           headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'X-NowAIKit-Proxy': '1' },
           body: JSON.stringify(body),
         });
-        if (!res.ok) return { error: sanitizeError(`API error ${res.status}: ${await res.text()}`) };
+        if (!res.ok) { const e = sanitizeError(`API error ${res.status}: ${await res.text()}`); logChat(provider, model, toolDefs?.length || 0, false, Date.now() - chatStart, undefined, e); return { error: e }; }
         const data = await res.json() as Record<string, unknown>;
-        return { content: data.content as Array<{ type: string; text?: string; id?: string; name?: string; input?: Record<string, unknown> }>, stop_reason: data.stop_reason as string };
+        const aUsage = data.usage as { input_tokens?: number; output_tokens?: number } | undefined;
+        const usage = aUsage ? { inputTokens: aUsage.input_tokens || 0, outputTokens: aUsage.output_tokens || 0 } : undefined;
+        logChat(provider, model, toolDefs?.length || 0, true, Date.now() - chatStart, usage);
+        return { content: data.content as Array<{ type: string; text?: string; id?: string; name?: string; input?: Record<string, unknown> }>, stop_reason: data.stop_reason as string, usage };
 
       } else if (provider === 'google') {
         const contents = messages.map((m: { role: string; content: unknown }) => {
@@ -544,15 +562,18 @@ const webApi: ElectronAPI = {
         } catch {
           res = await fetch(directUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
         }
-        if (!res.ok) return { error: sanitizeError(`Google AI error ${res.status}: ${await res.text()}`) };
-        const data = await res.json() as { candidates?: Array<{ content?: { parts?: Array<{ text?: string; functionCall?: { name: string; args: Record<string, unknown> } }> } }> };
+        if (!res.ok) { const e = sanitizeError(`Google AI error ${res.status}: ${await res.text()}`); logChat(provider, model, toolDefs?.length || 0, false, Date.now() - chatStart, undefined, e); return { error: e }; }
+        const data = await res.json() as { candidates?: Array<{ content?: { parts?: Array<{ text?: string; functionCall?: { name: string; args: Record<string, unknown> } }> } }>; usageMetadata?: { promptTokenCount?: number; candidatesTokenCount?: number } };
         const parts = data.candidates?.[0]?.content?.parts ?? [];
         const content: Array<{ type: string; text?: string; id?: string; name?: string; input?: Record<string, unknown> }> = [];
         for (const p of parts) {
           if (p.text) content.push({ type: 'text', text: p.text });
           if (p.functionCall) content.push({ type: 'tool_use', id: `toolu_${Date.now()}`, name: p.functionCall.name, input: p.functionCall.args });
         }
-        return { content, stop_reason: content.some(c => c.type === 'tool_use') ? 'tool_use' : 'end_turn' };
+        const gUsage = data.usageMetadata;
+        const usage = gUsage ? { inputTokens: gUsage.promptTokenCount || 0, outputTokens: gUsage.candidatesTokenCount || 0 } : undefined;
+        logChat(provider, model, toolDefs?.length || 0, true, Date.now() - chatStart, usage);
+        return { content, stop_reason: content.some(c => c.type === 'tool_use') ? 'tool_use' : 'end_turn', usage };
 
       } else {
         // OpenAI-compatible (OpenAI, Groq, OpenRouter)
@@ -599,8 +620,8 @@ const webApi: ElectronAPI = {
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}`, 'X-NowAIKit-Proxy': '1' },
           body: JSON.stringify(body),
         });
-        if (!res.ok) return { error: sanitizeError(`API error ${res.status}: ${await res.text()}`) };
-        const data = await res.json() as { choices?: Array<{ message?: { content?: string; tool_calls?: Array<{ id: string; function: { name: string; arguments: string } }> } }> };
+        if (!res.ok) { const e = sanitizeError(`API error ${res.status}: ${await res.text()}`); logChat(provider, model, toolDefs?.length || 0, false, Date.now() - chatStart, undefined, e); return { error: e }; }
+        const data = await res.json() as { choices?: Array<{ message?: { content?: string; tool_calls?: Array<{ id: string; function: { name: string; arguments: string } }> } }>; usage?: { prompt_tokens?: number; completion_tokens?: number } };
         const msg = data.choices?.[0]?.message;
         const content: Array<{ type: string; text?: string; id?: string; name?: string; input?: Record<string, unknown> }> = [];
         if (msg?.content) content.push({ type: 'text', text: msg.content });
@@ -611,13 +632,17 @@ const webApi: ElectronAPI = {
             content.push({ type: 'tool_use', id: tc.id, name: tc.function.name, input: args });
           }
         }
-        return { content, stop_reason: content.some(c => c.type === 'tool_use') ? 'tool_use' : 'end_turn' };
+        const oUsage = data.usage;
+        const usage = oUsage ? { inputTokens: oUsage.prompt_tokens || 0, outputTokens: oUsage.completion_tokens || 0 } : undefined;
+        logChat(provider, model, toolDefs?.length || 0, true, Date.now() - chatStart, usage);
+        return { content, stop_reason: content.some(c => c.type === 'tool_use') ? 'tool_use' : 'end_turn', usage };
       }
     } catch (err) {
-      if (err instanceof TypeError && String(err.message).includes('Failed to fetch')) {
-        return { error: 'AI proxy not available. Run "npm run serve" or "npm run dev:web" for browser AI chat, or use the desktop app.' };
-      }
-      return { error: err instanceof Error ? err.message : 'Request failed' };
+      const errMsg = err instanceof TypeError && String(err.message).includes('Failed to fetch')
+        ? 'AI proxy not available. Run "npm run serve" or "npm run dev:web" for browser AI chat, or use the desktop app.'
+        : (err instanceof Error ? err.message : 'Request failed');
+      logChat(provider, model, toolDefs?.length || 0, false, Date.now() - chatStart, undefined, errMsg);
+      return { error: errMsg };
     }
   },
 };

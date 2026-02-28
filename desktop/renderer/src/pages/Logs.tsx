@@ -15,6 +15,8 @@ interface LogEntry {
   toolCount?: number;
   success?: boolean;
   durationMs?: number;
+  inputTokens?: number;
+  outputTokens?: number;
   error?: string;
   [key: string]: unknown;
 }
@@ -75,7 +77,7 @@ export default function Logs(): React.ReactElement {
   }
 
   function exportCsv() {
-    const headers = ['Time', 'Event', 'Tool', 'Instance', 'User', 'Provider', 'Model', 'Status', 'Duration (ms)', 'Error'];
+    const headers = ['Time', 'Event', 'Tool', 'Instance', 'User', 'Provider', 'Model', 'Status', 'Duration (ms)', 'Input Tokens', 'Output Tokens', 'Error'];
     const rows = filtered.map(e => [
       e.ts ?? '',
       e.event ?? '',
@@ -86,6 +88,8 @@ export default function Logs(): React.ReactElement {
       e.model ?? '',
       e.success === true ? 'ok' : e.success === false ? 'error' : '',
       e.durationMs != null ? String(e.durationMs) : '',
+      e.inputTokens != null ? String(e.inputTokens) : '',
+      e.outputTokens != null ? String(e.outputTokens) : '',
       e.error ?? '',
     ]);
     const csv = [headers, ...rows].map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
@@ -138,7 +142,7 @@ export default function Logs(): React.ReactElement {
         </div>
       ) : (
         <div className="card" style={{ overflow:'auto' }}>
-          <table style={{ width:'100%', borderCollapse:'collapse', minWidth:900 }}>
+          <table style={{ width:'100%', borderCollapse:'collapse', minWidth:1000 }}>
             <thead>
               <tr>
                 <th style={th}>Time</th>
@@ -149,6 +153,7 @@ export default function Logs(): React.ReactElement {
                 <th style={th}>Provider</th>
                 <th style={th}>Model</th>
                 <th style={th}>Status</th>
+                <th style={th}>Tokens</th>
                 <th style={th}>Duration</th>
                 <th style={th}>Error</th>
               </tr>
@@ -164,6 +169,11 @@ export default function Logs(): React.ReactElement {
                   <td style={{ ...td, fontSize:'0.8rem', color:'var(--text2)' }}>{e.provider ?? '—'}</td>
                   <td style={{ ...td, fontFamily:'monospace', fontSize:'0.75rem', color:'var(--text2)', maxWidth:150, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{e.model ?? '—'}</td>
                   <td style={td}>{statusBadge(e)}</td>
+                  <td style={{ ...td, fontFamily:'monospace', fontSize:'0.75rem', color:'var(--text2)', whiteSpace:'nowrap' }}>
+                    {e.inputTokens != null || e.outputTokens != null
+                      ? `${e.inputTokens ?? 0}→${e.outputTokens ?? 0}`
+                      : '—'}
+                  </td>
                   <td style={{ ...td, color:'var(--text2)' }}>{e.durationMs != null ? `${e.durationMs}ms` : '—'}</td>
                   <td style={{ ...td, color:'var(--red)', fontSize:'0.75rem', maxWidth:200, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{e.error ?? ''}</td>
                 </tr>

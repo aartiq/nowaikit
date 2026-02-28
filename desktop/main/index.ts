@@ -336,8 +336,9 @@ Set the limit parameter to match what user asks for (e.g. "5 most recent" → li
           return { error: errText };
         }
         const data = await res.json() as Record<string, unknown>;
-        configStore.appendAuditLog({ ts: new Date().toISOString(), event: 'chat:send', provider, model, toolCount, success: true, durationMs: Date.now() - chatStart });
-        return { content: data.content, stop_reason: data.stop_reason };
+        const usage = data.usage as { input_tokens?: number; output_tokens?: number } | undefined;
+        configStore.appendAuditLog({ ts: new Date().toISOString(), event: 'chat:send', provider, model, toolCount, success: true, durationMs: Date.now() - chatStart, inputTokens: usage?.input_tokens, outputTokens: usage?.output_tokens });
+        return { content: data.content, stop_reason: data.stop_reason, usage: usage ? { inputTokens: usage.input_tokens || 0, outputTokens: usage.output_tokens || 0 } : undefined };
 
       } else if (provider === 'google') {
         const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
@@ -375,7 +376,7 @@ Set the limit parameter to match what user asks for (e.g. "5 most recent" → li
           configStore.appendAuditLog({ ts: new Date().toISOString(), event: 'chat:send', provider, model, toolCount, success: false, durationMs: Date.now() - chatStart, error: errText });
           return { error: errText };
         }
-        const data = await res.json() as { candidates?: Array<{ content?: { parts?: Array<{ text?: string; functionCall?: { name: string; args: Record<string, unknown> } }> } }> };
+        const data = await res.json() as { candidates?: Array<{ content?: { parts?: Array<{ text?: string; functionCall?: { name: string; args: Record<string, unknown> } }> } }>; usageMetadata?: { promptTokenCount?: number; candidatesTokenCount?: number; totalTokenCount?: number } };
         const parts = data.candidates?.[0]?.content?.parts ?? [];
 
         // Convert Google response to Anthropic-like content format
@@ -385,8 +386,9 @@ Set the limit parameter to match what user asks for (e.g. "5 most recent" → li
           if (p.functionCall) content.push({ type: 'tool_use', id: `toolu_${Date.now()}`, name: p.functionCall.name, input: p.functionCall.args });
         }
         const hasToolUse = content.some(c => c.type === 'tool_use');
-        configStore.appendAuditLog({ ts: new Date().toISOString(), event: 'chat:send', provider, model, toolCount, success: true, durationMs: Date.now() - chatStart });
-        return { content, stop_reason: hasToolUse ? 'tool_use' : 'end_turn' };
+        const gUsage = data.usageMetadata;
+        configStore.appendAuditLog({ ts: new Date().toISOString(), event: 'chat:send', provider, model, toolCount, success: true, durationMs: Date.now() - chatStart, inputTokens: gUsage?.promptTokenCount, outputTokens: gUsage?.candidatesTokenCount });
+        return { content, stop_reason: hasToolUse ? 'tool_use' : 'end_turn', usage: gUsage ? { inputTokens: gUsage.promptTokenCount || 0, outputTokens: gUsage.candidatesTokenCount || 0 } : undefined };
 
       } else {
         // OpenAI-compatible (OpenAI, Groq, OpenRouter)
@@ -445,7 +447,7 @@ Set the limit parameter to match what user asks for (e.g. "5 most recent" → li
           configStore.appendAuditLog({ ts: new Date().toISOString(), event: 'chat:send', provider, model, toolCount, success: false, durationMs: Date.now() - chatStart, error: errText });
           return { error: errText };
         }
-        const data = await res.json() as { choices?: Array<{ message?: { content?: string; tool_calls?: Array<{ id: string; function: { name: string; arguments: string } }> }; finish_reason?: string }> };
+        const data = await res.json() as { choices?: Array<{ message?: { content?: string; tool_calls?: Array<{ id: string; function: { name: string; arguments: string } }> }; finish_reason?: string }>; usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number } };
         const choice = data.choices?.[0];
         const msg = choice?.message;
 
@@ -460,8 +462,9 @@ Set the limit parameter to match what user asks for (e.g. "5 most recent" → li
           }
         }
         const hasToolUse = content.some(c => c.type === 'tool_use');
-        configStore.appendAuditLog({ ts: new Date().toISOString(), event: 'chat:send', provider, model, toolCount, success: true, durationMs: Date.now() - chatStart });
-        return { content, stop_reason: hasToolUse ? 'tool_use' : 'end_turn' };
+        const oUsage = data.usage;
+        configStore.appendAuditLog({ ts: new Date().toISOString(), event: 'chat:send', provider, model, toolCount, success: true, durationMs: Date.now() - chatStart, inputTokens: oUsage?.prompt_tokens, outputTokens: oUsage?.completion_tokens });
+        return { content, stop_reason: hasToolUse ? 'tool_use' : 'end_turn', usage: oUsage ? { inputTokens: oUsage.prompt_tokens || 0, outputTokens: oUsage.completion_tokens || 0 } : undefined };
       }
     } catch (err) {
       const errMsg = sanitizeError(err instanceof Error ? err.message : 'Request failed');
