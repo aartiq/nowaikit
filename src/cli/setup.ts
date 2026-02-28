@@ -240,22 +240,48 @@ export async function runSetup(options: { add?: boolean } = {}): Promise<void> {
   // ─── Step 4: Test Connection ───────────────────────────────────────────────
   step(4, 7, 'Testing Connection');
 
-  const { ok } = await testConnection(instanceUrl, authMethod, {
-    username,
-    password: userPassword,
-    clientId,
-    clientSecret,
-  });
-
-  if (!ok) {
-    const proceed = await confirm({
-      message: 'Connection failed. Save config anyway?',
-      default: false,
+  let connected = false;
+  while (!connected) {
+    const { ok } = await testConnection(instanceUrl, authMethod, {
+      username,
+      password: userPassword,
+      clientId,
+      clientSecret,
     });
-    if (!proceed) {
-      console.log(chalk.yellow('\n  Setup cancelled. Fix credentials and try again.\n'));
+
+    if (ok) {
+      connected = true;
+      break;
+    }
+
+    const action = await select<'retry' | 'creds' | 'save' | 'cancel'>({
+      message: 'What would you like to do?',
+      choices: [
+        { name: 'Retry connection', value: 'retry' },
+        { name: 'Re-enter credentials', value: 'creds' },
+        { name: 'Save config anyway (fix later)', value: 'save' },
+        { name: 'Cancel setup', value: 'cancel' },
+      ],
+    });
+
+    if (action === 'cancel') {
+      console.log(chalk.yellow('\n  Setup cancelled.\n'));
       return;
     }
+    if (action === 'save') break;
+    if (action === 'creds') {
+      console.log('');
+      if (authMethod === 'basic') {
+        username = await input({ message: 'Username:' });
+        userPassword = await password({ message: 'Password:', mask: '•' });
+      } else {
+        clientId = await input({ message: 'OAuth Client ID:' });
+        clientSecret = await password({ message: 'OAuth Client Secret:', mask: '•' });
+        username = await input({ message: 'Service account username:' });
+        userPassword = await password({ message: 'Service account password:', mask: '•' });
+      }
+    }
+    // retry loops back automatically
   }
 
   // ─── Step 5: Permissions & Role ────────────────────────────────────────────
