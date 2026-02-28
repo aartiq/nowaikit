@@ -28,12 +28,23 @@ function validateSysId(sysId: string): string {
   return sysId;
 }
 
+/** Allowlist of safe GlideSystem functions permitted in javascript: query expressions */
+const SAFE_GS_PATTERN = /^javascript:gs\.(getUserID|beginningOfToday|endOfToday|beginningOfYesterday|endOfYesterday|beginningOfLastMonth|endOfLastMonth|beginningOfThisMonth|endOfThisMonth|beginningOfThisQuarter|endOfThisQuarter|beginningOfThisYear|endOfThisYear|beginningOfNextMonth|endOfNextMonth|beginningOfLast7Days|endOfLast7Days|beginningOfLastYear|endOfLastYear|daysAgo|hoursAgo|minutesAgo|monthsAgo|quartersAgo|yearsAgo|now|dateGenerate)\([\d,\s'":-]*\)$/i;
+
 /** Validate and sanitize ServiceNow encoded query strings */
 function validateQuery(query: string): string {
   if (!query) return query;
-  // Reject embedded JavaScript (ServiceNow evaluates javascript: prefixed values server-side)
-  if (/javascript:/i.test(query) && !query.includes('gs.getUserID()')) {
-    throw new ServiceNowError('Query contains unsafe JavaScript expression. Only gs.getUserID() is allowed.', 'VALIDATION_ERROR');
+  // Validate javascript: expressions against safe GlideSystem function allowlist
+  const jsMatches = query.match(/javascript:[^@^]*/gi);
+  if (jsMatches) {
+    for (const match of jsMatches) {
+      if (!SAFE_GS_PATTERN.test(match.trim())) {
+        throw new ServiceNowError(
+          `Query contains unsafe JavaScript expression: "${match.substring(0, 60)}…". Only standard GlideSystem date/user functions are allowed.`,
+          'VALIDATION_ERROR'
+        );
+      }
+    }
   }
   // Enforce max query length
   if (query.length > 4096) {

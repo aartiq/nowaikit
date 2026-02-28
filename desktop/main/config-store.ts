@@ -68,14 +68,22 @@ export class ConfigStore {
         let salt: Buffer;
 
         // Load or generate salt
+        // IMPORTANT: existing installations used hardcoded 'nowaikit-salt'.
+        // Preserve backward compatibility by using that salt for existing keyring files.
+        const isExisting = existsSync(keyPath);
         if (existsSync(saltPath)) {
           salt = readFileSync(saltPath);
+        } else if (isExisting) {
+          // Existing installation — use old hardcoded salt for backward compatibility
+          salt = Buffer.from('nowaikit-salt');
+          writeFileSync(saltPath, salt, { mode: 0o600 });
         } else {
+          // Fresh installation — use random salt
           salt = randomBytes(16);
           writeFileSync(saltPath, salt, { mode: 0o600 });
         }
 
-        if (existsSync(keyPath)) {
+        if (isExisting) {
           const encrypted = readFileSync(keyPath);
           const decrypted = safeStorage.decryptString(encrypted);
           seed = decrypted ? Buffer.from(decrypted, 'hex') : randomBytes(32);
