@@ -1,7 +1,7 @@
 {
   "name": "nowaikit",
-  "version": "2.4.0",
-  "description": "ServiceNow MCP server — 400+ tools across all ServiceNow modules. Model Context Protocol (MCP) integration for Claude, ChatGPT, Gemini, Cursor, GitHub Copilot and any LLM. ITSM, ITOM, HRSD, CSM, Flow Designer, Service Portal, Performance Analytics, Scripting, App Studio and more. MIT licensed.",
+  "version": "2.4.1",
+  "description": "The Most Comprehensive ServiceNow AI Toolkit — 400+ MCP tools across all modules. Integrates with Claude, ChatGPT, Gemini, Cursor, GitHub Copilot and any LLM.",
   "main": "dist/server.js",
   "bin": {
     "nowaikit": "dist/cli/index.js"
