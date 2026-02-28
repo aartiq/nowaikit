@@ -17,6 +17,9 @@ export interface InstanceConfig {
   authMode?: 'service-account' | 'per-user' | 'impersonation';
   writeEnabled?: boolean;
   toolPackage?: string;
+  nowAssistEnabled?: boolean;
+  group?: string;
+  environment?: string;
   addedAt: string;
 }
 

@@ -33,6 +33,15 @@ function buildEnvBlock(instance: InstanceConfig): Record<string, string> {
   if (instance.authMode && instance.authMode !== 'service-account') {
     env['SERVICENOW_AUTH_MODE'] = instance.authMode;
   }
+  if (instance.nowAssistEnabled) {
+    env['NOWASSIST_ENABLED'] = 'true';
+  }
+  if (instance.group) {
+    env['SN_INSTANCE_GROUP'] = instance.group;
+  }
+  if (instance.environment) {
+    env['SN_INSTANCE_ENVIRONMENT'] = instance.environment;
+  }
   return env;
 }
 
@@ -61,7 +70,7 @@ function mergeJsonConfig(path: string, key: string, entry: Record<string, unknow
   if (!existing[key] || typeof existing[key] !== 'object') {
     existing[key] = {};
   }
-  (existing[key] as Record<string, unknown>)['servicenow'] = entry;
+  (existing[key] as Record<string, unknown>)['nowaikit'] = entry;
   writeFileSync(path, JSON.stringify(existing, null, 2), 'utf8');
 }
 
@@ -102,10 +111,10 @@ function writeClaudeCode(_client: DetectedClient, instance: InstanceConfig): Wri
   const envFlags = Object.entries(env)
     .map(([k, v]) => `--env ${k}=${v}`)
     .join(' ');
-  const cmd = `claude mcp add servicenow node ${serverPath()} ${envFlags}`;
+  const cmd = `claude mcp add nowaikit node ${serverPath()} ${envFlags}`;
   try {
     execSync(cmd, { stdio: 'pipe' });
-    return { success: true, message: 'Added via `claude mcp add servicenow`' };
+    return { success: true, message: 'Added via `claude mcp add nowaikit`' };
   } catch (err) {
     return { success: false, message: `claude mcp add failed: ${err}` };
   }

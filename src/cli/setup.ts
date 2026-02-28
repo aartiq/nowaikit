@@ -137,27 +137,52 @@ export async function runSetup(options: { add?: boolean } = {}): Promise<void> {
     console.log(chalk.dim('  Adding a new ServiceNow instance.\n'));
   }
 
-  // ─── Step 1: Instance URL ──────────────────────────────────────────────────
-  step(1, 6, 'ServiceNow Instance');
+  // ─── Step 1: Instance ────────────────────────────────────────────────────
+  step(1, 7, 'ServiceNow Instance');
 
-  const instanceUrl = await input({
-    message: 'Instance URL (no trailing slash):',
-    default: 'https://yourcompany.service-now.com',
+  const instanceId = await input({
+    message: 'Instance name (e.g. acme, dev12345):',
     validate: (v: string) => {
-      if (!v.startsWith('https://')) return 'Must start with https://';
-      if (v.endsWith('/')) return 'Remove the trailing slash';
+      if (!v.trim()) return 'Instance name is required';
+      if (/\s/.test(v)) return 'No spaces allowed';
       return true;
     },
   });
 
+  // Build URL from instance name, or allow full custom URL
+  let instanceUrl: string;
+  const trimmed = instanceId.trim().toLowerCase();
+  if (trimmed.startsWith('https://')) {
+    instanceUrl = trimmed.replace(/\/+$/, '');
+  } else {
+    instanceUrl = `https://${trimmed}.service-now.com`;
+  }
+  console.log(chalk.dim(`  → URL: ${instanceUrl}`));
+
   const instanceName = await input({
     message: 'Short name for this instance (e.g. prod, dev, acme):',
-    default: 'default',
+    default: trimmed.replace(/\.service-now\.com$/, '').replace(/[^a-z0-9_-]/gi, '-'),
     validate: (v: string) => (/^[a-z0-9_-]+$/i.test(v) ? true : 'Letters, numbers, - and _ only'),
   });
 
+  const environment = await select<string>({
+    message: 'Environment:',
+    choices: [
+      { name: 'Production', value: 'production' },
+      { name: 'Development', value: 'development' },
+      { name: 'Test / QA', value: 'test' },
+      { name: 'Staging / UAT', value: 'staging' },
+      { name: 'Personal Dev (PDI)', value: 'pdi' },
+    ],
+  });
+
+  const group = await input({
+    message: 'Instance group (optional — press Enter to skip):',
+    default: '',
+  });
+
   // ─── Step 2: Auth Method ───────────────────────────────────────────────────
-  step(2, 6, 'Authentication');
+  step(2, 7, 'Authentication');
 
   const authMethod = await select<'basic' | 'oauth'>({
     message: 'Authentication method:',
@@ -186,7 +211,7 @@ export async function runSetup(options: { add?: boolean } = {}): Promise<void> {
   });
 
   // ─── Step 3: Credentials ───────────────────────────────────────────────────
-  step(3, 6, 'Credentials');
+  step(3, 7, 'Credentials');
 
   let username: string | undefined;
   let userPassword: string | undefined;
@@ -213,7 +238,7 @@ export async function runSetup(options: { add?: boolean } = {}): Promise<void> {
   }
 
   // ─── Step 4: Test Connection ───────────────────────────────────────────────
-  step(4, 6, 'Testing Connection');
+  step(4, 7, 'Testing Connection');
 
   const { ok } = await testConnection(instanceUrl, authMethod, {
     username,
@@ -234,7 +259,7 @@ export async function runSetup(options: { add?: boolean } = {}): Promise<void> {
   }
 
   // ─── Step 5: Permissions & Role ────────────────────────────────────────────
-  step(5, 6, 'Permissions & Role');
+  step(5, 7, 'Permissions & Role');
 
   const toolPackage = await select<string>({
     message: 'Tool package:',
@@ -245,6 +270,38 @@ export async function runSetup(options: { add?: boolean } = {}): Promise<void> {
     message: 'Enable write operations (create/update/delete)?',
     default: false,
   });
+
+  const nowAssistEnabled = await confirm({
+    message: 'Enable Now Assist / AI features?',
+    default: false,
+  });
+
+  // ─── Step 6: Features ──────────────────────────────────────────────────────
+  step(6, 7, 'Features & Shortcuts');
+
+  console.log(chalk.dim('  Available slash commands (/ prompts):'));
+  console.log(chalk.cyan('    /morning-standup')    + chalk.dim('    — daily briefing: P1s, SLA breaches, changes'));
+  console.log(chalk.cyan('    /my-tickets')         + chalk.dim('         — all open work assigned to you'));
+  console.log(chalk.cyan('    /p1-alerts')          + chalk.dim('          — active Priority 1 incidents'));
+  console.log(chalk.cyan('    /my-changes')         + chalk.dim('         — pending change requests'));
+  console.log(chalk.cyan('    /knowledge-search')   + chalk.dim('   — search knowledge base'));
+  console.log(chalk.cyan('    /create-incident')    + chalk.dim('    — guided incident creation'));
+  console.log(chalk.cyan('    /sla-breaches')       + chalk.dim('       — records breaching SLA'));
+  console.log(chalk.cyan('    /ci-health')          + chalk.dim('          — CMDB CI health check'));
+  console.log(chalk.cyan('    /run-atf')            + chalk.dim('            — trigger ATF test suite'));
+  console.log(chalk.cyan('    /switch-instance')    + chalk.dim('    — switch to different instance'));
+  console.log(chalk.cyan('    /deploy-updateset')   + chalk.dim('   — preview and commit update set'));
+  console.log('');
+  console.log(chalk.dim('  Available @ mentions (resources):'));
+  console.log(chalk.cyan('    @my-incidents')       + chalk.dim('       — open incidents assigned to you'));
+  console.log(chalk.cyan('    @open-changes')       + chalk.dim('       — change requests pending approval'));
+  console.log(chalk.cyan('    @sla-breaches')       + chalk.dim('       — records breaching SLA'));
+  console.log(chalk.cyan('    @instance:info')      + chalk.dim('      — current instance metadata'));
+  console.log(chalk.cyan('    @ci:{name}')          + chalk.dim('          — CMDB CI lookup (e.g. @ci:web-prod-01)'));
+  console.log(chalk.cyan('    @kb:{title}')         + chalk.dim('         — KB article search (e.g. @kb:VPN-setup)'));
+  console.log('');
+  console.log(chalk.dim('  Custom commands: create a ') + chalk.cyan('nowaikit.commands.json') + chalk.dim(' file in your project root.'));
+  console.log('');
 
   const instance: InstanceConfig = {
     name: instanceName.toLowerCase(),
@@ -257,14 +314,17 @@ export async function runSetup(options: { add?: boolean } = {}): Promise<void> {
     authMode,
     writeEnabled,
     toolPackage,
+    nowAssistEnabled,
+    group: group || undefined,
+    environment,
     addedAt: new Date().toISOString(),
   };
 
   addInstance(instance);
   console.log(chalk.green(`\n  ✓ Saved instance "${instance.name}" to ~/.config/nowaikit/instances.json`));
 
-  // ─── Step 6: AI Client Installation ────────────────────────────────────────
-  step(6, 6, 'Install into AI Client(s)');
+  // ─── Step 7: AI Client Installation ────────────────────────────────────────
+  step(7, 7, 'Install into AI Client(s)');
 
   const clients = detectClients();
   const detected = clients.filter(c => c.detected);
@@ -322,8 +382,18 @@ function printSummary(instance: InstanceConfig): void {
   console.log('');
   console.log(chalk.bold.green('  Setup complete!'));
   console.log('');
-  console.log(chalk.dim('  Restart your AI client to activate the new config, then try:'));
+  console.log(chalk.dim('  Instance: ') + chalk.cyan(instance.instanceUrl));
+  console.log(chalk.dim('  Name:     ') + chalk.cyan(instance.name));
+  if (instance.environment) console.log(chalk.dim('  Env:      ') + chalk.cyan(instance.environment));
+  if (instance.group)       console.log(chalk.dim('  Group:    ') + chalk.cyan(instance.group));
+  console.log(chalk.dim('  Tools:    ') + chalk.cyan(instance.toolPackage || 'full'));
+  console.log(chalk.dim('  Write:    ') + chalk.cyan(instance.writeEnabled ? 'enabled' : 'disabled'));
+  console.log(chalk.dim('  NowAssist:') + chalk.cyan(instance.nowAssistEnabled ? ' enabled' : ' disabled'));
+  console.log('');
+  console.log(chalk.dim('  Restart your AI client to activate, then try:'));
   console.log(chalk.cyan('    List my 5 most recent open incidents'));
+  console.log(chalk.cyan('    /morning-standup'));
+  console.log(chalk.cyan('    @my-incidents'));
   console.log('');
   console.log(chalk.dim('  Manage nowaikit from the terminal:'));
   console.log(`    ${chalk.cyan('nowaikit setup --add')}        Add another instance`);

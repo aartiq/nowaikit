@@ -27,6 +27,7 @@ jobs:
         working-directory: desktop
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          EP_GH_IGNORE_EXISTING: true
         run: npm run package:mac
 
       - name: Upload macOS artifacts
@@ -56,6 +57,7 @@ jobs:
         working-directory: desktop
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          EP_GH_IGNORE_EXISTING: true
         run: npm run package:win
 
       - name: Upload Windows artifacts
@@ -85,6 +87,7 @@ jobs:
         working-directory: desktop
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          EP_GH_IGNORE_EXISTING: true
         run: npm run package:linux
 
       - name: Upload Linux artifacts

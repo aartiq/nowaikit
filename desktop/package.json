@@ -1,9 +1,12 @@
 {
   "name": "nowaikit-desktop",
-  "version": "2.4.0",
+  "version": "2.4.1",
   "description": "NowAIKit Desktop — visual setup wizard, dashboard, tool browser, and audit log viewer for ServiceNow MCP server",
   "main": "dist/main/index.js",
-  "author": "aartiq",
+  "author": {
+    "name": "aartiq",
+    "email": "habenani@gmail.com"
+  },
   "license": "MIT",
   "homepage": "https://nowaitkit.com",
   "scripts": {

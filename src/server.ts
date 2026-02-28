@@ -30,8 +30,8 @@ if (!hasLegacy && !hasMulti && !hasConfig) {
 
 const server = new Server(
   {
-    name: 'servicenow-mcp',
-    version: '2.4.0',
+    name: 'nowaikit',
+    version: '2.4.1',
   },
   {
     capabilities: {
