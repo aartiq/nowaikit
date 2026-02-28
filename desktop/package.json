@@ -1,6 +1,6 @@
 {
   "name": "nowaikit-desktop",
-  "version": "2.5.0",
+  "version": "2.5.1",
   "description": "NowAIKit Desktop — visual setup wizard, dashboard, tool browser, and audit log viewer",
   "main": "dist/main/index.js",
   "author": {
@@ -18,8 +18,8 @@
     "build:renderer": "vite build",
     "build:main": "tsc -p tsconfig.main.json",
     "build:web": "vite build",
-    "serve": "node serve.js",
-    "preview:web": "node serve.js",
+    "serve": "node serve.cjs",
+    "preview:web": "node serve.cjs",
     "package": "npm run build && electron-builder",
     "package:win": "npm run build && electron-builder --win",
     "package:mac": "npm run build && electron-builder --mac",

@@ -53,7 +53,7 @@ const program = new Command();
 program
   .name('nowaikit')
   .description('The Most Comprehensive ServiceNow AI Toolkit')
-  .version('2.5.0')
+  .version('2.5.1')
   .addHelpText('before', '')
   .addHelpText('beforeAll', () => {
     cliBanner();
@@ -153,7 +153,7 @@ program
     // Locate serve.js relative to this CLI file (dist/cli/index.js -> ../../desktop/serve.js)
     const cliDir = path.dirname(fileURLToPath(import.meta.url));
     const pkgRoot = path.resolve(cliDir, '..', '..');
-    const serveJs = path.join(pkgRoot, 'desktop', 'serve.js');
+    const serveJs = path.join(pkgRoot, 'desktop', 'serve.cjs');
     const staticDir = path.join(pkgRoot, 'desktop', 'renderer', 'dist');
 
     if (!existsSync(serveJs)) {
