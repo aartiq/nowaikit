@@ -61,12 +61,17 @@ const webApi: ElectronAPI = {
     saveJSON(`nowaikit:config:${key}`, value);
   },
   getAllConfig: async () => {
-    return loadJSON<Record<string, unknown>>('nowaikit:config:all', {
-      instances: getInstances(),
+    const instances = getInstances();
+    const activeInstance = loadJSON<string>('nowaikit:config:activeInstance', instances[0]?.name || '');
+    const settings = loadJSON<unknown>('nowaikit:config:settings', null);
+    return {
+      instances,
+      activeInstance,
       theme: 'dark',
       telemetry: false,
       autoUpdate: true,
-    });
+      ...(settings ? { settings } : {}),
+    };
   },
 
   // ── Instances ──
@@ -82,6 +87,11 @@ const webApi: ElectronAPI = {
       instances.push(instance);
     }
     saveJSON('nowaikit:instances', instances);
+    // Auto-set as active if no active instance exists
+    const currentActive = loadJSON<string>('nowaikit:config:activeInstance', '');
+    if (!currentActive || !instances.some(i => i.name === currentActive)) {
+      saveJSON('nowaikit:config:activeInstance', instance.name);
+    }
     appendAuditEntry({
       ts: new Date().toISOString(),
       event: 'instance:add',
@@ -96,6 +106,11 @@ const webApi: ElectronAPI = {
     if (idx < 0) return { success: false, error: `Instance "${name}" not found` };
     instances.splice(idx, 1);
     saveJSON('nowaikit:instances', instances);
+    // Update active instance if the removed one was active
+    const currentActive = loadJSON<string>('nowaikit:config:activeInstance', '');
+    if (currentActive === name) {
+      saveJSON('nowaikit:config:activeInstance', instances[0]?.name || '');
+    }
     appendAuditEntry({
       ts: new Date().toISOString(),
       event: 'instance:remove',
