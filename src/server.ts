@@ -31,7 +31,7 @@ if (!hasLegacy && !hasMulti && !hasConfig) {
 const server = new Server(
   {
     name: 'servicenow-mcp',
-    version: '2.3.0',
+    version: '2.4.0',
   },
   {
     capabilities: {
@@ -153,7 +153,7 @@ server.setRequestHandler(GetPromptRequestSchema, async (request): Promise<any> =
 async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  logger.info(`ServiceNow MCP server v2.3.0 running on stdio [${tools.length} tools]`);
+  logger.info(`ServiceNow MCP server running on stdio [${tools.length} tools]`);
 }
 
 main().catch((error) => {

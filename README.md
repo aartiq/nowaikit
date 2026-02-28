@@ -1013,7 +1013,7 @@ Type `/` in the chat input to open a floating picker over all 400+ ServiceNow to
 - **Dashboard URL truncation** — long instance URLs are truncated with `…` (full URL on hover)
 - **Bug fix: ChatGPT and Gemini responses now display correctly** — responses were being silently dropped due to a content-format mismatch between provider response conversion and the renderer; now fully fixed for both providers and the HTTP API server
 
-Version 2.5.0 — [full changelog](CHANGELOG.md)
+[Full changelog](CHANGELOG.md)
 
 ## What's New in v2.4
 
@@ -1037,7 +1037,7 @@ Version 2.5.0 — [full changelog](CHANGELOG.md)
 - **HTTP API server** (`npm run serve`) — REST proxy for Lovable, Bolt, v0, Replit apps. Keeps credentials server-side.
 - **Smithery registry** — `smithery install nowaikit` one-command install.
 
-Version 2.4.0 — [full changelog](CHANGELOG.md)
+[Full changelog](CHANGELOG.md)
 
 ## What's New in v2.3
 
@@ -1047,7 +1047,7 @@ Version 2.4.0 — [full changelog](CHANGELOG.md)
 - **Create portals & pages** — `create_portal`, `create_portal_page` added to Service Portal module
 - **Create/update catalog items** — `create_catalog_item`, `update_catalog_item` added to Catalog module
 - **Approval rules** — `create_approval_rule` for automated approval workflow setup
-- Version 2.3.0 — [full changelog](CHANGELOG.md)
+[Full changelog](CHANGELOG.md)
 
 ## What's New in v2.2
 
@@ -1056,7 +1056,7 @@ Version 2.4.0 — [full changelog](CHANGELOG.md)
 - **Per-call instance routing** — pass `instance: "name"` to any tool, or `switch_instance` globally
 - **2 new role packages** — `devops_engineer`, `itam_analyst`
 - `system_administrator` package extended with system properties and update set tools
-- Version 2.2.0 — [full changelog](CHANGELOG.md)
+[Full changelog](CHANGELOG.md)
 
 ### v2.1 highlights
 

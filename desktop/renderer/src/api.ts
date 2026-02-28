@@ -445,7 +445,7 @@ const webApi: ElectronAPI = {
   // ── System ──
   getVersion: async () => {
     return {
-      app: '2.4.0',
+      app: (typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'dev') as string,
       electron: typeof navigator !== 'undefined' ? 'Browser' : 'N/A',
       node: typeof navigator !== 'undefined' ? navigator.userAgent.split(' ').pop() || 'Browser' : 'N/A',
     };

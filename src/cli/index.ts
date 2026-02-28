@@ -21,7 +21,7 @@ const program = new Command();
 program
   .name('nowaikit')
   .description('ServiceNow MCP server — setup and management CLI')
-  .version('2.3.0');
+  .version('2.4.0');
 
 // ─── setup ────────────────────────────────────────────────────────────────────
 program

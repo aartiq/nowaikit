@@ -32,7 +32,7 @@ win:
     - target: nsis
       arch: [x64, arm64]
   icon: resources/icon.ico
-  artifactName: nowaikit-Setup-${version}.${ext}
+  artifactName: nowaikit-Setup.${ext}
 
 nsis:
   oneClick: false
@@ -47,7 +47,7 @@ mac:
       arch: [x64, arm64]
   icon: resources/icon.icns
   category: public.app-category.developer-tools
-  artifactName: nowaikit-${version}.${ext}
+  artifactName: nowaikit.${ext}
 
 linux:
   target:
@@ -57,7 +57,7 @@ linux:
       arch: [x64]
   icon: resources/icon.png
   category: Development
-  artifactName: nowaikit-${version}.${ext}
+  artifactName: nowaikit.${ext}
 
 publish:
   provider: github

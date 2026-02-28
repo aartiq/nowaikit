@@ -10,7 +10,7 @@ description: >
   Multi-instance support, 14 role-based tool packages, 5-tier permissions,
   slash commands and @ mention resources built in.
 
-version: "2.3.0"
+version: "2.4.0"
 license: MIT
 homepage: https://github.com/aartiq/nowaikit
 repository: https://github.com/aartiq/nowaikit

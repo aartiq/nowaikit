@@ -54,7 +54,7 @@ npm install
 npm run package:win
 ```
 
-The NSIS installer will be at `release/nowaikit-Setup-2.4.0.exe`.
+The NSIS installer will be at `release/nowaikit-Setup.exe`.
 
 ### Code Signing (Optional)
 

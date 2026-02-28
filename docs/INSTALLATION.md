@@ -41,7 +41,7 @@ npx nowaikit setup
 The wizard walks you through:
 
 ```
-Welcome to nowaikit v2.4.0
+Welcome to nowaikit
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 Step 1/5 — ServiceNow Instance
@@ -85,9 +85,9 @@ Download the **nowaikit Desktop** app — includes an 8-step visual wizard, inst
 
 | Platform | Download |
 |----------|----------|
-| **macOS** | [nowaikit-2.4.0.dmg](https://github.com/aartiq/nowaikit/releases/latest) |
-| **Windows** | [nowaikit-Setup-2.4.0.exe](https://github.com/aartiq/nowaikit/releases/latest) |
-| **Linux** | [nowaikit-2.4.0.AppImage](https://github.com/aartiq/nowaikit/releases/latest) · [nowaikit_2.4.0_amd64.deb](https://github.com/aartiq/nowaikit/releases/latest) |
+| **macOS** | [nowaikit.dmg](https://github.com/aartiq/nowaikit/releases/latest) |
+| **Windows** | [nowaikit-Setup.exe](https://github.com/aartiq/nowaikit/releases/latest) |
+| **Linux** | [nowaikit.AppImage](https://github.com/aartiq/nowaikit/releases/latest) · [nowaikit.deb](https://github.com/aartiq/nowaikit/releases/latest) |
 
 The app auto-updates when new releases are published.
 

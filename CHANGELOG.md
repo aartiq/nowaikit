@@ -100,7 +100,7 @@ Named data references users can pull into AI context with `@`:
 - GUI config schema mapping all env vars to form fields
 
 ### Changed
-- `src/server.ts` bumped to v2.4.0; registers `prompts` capability alongside tools and resources
+- `src/server.ts` registers `prompts` capability alongside tools and resources
 - `src/servicenow/types.ts` — added `AuthMode` type and new `ServiceNowConfig` fields
 - `src/servicenow/client.ts` — added `withUser()`, `getImpersonateHeader()`, `X-Sn-Impersonate` support
 - `package.json` — added `bin: { nowaikit }`, `serve` and `setup` scripts; new deps: `@inquirer/prompts`, `chalk`, `commander`, `ora`
