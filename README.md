@@ -266,13 +266,34 @@ nowaikit setup --add
 nowaikit instances list
 ```
 
-### Option B — Desktop App (Pro)
+### Option B — Web UI (Browser Dashboard)
 
-The **nowaikit Desktop** app is available with a Pro license. It includes a visual setup wizard, multi-provider AI chat, tool browser, and audit log viewer.
+Run the NowAIKit dashboard in your browser — no Electron required:
 
-Learn more at [nowaikit.com/#pricing](https://nowaikit.com/#pricing).
+```bash
+# 1. Clone and build
+git clone https://github.com/aartiq/nowaikit.git
+cd nowaikit
+npm install && npm run build
 
-### Option B — Manual Setup
+# 2. Build the web UI
+cd desktop
+npm install && npm run build:web
+
+# 3. Start the web server
+npm run serve
+```
+
+Open **http://localhost:4175** — the dashboard includes instance management, settings, and an audit log viewer.
+
+> **Custom port:** `PORT=3000 npm run serve`
+> **Expose to network:** `HOST=0.0.0.0 npm run serve` (use with caution)
+
+### Option C — Desktop App
+
+Download the native desktop app (macOS, Windows, Linux) from [GitHub Releases](https://github.com/aartiq/nowaikit/releases). Includes a visual setup wizard, tool browser, and audit log viewer.
+
+### Option D — Manual Setup
 
 ```bash
 git clone https://github.com/aartiq/nowaikit.git && cd nowaikit
