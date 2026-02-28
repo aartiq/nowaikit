@@ -32,9 +32,9 @@ function logoText(): string {
 
 function cliBanner(): void {
   console.log('');
-  console.log(bright('  ╔╗╔') + dim('  ') + teal('✦'));
-  console.log(teal('  ║║║') + dim('  ') + navy('│'));
-  console.log(navy('  ╝╚╝') + dim('  ') + teal('●'));
+  console.log(bright('  ╔╗╔') + teal('╔═╗') + bright('╦ ╦') + dim('  ') + teal('╔═╗') + bright('╦') + teal('╦╔═') + bright('╦') + teal('╔╦╗'));
+  console.log(teal('  ║║║') + navy('║ ║') + teal('║║║') + dim('  ') + teal('╠═╣') + navy('║') + teal('╠╩╗') + navy('║') + teal(' ║ '));
+  console.log(navy('  ╝╚╝') + teal('╚═╝') + navy('╚╩╝') + dim('  ') + navy('╩ ╩') + teal('╩') + navy('╩ ╩') + teal('╩') + navy(' ╩ ') + dim('  ') + teal('✦'));
   console.log('');
   console.log(`  ${logoText()}  ${dim('—')} ${subtle('The #1 AI App for ServiceNow')}`);
   console.log(dim('  Connect ') + teal.bold('Any AI') + dim(' to ServiceNow. Instantly.'));

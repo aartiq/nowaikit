@@ -94,15 +94,15 @@ function logoText(): string {
 
 function banner(): void {
   console.log('');
-  // N + sparkle logo (matches website SVG — teal/navy gradient)
-  console.log(bright('      ╔╗╔') + dim('  ') + teal('✦'));
-  console.log(teal('      ║║║') + dim('  ') + navy('│'));
-  console.log(navy('      ╝╚╝') + dim('  ') + teal('●'));
+  // ASCII art logo — "NowAIKit" in stylized block text with teal/navy gradient
+  console.log(bright('  ╔╗╔') + teal('╔═╗') + bright('╦ ╦') + dim('  ') + teal('╔═╗') + bright('╦') + teal('╦╔═') + bright('╦') + teal('╔╦╗'));
+  console.log(teal('  ║║║') + navy('║ ║') + teal('║║║') + dim('  ') + teal('╠═╣') + navy('║') + teal('╠╩╗') + navy('║') + teal(' ║ '));
+  console.log(navy('  ╝╚╝') + teal('╚═╝') + navy('╚╩╝') + dim('  ') + navy('╩ ╩') + teal('╩') + navy('╩ ╩') + teal('╩') + navy(' ╩ ') + dim('  ') + teal('✦'));
   console.log('');
-  console.log(`      ${logoText()}  ${dim('—')} ${subtle('Setup Wizard')}`);
+  console.log(`  ${logoText()}  ${dim('—')} ${subtle('Setup Wizard')}`);
   console.log('');
-  console.log(dim('      Connect ') + teal.bold('Any AI') + dim(' to ServiceNow. Instantly.'));
-  console.log(dim('      400+ tools  ·  All modules  ·  Any AI client'));
+  console.log(dim('  Connect ') + teal.bold('Any AI') + dim(' to ServiceNow. Instantly.'));
+  console.log(dim('  400+ tools  ·  All modules  ·  Any AI client'));
   console.log('');
   divider();
   console.log('');
@@ -538,9 +538,9 @@ function printSummary(instance: InstanceConfig): void {
   divider();
   console.log('');
 
-  console.log(bright('      ╔╗╔') + dim('  ') + teal('✦'));
-  console.log(teal('      ║║║') + dim('  ') + navy('│'));
-  console.log(navy('      ╝╚╝') + dim('  ') + teal('●'));
+  console.log(bright('  ╔╗╔') + teal('╔═╗') + bright('╦ ╦') + dim('  ') + teal('╔═╗') + bright('╦') + teal('╦╔═') + bright('╦') + teal('╔╦╗'));
+  console.log(teal('  ║║║') + navy('║ ║') + teal('║║║') + dim('  ') + teal('╠═╣') + navy('║') + teal('╠╩╗') + navy('║') + teal(' ║ '));
+  console.log(navy('  ╝╚╝') + teal('╚═╝') + navy('╚╩╝') + dim('  ') + navy('╩ ╩') + teal('╩') + navy('╩ ╩') + teal('╩') + navy(' ╩ ') + dim('  ') + teal('✦'));
   console.log('');
 
   box([
