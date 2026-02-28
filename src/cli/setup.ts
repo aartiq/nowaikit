@@ -126,15 +126,55 @@ function sectionLabel(label: string): void {
 }
 
 // ─── Test connection ──────────────────────────────────────────────────────────
+
+/** Extract the real error message from Node.js fetch failures (cause chain) */
+function extractFetchError(error: unknown): string {
+  if (!(error instanceof Error)) return String(error);
+
+  // Node.js fetch wraps real errors in .cause
+  const cause = (error as Error & { cause?: Error }).cause;
+  if (cause) {
+    const code = (cause as Error & { code?: string }).code;
+    if (code === 'ENOTFOUND')      return `DNS lookup failed — hostname not found. Check the instance name.`;
+    if (code === 'ECONNREFUSED')   return `Connection refused — the instance may be down or blocking access.`;
+    if (code === 'ECONNRESET')     return `Connection reset by the server. Check firewall or VPN settings.`;
+    if (code === 'ETIMEDOUT')      return `Connection timed out. Check network connectivity.`;
+    if (code === 'CERT_HAS_EXPIRED') return `SSL certificate has expired on the ServiceNow instance.`;
+    if (code === 'UNABLE_TO_VERIFY_LEAF_SIGNATURE') return `SSL certificate verification failed.`;
+    if (code)                      return `Network error: ${code} — ${cause.message}`;
+    return cause.message;
+  }
+  return error.message;
+}
+
 async function testConnection(
   instanceUrl: string,
   authMethod: 'basic' | 'oauth',
   creds: Partial<InstanceConfig>
 ): Promise<{ ok: boolean; message: string }> {
+  // Pre-flight: verify the hostname is reachable before attempting auth
   const spinner = ora({
-    text: dim('  Testing connection to ServiceNow…'),
+    text: dim('  Checking instance reachability…'),
     color: 'cyan',
   }).start();
+
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000);
+    await fetch(instanceUrl, { method: 'HEAD', signal: controller.signal, redirect: 'follow' });
+    clearTimeout(timeout);
+  } catch (preflight) {
+    const msg = extractFetchError(preflight);
+    spinner.fail(err(`  Instance unreachable: ${msg}`));
+    console.log('');
+    console.log(dim('  Verify:'));
+    console.log(dim('    • The instance name is correct (just the subdomain)'));
+    console.log(dim('    • The instance is online at ') + accent(instanceUrl));
+    console.log(dim('    • Your network/VPN allows access'));
+    return { ok: false, message: msg };
+  }
+
+  spinner.text = dim('  Testing authentication…');
 
   try {
     const { ServiceNowClient } = await import('../servicenow/client.js');
@@ -148,13 +188,15 @@ async function testConnection(
         username: creds.username,
         password: creds.password,
       },
+      maxRetries: 1,
+      requestTimeoutMs: 15000,
     });
 
     const result = await client.queryRecords({ table: 'sys_user', limit: 1 });
     spinner.succeed(success('  Connected — authentication verified'));
     return { ok: true, message: `Connected (${result.count >= 0 ? 'OK' : 'warning'})` };
   } catch (error) {
-    const msg = error instanceof Error ? error.message : String(error);
+    const msg = extractFetchError(error);
     spinner.fail(err(`  Connection failed: ${msg}`));
     return { ok: false, message: msg };
   }
@@ -233,7 +275,8 @@ export async function runSetup(options: { add?: boolean } = {}): Promise<void> {
   // ─── Step 1: Instance ──────────────────────────────────────────────────────
   step(1, 'ServiceNow Instance');
 
-  sectionLabel('Enter your instance name — we\'ll build the URL for you');
+  sectionLabel('Enter your instance name — just the subdomain, not the full URL');
+  console.log(dim('  Example: if your URL is https://acme.service-now.com, enter ') + brand('acme'));
   console.log('');
 
   const instanceId = await input({
@@ -246,9 +289,14 @@ export async function runSetup(options: { add?: boolean } = {}): Promise<void> {
   });
 
   let instanceUrl: string;
-  const trimmed = instanceId.trim().toLowerCase();
+  let trimmed = instanceId.trim().toLowerCase();
+  // Strip full URL if user pasted one
   if (trimmed.startsWith('https://')) {
     instanceUrl = trimmed.replace(/\/+$/, '');
+    trimmed = instanceUrl.replace('https://', '').replace('.service-now.com', '');
+  } else if (trimmed.includes('.service-now.com')) {
+    trimmed = trimmed.replace('.service-now.com', '').replace(/\/+$/, '');
+    instanceUrl = `https://${trimmed}.service-now.com`;
   } else {
     instanceUrl = `https://${trimmed}.service-now.com`;
   }
