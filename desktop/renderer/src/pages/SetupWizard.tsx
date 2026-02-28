@@ -95,7 +95,7 @@ export function SetupWizard() {
     <div className="fade-in">
       <div className="page-header">
         <h1 className="page-title">Setup Wizard</h1>
-        <p className="page-subtitle">Connect NowAIKit to your ServiceNow instance</p>
+        <p className="page-subtitle">Connect Any AI to ServiceNow. Instantly.</p>
       </div>
 
       {/* Step indicators */}
@@ -284,7 +284,7 @@ export function SetupWizard() {
             <div className="code-block">
 {`{
   "mcpServers": {
-    "now-ai-kit": {
+    "nowaikit": {
       "command": "node",
       "args": ["<server-path>/dist/server.js"],
       "env": {
@@ -334,7 +334,7 @@ export function SetupWizard() {
             <div style={{ fontSize: 48, marginBottom: 16 }}>&#10003;</div>
             <h3>Setup Complete!</h3>
             <p style={{ color: 'var(--text-muted)', marginTop: 8 }}>
-              NowAIKit is connected to <strong>{form.instanceUrl}</strong> and the MCP server is running.
+              nowaikit is connected to <strong>{form.instanceUrl}</strong> and the MCP server is running.
             </p>
             <p style={{ color: 'var(--text-muted)', marginTop: 8 }}>
               Open Claude Desktop, Cursor, or VS Code and start asking questions about your ServiceNow instance.

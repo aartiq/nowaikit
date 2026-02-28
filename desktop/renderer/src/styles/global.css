@@ -2,7 +2,7 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --bg: #0f1117;
+  --bg: #05050f;
   --bg-surface: #161822;
   --bg-card: #1c1e2e;
   --bg-hover: #252840;
@@ -82,7 +82,7 @@ body {
 }
 
 .sidebar-logo .logo-accent {
-  background: linear-gradient(90deg, #38bdf8 0%, #818cf8 60%, #a78bfa 100%);
+  background: linear-gradient(90deg, #0ea5e9 0%, #6366f1 60%, #8b5cf6 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;

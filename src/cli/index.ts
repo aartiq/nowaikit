@@ -16,21 +16,30 @@ import { runSetup } from './setup.js';
 import { authLogin, authLogout, authWhoami } from './auth.js';
 import { listInstances, removeInstance } from './config-store.js';
 
-const brand   = chalk.hex('#00C7B7');
-const accent  = chalk.hex('#6366F1');
-const dim     = chalk.hex('#6B7280');
-const white   = chalk.hex('#F9FAFB');
+// Brand colors (matches nowaitkit.com)
+const purple  = chalk.hex('#A855F7');
+const indigo  = chalk.hex('#6366F1');
+const violet  = chalk.hex('#8B5CF6');
+const sky     = chalk.hex('#0EA5E9');
+const dim     = chalk.hex('#64748B');
+const white   = chalk.hex('#F1F5F9');
+const subtle  = chalk.hex('#94A3B8');
 const success = chalk.hex('#22C55E');
 const err     = chalk.hex('#EF4444');
+const teal    = chalk.hex('#06B6D4');
+
+function logoText(): string {
+  return white('Now') + indigo.bold('AI') + white('Kit');
+}
 
 function cliBanner(): void {
   console.log('');
-  console.log(brand('  ╔╗╔╔═╗╦ ╦  ╔═╗╦╦╔═╦╔╦╗'));
-  console.log(brand('  ║║║║ ║║║║  ╠═╣║╠╩╗║ ║ '));
-  console.log(brand('  ╝╚╝╚═╝╚╩╝  ╩ ╩╩╩ ╩╩ ╩ '));
+  console.log(sky('  ╔╗╔') + dim('  ') + violet('✦'));
+  console.log(indigo('  ║║║') + dim('  ') + purple('│'));
+  console.log(purple('  ╝╚╝') + dim('  ') + violet('●'));
   console.log('');
-  console.log(white('  The Most Comprehensive ServiceNow AI Toolkit'));
-  console.log(dim('  400+ MCP tools  ·  All modules  ·  Any AI client'));
+  console.log(`  ${logoText()}  ${dim('—')} ${subtle('The Most Comprehensive ServiceNow AI Toolkit')}`);
+  console.log(dim('  Connect ') + indigo.bold('Any AI') + dim(' to ServiceNow. Instantly.'));
   console.log('');
 }
 
@@ -39,7 +48,7 @@ const program = new Command();
 program
   .name('nowaikit')
   .description('The Most Comprehensive ServiceNow AI Toolkit')
-  .version('2.4.3')
+  .version('2.4.5')
   .addHelpText('before', '')
   .addHelpText('beforeAll', () => {
     cliBanner();
@@ -89,30 +98,30 @@ instances
     const list = listInstances();
     if (list.length === 0) {
       console.log('');
-      console.log(dim('  No instances configured. Run ') + brand('nowaikit setup') + dim(' to add one.'));
+      console.log(dim('  No instances configured. Run ') + purple('nowaikit setup') + dim(' to add one.'));
       console.log('');
       return;
     }
     console.log('');
-    console.log(dim('  ' + '─'.repeat(56)));
-    console.log(`  ${dim('NAME'.padEnd(16))} ${dim('URL'.padEnd(32))} ${dim('AUTH')}`);
-    console.log(dim('  ' + '─'.repeat(56)));
+    console.log(dim('  ' + '─'.repeat(60)));
+    console.log(`  ${dim('NAME'.padEnd(16))} ${dim('URL'.padEnd(36))} ${dim('AUTH')}`);
+    console.log(dim('  ' + '─'.repeat(60)));
     for (const inst of list) {
       const envBadge = inst.environment
-        ? (inst.environment === 'production' ? chalk.hex('#EF4444')(' PROD ')
-          : inst.environment === 'development' ? chalk.hex('#22C55E')(' DEV  ')
-          : inst.environment === 'test' ? chalk.hex('#F59E0B')(' TEST ')
-          : inst.environment === 'staging' ? chalk.hex('#6366F1')(' STG  ')
+        ? (inst.environment === 'production'  ? err(' PROD ')
+          : inst.environment === 'development' ? success(' DEV  ')
+          : inst.environment === 'test'        ? chalk.hex('#F59E0B')(' TEST ')
+          : inst.environment === 'staging'     ? indigo(' STG  ')
           : dim(' PDI  '))
         : '';
       console.log(
-        `  ${brand(inst.name.padEnd(16))} ${accent(inst.instanceUrl.padEnd(32))} ${dim(inst.authMethod)}${envBadge ? ' ' + envBadge : ''}`
+        `  ${purple(inst.name.padEnd(16))} ${teal(inst.instanceUrl.padEnd(36))} ${dim(inst.authMethod)}${envBadge ? ' ' + envBadge : ''}`
       );
       if (inst.group) {
         console.log(`  ${' '.repeat(16)} ${dim('group: ' + inst.group)}`);
       }
     }
-    console.log(dim('  ' + '─'.repeat(56)));
+    console.log(dim('  ' + '─'.repeat(60)));
     console.log('');
   });
 

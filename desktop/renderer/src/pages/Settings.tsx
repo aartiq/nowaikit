@@ -154,9 +154,9 @@ const MODELS_BY_PROVIDER: Record<AiProviderId, { value: string; label: string; d
 };
 
 const ACCENTS: { id: ThemeAccent; color: string; label: string }[] = [
-  { id: 'blue',    color: '#4f8ef7', label: 'Blue (default)' },
-  { id: 'violet',  color: '#7c5cbf', label: 'Violet'  },
-  { id: 'sky',     color: '#38bdf8', label: 'Sky'     },
+  { id: 'blue',    color: '#6366f1', label: 'Indigo (default)' },
+  { id: 'violet',  color: '#8b5cf6', label: 'Violet'  },
+  { id: 'sky',     color: '#0ea5e9', label: 'Sky'     },
   { id: 'emerald', color: '#22c55e', label: 'Emerald' },
   { id: 'rose',    color: '#ef4444', label: 'Rose'    },
 ];

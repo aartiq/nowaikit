@@ -1,6 +1,6 @@
 {
   "name": "nowaikit-desktop",
-  "version": "2.4.1",
+  "version": "2.4.5",
   "description": "NowAIKit Desktop — visual setup wizard, dashboard, tool browser, and audit log viewer for ServiceNow MCP server",
   "main": "dist/main/index.js",
   "author": {

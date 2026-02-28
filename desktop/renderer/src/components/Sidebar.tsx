@@ -54,9 +54,9 @@ const NAV: { id: Page; label: string }[] = [
 ];
 
 const ACCENTS: { id: ThemeAccent; color: string }[] = [
-  { id: 'blue',    color: '#4f8ef7' },
-  { id: 'violet',  color: '#7c5cbf' },
-  { id: 'sky',     color: '#38bdf8' },
+  { id: 'blue',    color: '#6366f1' },
+  { id: 'violet',  color: '#8b5cf6' },
+  { id: 'sky',     color: '#0ea5e9' },
   { id: 'emerald', color: '#22c55e' },
   { id: 'rose',    color: '#ef4444' },
 ];
@@ -99,7 +99,7 @@ export default function Sidebar({ currentPage, onNavigate, instanceName, instanc
           <span style={{ fontWeight: 700, fontSize: '1.05rem', letterSpacing: '-0.3px' }}>
             <span style={{ color: 'var(--text)' }}>Now</span>
             <span style={{
-              background: 'linear-gradient(90deg, #38bdf8 0%, #818cf8 60%, #a78bfa 100%)',
+              background: 'linear-gradient(90deg, #0ea5e9 0%, #6366f1 60%, #8b5cf6 100%)',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
               fontWeight: 800,

@@ -13,9 +13,9 @@ interface Props {
 const ENV_COLORS: Record<string, { bg: string; fg: string }> = {
   prod:    { bg: 'rgba(239,68,68,0.15)',  fg: '#f87171' },
   staging: { bg: 'rgba(251,191,36,0.15)', fg: '#fbbf24' },
-  test:    { bg: 'rgba(56,189,248,0.15)', fg: '#38bdf8' },
+  test:    { bg: 'rgba(14,165,233,0.15)', fg: '#0ea5e9' },
   dev:     { bg: 'rgba(34,197,94,0.15)',  fg: '#22c55e' },
-  uat:     { bg: 'rgba(167,139,250,0.15)',fg: '#a78bfa' },
+  uat:     { bg: 'rgba(139,92,246,0.15)', fg: '#8b5cf6' },
 };
 
 function envStyle(env: string): { bg: string; fg: string } {

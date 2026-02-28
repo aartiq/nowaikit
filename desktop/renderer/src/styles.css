@@ -2,33 +2,33 @@
 
 /* ── Brand gradients (from banner.svg) ── */
 :root {
-  --brand-gradient: linear-gradient(90deg, #0ea5e9 0%, #4f8ef7 50%, #7c5cbf 100%);
-  --text-gradient:  linear-gradient(90deg, #38bdf8 0%, #818cf8 60%, #a78bfa 100%);
+  --brand-gradient: linear-gradient(90deg, #0ea5e9 0%, #6366f1 50%, #8b5cf6 100%);
+  --text-gradient:  linear-gradient(90deg, #0ea5e9 0%, #6366f1 60%, #8b5cf6 100%);
 }
 
 /* ── Accent palettes ── */
 /* Default = brand blue from src/dashboard/html.ts */
 :root,
 [data-accent="blue"] {
-  --accent:     #4f8ef7;
-  --accent-dim: #2563eb;
-  --accent-bg:  rgba(79,142,247,0.12);
-  --accent-glow:rgba(79,142,247,0.25);
-  --accent2:    #7c5cbf;
+  --accent:     #6366f1;
+  --accent-dim: #4f46e5;
+  --accent-bg:  rgba(99,102,241,0.12);
+  --accent-glow:rgba(99,102,241,0.25);
+  --accent2:    #8b5cf6;
 }
 [data-accent="violet"] {
-  --accent:     #7c5cbf;
-  --accent-dim: #5b21b6;
-  --accent-bg:  rgba(124,92,191,0.12);
-  --accent-glow:rgba(124,92,191,0.25);
-  --accent2:    #4f8ef7;
+  --accent:     #8b5cf6;
+  --accent-dim: #6d28d9;
+  --accent-bg:  rgba(139,92,246,0.12);
+  --accent-glow:rgba(139,92,246,0.25);
+  --accent2:    #6366f1;
 }
 [data-accent="sky"] {
-  --accent:     #38bdf8;
+  --accent:     #0ea5e9;
   --accent-dim: #0284c7;
-  --accent-bg:  rgba(56,189,248,0.12);
-  --accent-glow:rgba(56,189,248,0.25);
-  --accent2:    #7c5cbf;
+  --accent-bg:  rgba(14,165,233,0.12);
+  --accent-glow:rgba(14,165,233,0.25);
+  --accent2:    #8b5cf6;
 }
 [data-accent="emerald"] {
   --accent:     #22c55e;
@@ -48,7 +48,7 @@
 /* ── Dark theme — exact values from src/dashboard/html.ts ── */
 :root,
 [data-theme="dark"] {
-  --bg:       #0f1117;
+  --bg:       #05050f;
   --surface:  #1a1d27;
   --surface2: #222534;
   --surface3: #2a2e42;

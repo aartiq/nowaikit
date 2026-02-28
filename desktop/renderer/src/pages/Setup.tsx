@@ -181,8 +181,8 @@ export default function Setup({ onComplete, onClose, existingGroups = [] }: Prop
 
         {step === 'welcome' && (
           <>
-            <h1 style={styles.title}>Welcome to nowaikit</h1>
-            <p style={styles.sub}>Connect your ServiceNow instance to AI in a few steps. No config files needed.</p>
+            <h1 style={styles.title}>Welcome to NowAIKit</h1>
+            <p style={styles.sub}>Connect Any AI to ServiceNow. Instantly.</p>
             <div style={{ display:'flex', gap:12 }}>
               <button style={styles.btn} onClick={next}>Get Started →</button>
               {onClose && <button style={styles.btnGhost} onClick={onClose}>Cancel</button>}

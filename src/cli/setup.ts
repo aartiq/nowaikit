@@ -21,16 +21,21 @@ import { detectClients } from './detect-clients.js';
 import { writeClientConfig } from './writers/index.js';
 import type { InstanceConfig } from './config-store.js';
 
-// ─── Brand colors ──────────────────────────────────────────────────────────────
-const brand   = chalk.hex('#00C7B7');        // teal accent
-const brandBg = chalk.bgHex('#00C7B7').black.bold;
-const accent  = chalk.hex('#6366F1');        // indigo
+// ─── Brand colors (matches nowaitkit.com) ──────────────────────────────────────
+const purple  = chalk.hex('#A855F7');        // purple-500 — primary brand
+const indigo  = chalk.hex('#6366F1');        // indigo — logo center
+const violet  = chalk.hex('#8B5CF6');        // violet — logo end
+const teal    = chalk.hex('#06B6D4');        // teal-500 — gradient end
+const sky     = chalk.hex('#0EA5E9');        // sky blue — logo start
+const brand   = purple;                      // primary brand color
+const brandBg = chalk.bgHex('#6366F1').white.bold; // indigo badge bg
+const accent  = indigo;                      // accent (AI highlight)
 const success = chalk.hex('#22C55E');        // green
 const warn    = chalk.hex('#F59E0B');        // amber
 const err     = chalk.hex('#EF4444');        // red
-const dim     = chalk.hex('#6B7280');        // gray-500
-const white   = chalk.hex('#F9FAFB');        // gray-50
-const subtle  = chalk.hex('#9CA3AF');        // gray-400
+const dim     = chalk.hex('#64748B');        // slate-500
+const white   = chalk.hex('#F1F5F9');        // slate-100
+const subtle  = chalk.hex('#94A3B8');        // slate-400
 
 const TOTAL_STEPS = 7;
 
@@ -68,24 +73,37 @@ function stripAnsi(str: string): string {
   return str.replace(/\x1B\[[0-9;]*m/g, '');
 }
 
-// ─── Progress bar ─────────────────────────────────────────────────────────────
+// ─── Progress bar (gradient fill) ─────────────────────────────────────────────
 function progressBar(current: number, total: number): string {
-  const filled = Math.round((current / total) * 20);
-  const empty = 20 - filled;
-  const bar = brand('█'.repeat(filled)) + dim('░'.repeat(empty));
+  const width = 20;
+  const filled = Math.round((current / total) * width);
+  const empty = width - filled;
+  // Gradient blocks: sky → indigo → purple
+  const colors = [sky, sky, teal, teal, indigo, indigo, indigo, violet, violet, purple,
+                  purple, purple, violet, violet, indigo, indigo, teal, teal, sky, sky];
+  let bar = '';
+  for (let i = 0; i < filled; i++) bar += colors[i]('█');
+  bar += dim('░'.repeat(empty));
   const pct = dim(`${Math.round((current / total) * 100)}%`);
   return `  ${bar} ${pct}`;
 }
 
-// ─── Banner ───────────────────────────────────────────────────────────────────
+// ─── Logo + Banner ────────────────────────────────────────────────────────────
+function logoText(): string {
+  return white('Now') + indigo.bold('AI') + white('Kit');
+}
+
 function banner(): void {
   console.log('');
-  console.log(brand('      ╔╗╔╔═╗╦ ╦  ╔═╗╦╦╔═╦╔╦╗'));
-  console.log(brand('      ║║║║ ║║║║  ╠═╣║╠╩╗║ ║ '));
-  console.log(brand('      ╝╚╝╚═╝╚╩╝  ╩ ╩╩╩ ╩╩ ╩ '));
+  // N + sparkle logo (matches website SVG)
+  console.log(sky('      ╔╗╔') + dim('  ') + violet('✦'));
+  console.log(indigo('      ║║║') + dim('  ') + purple('│'));
+  console.log(purple('      ╝╚╝') + dim('  ') + violet('●'));
   console.log('');
-  console.log(white('      The Most Comprehensive ServiceNow AI Toolkit'));
-  console.log(dim('      400+ MCP tools  ·  All modules  ·  Any AI client'));
+  console.log(`      ${logoText()}  ${dim('—')} ${subtle('Setup Wizard')}`);
+  console.log('');
+  console.log(dim('      Connect ') + indigo.bold('Any AI') + dim(' to ServiceNow. Instantly.'));
+  console.log(dim('      400+ tools  ·  All modules  ·  Any AI client'));
   console.log('');
   divider();
   console.log('');
@@ -521,9 +539,9 @@ function printSummary(instance: InstanceConfig): void {
   divider();
   console.log('');
 
-  console.log(brand('      ╔╗╔╔═╗╦ ╦  ╔═╗╦╦╔═╦╔╦╗'));
-  console.log(brand('      ║║║║ ║║║║  ╠═╣║╠╩╗║ ║ '));
-  console.log(brand('      ╝╚╝╚═╝╚╩╝  ╩ ╩╩╩ ╩╩ ╩ '));
+  console.log(sky('      ╔╗╔') + dim('  ') + violet('✦'));
+  console.log(indigo('      ║║║') + dim('  ') + purple('│'));
+  console.log(purple('      ╝╚╝') + dim('  ') + violet('●'));
   console.log('');
 
   box([

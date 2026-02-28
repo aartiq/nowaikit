@@ -31,7 +31,7 @@ if (!hasLegacy && !hasMulti && !hasConfig) {
 const server = new Server(
   {
     name: 'nowaikit',
-    version: '2.4.1',
+    version: '2.4.5',
   },
   {
     capabilities: {
