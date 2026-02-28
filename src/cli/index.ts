@@ -48,7 +48,7 @@ const program = new Command();
 program
   .name('nowaikit')
   .description('The Most Comprehensive ServiceNow AI Toolkit')
-  .version('2.4.7')
+  .version('2.4.8')
   .addHelpText('before', '')
   .addHelpText('beforeAll', () => {
     cliBanner();
