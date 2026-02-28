@@ -12,7 +12,7 @@ export interface ToolDefinition {
   };
 }
 
-export const ALL_TOOLS: ToolDefinition[] = [
+export const TOOL_DEFINITIONS: ToolDefinition[] = [
   {
     "name": "query_records",
     "description": "Query ServiceNow records with filtering, field selection, pagination, and sorting",
