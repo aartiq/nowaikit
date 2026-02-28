@@ -2,12 +2,13 @@
  * Interactive setup wizard — `nowaikit setup`
  *
  * Walks the user through:
- *   1. ServiceNow instance URL
+ *   1. ServiceNow instance
  *   2. Auth method (Basic / OAuth)
  *   3. Credentials
  *   4. Connection test
- *   5. Permission tier / tool package selection
- *   6. AI client selection + config writing
+ *   5. Permission tier / tool package
+ *   6. Features & shortcuts overview
+ *   7. AI client installation
  */
 import { input, password, select, checkbox, confirm } from '@inquirer/prompts';
 import chalk from 'chalk';
@@ -20,18 +21,125 @@ import { detectClients } from './detect-clients.js';
 import { writeClientConfig } from './writers/index.js';
 import type { InstanceConfig } from './config-store.js';
 
+// ─── Brand colors ──────────────────────────────────────────────────────────────
+const brand   = chalk.hex('#00C7B7');        // teal accent
+const brandBg = chalk.bgHex('#00C7B7').black.bold;
+const accent  = chalk.hex('#6366F1');        // indigo
+const success = chalk.hex('#22C55E');        // green
+const warn    = chalk.hex('#F59E0B');        // amber
+const err     = chalk.hex('#EF4444');        // red
+const dim     = chalk.hex('#6B7280');        // gray-500
+const white   = chalk.hex('#F9FAFB');        // gray-50
+const subtle  = chalk.hex('#9CA3AF');        // gray-400
+
+const TOTAL_STEPS = 7;
+
 const TOOL_PACKAGES = [
-  { value: 'full', name: 'full — all 400+ tools' },
-  { value: 'service_desk', name: 'service_desk — help desk agents' },
-  { value: 'change_coordinator', name: 'change_coordinator — change managers' },
-  { value: 'knowledge_author', name: 'knowledge_author — KB writers' },
-  { value: 'catalog_builder', name: 'catalog_builder — catalog admins' },
-  { value: 'system_administrator', name: 'system_administrator — SysAdmins' },
-  { value: 'platform_developer', name: 'platform_developer — developers' },
-  { value: 'itom_engineer', name: 'itom_engineer — IT Ops / monitoring' },
-  { value: 'agile_manager', name: 'agile_manager — Scrum / SAFe teams' },
-  { value: 'ai_developer', name: 'ai_developer — Now Assist / AI builders' },
+  { value: 'full',                 name: `${brand('full')}                 ${dim('— all 400+ tools')}` },
+  { value: 'service_desk',        name: `${brand('service_desk')}        ${dim('— help desk agents')}` },
+  { value: 'change_coordinator',  name: `${brand('change_coordinator')}  ${dim('— change managers')}` },
+  { value: 'knowledge_author',   name: `${brand('knowledge_author')}   ${dim('— KB writers')}` },
+  { value: 'catalog_builder',    name: `${brand('catalog_builder')}    ${dim('— catalog admins')}` },
+  { value: 'system_administrator', name: `${brand('system_administrator')} ${dim('— SysAdmins')}` },
+  { value: 'platform_developer', name: `${brand('platform_developer')} ${dim('— developers')}` },
+  { value: 'itom_engineer',      name: `${brand('itom_engineer')}      ${dim('— IT Ops / monitoring')}` },
+  { value: 'agile_manager',      name: `${brand('agile_manager')}      ${dim('— Scrum / SAFe teams')}` },
+  { value: 'ai_developer',       name: `${brand('ai_developer')}       ${dim('— Now Assist / AI builders')}` },
 ];
+
+// ─── Box drawing helpers ──────────────────────────────────────────────────────
+function box(lines: string[], color = brand): void {
+  const maxLen = Math.max(...lines.map(l => stripAnsi(l).length));
+  const w = maxLen + 4;
+  console.log(color(`  ╭${'─'.repeat(w)}╮`));
+  for (const line of lines) {
+    const pad = w - stripAnsi(line).length - 2;
+    console.log(color('  │') + ' ' + line + ' '.repeat(pad) + color(' │'));
+  }
+  console.log(color(`  ╰${'─'.repeat(w)}╯`));
+}
+
+function divider(): void {
+  console.log(dim('  ' + '─'.repeat(56)));
+}
+
+function stripAnsi(str: string): string {
+  // eslint-disable-next-line no-control-regex
+  return str.replace(/\x1B\[[0-9;]*m/g, '');
+}
+
+// ─── Progress bar ─────────────────────────────────────────────────────────────
+function progressBar(current: number, total: number): string {
+  const filled = Math.round((current / total) * 20);
+  const empty = 20 - filled;
+  const bar = brand('█'.repeat(filled)) + dim('░'.repeat(empty));
+  const pct = dim(`${Math.round((current / total) * 100)}%`);
+  return `  ${bar} ${pct}`;
+}
+
+// ─── Banner ───────────────────────────────────────────────────────────────────
+function banner(): void {
+  console.log('');
+  console.log(brand('      ╔╗╔╔═╗╦ ╦  ╔═╗╦╦╔═╦╔╦╗'));
+  console.log(brand('      ║║║║ ║║║║  ╠═╣║╠╩╗║ ║ '));
+  console.log(brand('      ╝╚╝╚═╝╚╩╝  ╩ ╩╩╩ ╩╩ ╩ '));
+  console.log('');
+  console.log(white('      The Most Comprehensive ServiceNow AI Toolkit'));
+  console.log(dim('      400+ MCP tools  ·  All modules  ·  Any AI client'));
+  console.log('');
+  divider();
+  console.log('');
+}
+
+// ─── Step header ──────────────────────────────────────────────────────────────
+function step(n: number, title: string): void {
+  console.log('');
+  console.log(progressBar(n, TOTAL_STEPS));
+  console.log('');
+  const badge = brandBg(` ${n}/${TOTAL_STEPS} `);
+  console.log(`  ${badge} ${white(title)}`);
+  console.log('');
+}
+
+// ─── Section label ────────────────────────────────────────────────────────────
+function sectionLabel(label: string): void {
+  console.log(`  ${accent('▸')} ${subtle(label)}`);
+}
+
+// ─── Test connection ──────────────────────────────────────────────────────────
+async function testConnection(
+  instanceUrl: string,
+  authMethod: 'basic' | 'oauth',
+  creds: Partial<InstanceConfig>
+): Promise<{ ok: boolean; message: string }> {
+  const spinner = ora({
+    text: dim('  Testing connection to ServiceNow…'),
+    color: 'cyan',
+  }).start();
+
+  try {
+    const { ServiceNowClient } = await import('../servicenow/client.js');
+    const client = new ServiceNowClient({
+      instanceUrl,
+      authMethod,
+      basic: { username: creds.username, password: creds.password },
+      oauth: {
+        clientId: creds.clientId,
+        clientSecret: creds.clientSecret,
+        username: creds.username,
+        password: creds.password,
+      },
+    });
+
+    const result = await client.queryRecords({ table: 'sys_user', limit: 1 });
+    spinner.succeed(success('  Connected — authentication verified'));
+    return { ok: true, message: `Connected (${result.count >= 0 ? 'OK' : 'warning'})` };
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error);
+    spinner.fail(err(`  Connection failed: ${msg}`));
+    return { ok: false, message: msg };
+  }
+}
 
 /** Returns true if `cmd` is resolvable on PATH. */
 function isCommandAvailable(cmd: string): boolean {
@@ -49,20 +157,19 @@ function isCommandAvailable(cmd: string): boolean {
  * in the package root. Skips silently if it's already linked.
  */
 async function ensureGlobalCommand(): Promise<void> {
-  if (isCommandAvailable('nowaikit')) return; // already on PATH, nothing to do
+  if (isCommandAvailable('nowaikit')) return;
 
-  const spinner = ora('  Making `nowaikit` available as a global command…').start();
+  const spinner = ora({
+    text: dim('  Making `nowaikit` available as a global command…'),
+    color: 'cyan',
+  }).start();
 
-  // dist/cli/setup.js → dist/cli/ → dist/ → <package root>
   const pkgRoot = path.resolve(fileURLToPath(import.meta.url), '..', '..', '..');
 
   try {
     execSync('npm link', { cwd: pkgRoot, stdio: 'pipe' });
-    spinner.succeed(chalk.green('  ✓ `nowaikit` is now available as a global command'));
+    spinner.succeed(success('  `nowaikit` is now available as a global command'));
   } catch {
-    // npm link failed (common cause: /usr/local/bin needs sudo).
-    // Try again honoring the user's configured npm prefix, which is usually
-    // writable without sudo when using nvm, volta, fnm, or a local prefix.
     try {
       const prefix = execSync('npm config get prefix', { encoding: 'utf8', stdio: 'pipe' }).trim();
       execSync('npm link', {
@@ -70,60 +177,21 @@ async function ensureGlobalCommand(): Promise<void> {
         stdio: 'pipe',
         env: { ...process.env, npm_config_prefix: prefix },
       });
-      spinner.succeed(chalk.green('  ✓ `nowaikit` linked via npm prefix'));
+      spinner.succeed(success('  `nowaikit` linked via npm prefix'));
     } catch {
-      spinner.warn(chalk.yellow('  Could not link globally — permission denied'));
+      spinner.warn(warn('  Could not link globally — permission denied'));
       console.log('');
-      console.log(chalk.dim('  Fix options (choose one):'));
-      console.log(chalk.cyan(`    sudo npm link`)                          + chalk.dim('  # if using system Node'));
-      console.log(chalk.cyan(`    npm install -g nowaikit`)              + chalk.dim('  # install from npm registry'));
-      console.log(chalk.cyan(`    npx nowaikit instances list`)            + chalk.dim('  # use npx instead of global command'));
+      console.log(dim('  Fix options (choose one):'));
+      console.log(brand('    sudo npm link')            + dim('              # if using system Node'));
+      console.log(brand('    npm install -g nowaikit')   + dim('   # install from npm registry'));
+      console.log(brand('    npx nowaikit instances list') + dim(' # use npx instead'));
     }
   }
 }
 
-function banner(): void {
-  console.log('');
-  console.log(chalk.bold.cyan('  nowaikit — ServiceNow MCP Setup Wizard'));
-  console.log(chalk.dim('  ─────────────────────────────────────────────'));
-  console.log('');
-}
-
-function step(n: number, total: number, title: string): void {
-  console.log('');
-  console.log(chalk.bold(`  Step ${n}/${total} — ${title}`));
-}
-
-async function testConnection(
-  instanceUrl: string,
-  authMethod: 'basic' | 'oauth',
-  creds: Partial<InstanceConfig>
-): Promise<{ ok: boolean; message: string }> {
-  const spinner = ora('  Testing connection to ServiceNow…').start();
-
-  try {
-    const { ServiceNowClient } = await import('../servicenow/client.js');
-    const client = new ServiceNowClient({
-      instanceUrl,
-      authMethod,
-      basic: { username: creds.username, password: creds.password },
-      oauth: {
-        clientId: creds.clientId,
-        clientSecret: creds.clientSecret,
-        username: creds.username,
-        password: creds.password,
-      },
-    });
-
-    const result = await client.queryRecords({ table: 'sys_user', limit: 1 });
-    spinner.succeed(chalk.green(`  Connected — ${result.count >= 0 ? 'auth OK' : 'warning'}`));
-    return { ok: true, message: 'Connection successful' };
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    spinner.fail(chalk.red(`  Connection failed: ${msg}`));
-    return { ok: false, message: msg };
-  }
-}
+// ═══════════════════════════════════════════════════════════════════════════════
+// MAIN SETUP FLOW
+// ═══════════════════════════════════════════════════════════════════════════════
 
 export async function runSetup(options: { add?: boolean } = {}): Promise<void> {
   banner();
@@ -132,16 +200,25 @@ export async function runSetup(options: { add?: boolean } = {}): Promise<void> {
   const isFirstRun = Object.keys(existing.instances).length === 0 && !options.add;
 
   if (isFirstRun) {
-    console.log(chalk.dim("  Let's connect your first ServiceNow instance.\n"));
+    box([
+      white("Welcome! Let's connect your first ServiceNow instance."),
+      dim('This wizard will configure everything in under 2 minutes.'),
+    ]);
   } else if (options.add) {
-    console.log(chalk.dim('  Adding a new ServiceNow instance.\n'));
+    box([
+      white('Adding a new ServiceNow instance.'),
+      dim('Your existing instances will not be affected.'),
+    ]);
   }
 
-  // ─── Step 1: Instance ────────────────────────────────────────────────────
-  step(1, 7, 'ServiceNow Instance');
+  // ─── Step 1: Instance ──────────────────────────────────────────────────────
+  step(1, 'ServiceNow Instance');
+
+  sectionLabel('Enter your instance name — we\'ll build the URL for you');
+  console.log('');
 
   const instanceId = await input({
-    message: 'Instance name (e.g. acme, dev12345):',
+    message: brand('?') + ' Instance name ' + dim('(e.g. acme, dev12345)') + brand(':'),
     validate: (v: string) => {
       if (!v.trim()) return 'Instance name is required';
       if (/\s/.test(v)) return 'No spaces allowed';
@@ -149,7 +226,6 @@ export async function runSetup(options: { add?: boolean } = {}): Promise<void> {
     },
   });
 
-  // Build URL from instance name, or allow full custom URL
   let instanceUrl: string;
   const trimmed = instanceId.trim().toLowerCase();
   if (trimmed.startsWith('https://')) {
@@ -157,61 +233,66 @@ export async function runSetup(options: { add?: boolean } = {}): Promise<void> {
   } else {
     instanceUrl = `https://${trimmed}.service-now.com`;
   }
-  console.log(chalk.dim(`  → URL: ${instanceUrl}`));
+
+  console.log(`  ${success('→')} ${dim('URL:')} ${accent(instanceUrl)}`);
+  console.log('');
 
   const instanceName = await input({
-    message: 'Short name for this instance (e.g. prod, dev, acme):',
+    message: brand('?') + ' Short name ' + dim('(e.g. prod, dev, acme)') + brand(':'),
     default: trimmed.replace(/\.service-now\.com$/, '').replace(/[^a-z0-9_-]/gi, '-'),
     validate: (v: string) => (/^[a-z0-9_-]+$/i.test(v) ? true : 'Letters, numbers, - and _ only'),
   });
 
   const environment = await select<string>({
-    message: 'Environment:',
+    message: brand('?') + ' Environment' + brand(':'),
     choices: [
-      { name: 'Production', value: 'production' },
-      { name: 'Development', value: 'development' },
-      { name: 'Test / QA', value: 'test' },
-      { name: 'Staging / UAT', value: 'staging' },
-      { name: 'Personal Dev (PDI)', value: 'pdi' },
+      { name: `${accent('●')} Production`,       value: 'production' },
+      { name: `${brand('●')} Development`,       value: 'development' },
+      { name: `${warn('●')} Test / QA`,          value: 'test' },
+      { name: `${subtle('●')} Staging / UAT`,    value: 'staging' },
+      { name: `${dim('●')} Personal Dev (PDI)`,  value: 'pdi' },
     ],
   });
 
   const group = await input({
-    message: 'Instance group (optional — press Enter to skip):',
+    message: brand('?') + ' Instance group ' + dim('(optional — Enter to skip)') + brand(':'),
     default: '',
   });
 
-  // ─── Step 2: Auth Method ───────────────────────────────────────────────────
-  step(2, 7, 'Authentication');
+  // ─── Step 2: Authentication ────────────────────────────────────────────────
+  step(2, 'Authentication');
+
+  sectionLabel('Choose how to authenticate with ServiceNow');
+  console.log('');
 
   const authMethod = await select<'basic' | 'oauth'>({
-    message: 'Authentication method:',
+    message: brand('?') + ' Auth method' + brand(':'),
     choices: [
-      { name: 'Basic (username + password) — good for dev/PDI', value: 'basic' },
-      { name: 'OAuth 2.0 — recommended for production', value: 'oauth' },
+      { name: `${brand('🔑')} Basic ${dim('(username + password) — good for dev/PDI')}`, value: 'basic' },
+      { name: `${accent('🔒')} OAuth 2.0 ${dim('— recommended for production')}`,       value: 'oauth' },
     ],
   });
 
   const authMode = await select<'service-account' | 'per-user' | 'impersonation'>({
-    message: 'Execution context (who runs the queries?):',
+    message: brand('?') + ' Execution context' + brand(':'),
     choices: [
       {
-        name: 'Service account — one shared account (current default)',
+        name: `${brand('👤')} Service account ${dim('— one shared account (default)')}`,
         value: 'service-account',
       },
       {
-        name: 'Per-user — each user authenticates with their own credentials (enterprise)',
+        name: `${accent('👥')} Per-user ${dim('— each user authenticates individually (enterprise)')}`,
         value: 'per-user',
       },
       {
-        name: 'Impersonation — service account + X-Sn-Impersonate header per user',
+        name: `${subtle('🎭')} Impersonation ${dim('— service account + X-Sn-Impersonate per user')}`,
         value: 'impersonation',
       },
     ],
   });
 
-  // ─── Step 3: Credentials ───────────────────────────────────────────────────
-  step(3, 7, 'Credentials');
+  // ─── Step 3: Credentials ──────────────────────────────────────────────────
+  step(3, 'Credentials');
 
   let username: string | undefined;
   let userPassword: string | undefined;
@@ -219,26 +300,31 @@ export async function runSetup(options: { add?: boolean } = {}): Promise<void> {
   let clientSecret: string | undefined;
 
   if (authMode === 'per-user') {
-    console.log(
-      chalk.dim(
-        '  Per-user mode: run `nowaikit auth login` separately for each user.\n' +
-        '  For now, provide a fallback service account for setup testing.'
-      )
-    );
+    box([
+      warn('Per-user mode selected'),
+      dim('Run `nowaikit auth login` separately for each user.'),
+      dim('Provide a fallback service account for setup testing.'),
+    ], warn);
+    console.log('');
   }
 
   if (authMethod === 'basic') {
-    username = await input({ message: 'Username:' });
-    userPassword = await password({ message: 'Password:', mask: '•' });
+    username = await input({ message: brand('?') + ' Username' + brand(':') });
+    userPassword = await password({ message: brand('?') + ' Password' + brand(':'), mask: '•' });
   } else {
-    clientId = await input({ message: 'OAuth Client ID:' });
-    clientSecret = await password({ message: 'OAuth Client Secret:', mask: '•' });
-    username = await input({ message: 'Service account username:' });
-    userPassword = await password({ message: 'Service account password:', mask: '•' });
+    sectionLabel('OAuth 2.0 credentials');
+    console.log('');
+    clientId = await input({ message: brand('?') + ' Client ID' + brand(':') });
+    clientSecret = await password({ message: brand('?') + ' Client Secret' + brand(':'), mask: '•' });
+    console.log('');
+    sectionLabel('Service account for token generation');
+    console.log('');
+    username = await input({ message: brand('?') + ' Username' + brand(':') });
+    userPassword = await password({ message: brand('?') + ' Password' + brand(':'), mask: '•' });
   }
 
-  // ─── Step 4: Test Connection ───────────────────────────────────────────────
-  step(4, 7, 'Testing Connection');
+  // ─── Step 4: Test Connection ──────────────────────────────────────────────
+  step(4, 'Testing Connection');
 
   let connected = false;
   while (!connected) {
@@ -254,81 +340,101 @@ export async function runSetup(options: { add?: boolean } = {}): Promise<void> {
       break;
     }
 
+    console.log('');
     const action = await select<'retry' | 'creds' | 'save' | 'cancel'>({
-      message: 'What would you like to do?',
+      message: warn('?') + ' What would you like to do?' + brand(':'),
       choices: [
-        { name: 'Retry connection', value: 'retry' },
-        { name: 'Re-enter credentials', value: 'creds' },
-        { name: 'Save config anyway (fix later)', value: 'save' },
-        { name: 'Cancel setup', value: 'cancel' },
+        { name: `${brand('↻')} Retry connection`,                          value: 'retry' },
+        { name: `${accent('✏')} Re-enter credentials`,                     value: 'creds' },
+        { name: `${subtle('💾')} Save config anyway ${dim('(fix later)')}`, value: 'save' },
+        { name: `${err('✕')} Cancel setup`,                                value: 'cancel' },
       ],
     });
 
     if (action === 'cancel') {
-      console.log(chalk.yellow('\n  Setup cancelled.\n'));
+      console.log('');
+      box([err('Setup cancelled.')], err);
+      console.log('');
       return;
     }
     if (action === 'save') break;
     if (action === 'creds') {
       console.log('');
       if (authMethod === 'basic') {
-        username = await input({ message: 'Username:' });
-        userPassword = await password({ message: 'Password:', mask: '•' });
+        username = await input({ message: brand('?') + ' Username' + brand(':') });
+        userPassword = await password({ message: brand('?') + ' Password' + brand(':'), mask: '•' });
       } else {
-        clientId = await input({ message: 'OAuth Client ID:' });
-        clientSecret = await password({ message: 'OAuth Client Secret:', mask: '•' });
-        username = await input({ message: 'Service account username:' });
-        userPassword = await password({ message: 'Service account password:', mask: '•' });
+        clientId = await input({ message: brand('?') + ' Client ID' + brand(':') });
+        clientSecret = await password({ message: brand('?') + ' Client Secret' + brand(':'), mask: '•' });
+        username = await input({ message: brand('?') + ' Username' + brand(':') });
+        userPassword = await password({ message: brand('?') + ' Password' + brand(':'), mask: '•' });
       }
     }
-    // retry loops back automatically
   }
 
-  // ─── Step 5: Permissions & Role ────────────────────────────────────────────
-  step(5, 7, 'Permissions & Role');
+  // ─── Step 5: Permissions & Role ───────────────────────────────────────────
+  step(5, 'Permissions & Role');
+
+  sectionLabel('Select which tools to expose to your AI client');
+  console.log('');
 
   const toolPackage = await select<string>({
-    message: 'Tool package:',
+    message: brand('?') + ' Tool package' + brand(':'),
     choices: TOOL_PACKAGES,
   });
 
   const writeEnabled = await confirm({
-    message: 'Enable write operations (create/update/delete)?',
+    message: brand('?') + ' Enable write operations ' + dim('(create/update/delete)') + brand('?'),
     default: false,
   });
 
   const nowAssistEnabled = await confirm({
-    message: 'Enable Now Assist / AI features?',
+    message: brand('?') + ' Enable Now Assist / AI features' + brand('?'),
     default: false,
   });
 
-  // ─── Step 6: Features ──────────────────────────────────────────────────────
-  step(6, 7, 'Features & Shortcuts');
+  // ─── Step 6: Features & Shortcuts ─────────────────────────────────────────
+  step(6, 'Features & Shortcuts');
 
-  console.log(chalk.dim('  Available slash commands (/ prompts):'));
-  console.log(chalk.cyan('    /morning-standup')    + chalk.dim('    — daily briefing: P1s, SLA breaches, changes'));
-  console.log(chalk.cyan('    /my-tickets')         + chalk.dim('         — all open work assigned to you'));
-  console.log(chalk.cyan('    /p1-alerts')          + chalk.dim('          — active Priority 1 incidents'));
-  console.log(chalk.cyan('    /my-changes')         + chalk.dim('         — pending change requests'));
-  console.log(chalk.cyan('    /knowledge-search')   + chalk.dim('   — search knowledge base'));
-  console.log(chalk.cyan('    /create-incident')    + chalk.dim('    — guided incident creation'));
-  console.log(chalk.cyan('    /sla-breaches')       + chalk.dim('       — records breaching SLA'));
-  console.log(chalk.cyan('    /ci-health')          + chalk.dim('          — CMDB CI health check'));
-  console.log(chalk.cyan('    /run-atf')            + chalk.dim('            — trigger ATF test suite'));
-  console.log(chalk.cyan('    /switch-instance')    + chalk.dim('    — switch to different instance'));
-  console.log(chalk.cyan('    /deploy-updateset')   + chalk.dim('   — preview and commit update set'));
+  console.log(`  ${accent('▸')} ${white('Slash Commands')} ${dim('(type / in your AI client)')}`);
   console.log('');
-  console.log(chalk.dim('  Available @ mentions (resources):'));
-  console.log(chalk.cyan('    @my-incidents')       + chalk.dim('       — open incidents assigned to you'));
-  console.log(chalk.cyan('    @open-changes')       + chalk.dim('       — change requests pending approval'));
-  console.log(chalk.cyan('    @sla-breaches')       + chalk.dim('       — records breaching SLA'));
-  console.log(chalk.cyan('    @instance:info')      + chalk.dim('      — current instance metadata'));
-  console.log(chalk.cyan('    @ci:{name}')          + chalk.dim('          — CMDB CI lookup (e.g. @ci:web-prod-01)'));
-  console.log(chalk.cyan('    @kb:{title}')         + chalk.dim('         — KB article search (e.g. @kb:VPN-setup)'));
+  const commands = [
+    ['/morning-standup',  'Daily briefing: P1s, SLA breaches, changes'],
+    ['/my-tickets',       'All open work assigned to you'],
+    ['/p1-alerts',        'Active Priority 1 incidents'],
+    ['/my-changes',       'Pending change requests'],
+    ['/knowledge-search', 'Search knowledge base'],
+    ['/create-incident',  'Guided incident creation'],
+    ['/sla-breaches',     'Records breaching SLA'],
+    ['/ci-health',        'CMDB CI health check'],
+    ['/run-atf',          'Trigger ATF test suite'],
+    ['/switch-instance',  'Switch to different instance'],
+    ['/deploy-updateset', 'Preview and commit update set'],
+  ];
+  for (const [cmd, desc] of commands) {
+    console.log(`    ${brand(cmd.padEnd(22))} ${dim(desc)}`);
+  }
+
   console.log('');
-  console.log(chalk.dim('  Custom commands: create a ') + chalk.cyan('nowaikit.commands.json') + chalk.dim(' file in your project root.'));
+  console.log(`  ${accent('▸')} ${white('@ Mentions')} ${dim('(type @ to reference live data)')}`);
+  console.log('');
+  const resources = [
+    ['@my-incidents',  'Open incidents assigned to you'],
+    ['@open-changes',  'Change requests pending approval'],
+    ['@sla-breaches',  'Records breaching SLA'],
+    ['@instance:info', 'Current instance metadata'],
+    ['@ci:{name}',     'CMDB CI lookup (e.g. @ci:web-prod-01)'],
+    ['@kb:{title}',    'KB article search (e.g. @kb:VPN-setup)'],
+  ];
+  for (const [res, desc] of resources) {
+    console.log(`    ${accent(res.padEnd(22))} ${dim(desc)}`);
+  }
+
+  console.log('');
+  console.log(`  ${dim('Custom commands:')} create a ${brand('nowaikit.commands.json')} ${dim('in your project root.')}`);
   console.log('');
 
+  // ─── Save instance ────────────────────────────────────────────────────────
   const instance: InstanceConfig = {
     name: instanceName.toLowerCase(),
     instanceUrl,
@@ -347,41 +453,46 @@ export async function runSetup(options: { add?: boolean } = {}): Promise<void> {
   };
 
   addInstance(instance);
-  console.log(chalk.green(`\n  ✓ Saved instance "${instance.name}" to ~/.config/nowaikit/instances.json`));
 
-  // ─── Step 7: AI Client Installation ────────────────────────────────────────
-  step(7, 7, 'Install into AI Client(s)');
+  box([
+    success(`✓ Instance "${instance.name}" saved`),
+    dim(`  ~/.config/nowaikit/instances.json`),
+  ], success);
+
+  // ─── Step 7: AI Client Installation ───────────────────────────────────────
+  step(7, 'Install into AI Client(s)');
 
   const clients = detectClients();
   const detected = clients.filter(c => c.detected);
   const notDetected = clients.filter(c => !c.detected);
 
   if (detected.length === 0) {
-    console.log(chalk.yellow('  No AI clients detected. Generating .env file instead.'));
+    console.log(warn('  No AI clients detected. Generating .env file instead.'));
     const dotenvClient = clients.find(c => c.id === 'dotenv')!;
     const result = writeClientConfig(dotenvClient, instance);
-    console.log(result.success ? chalk.green(`  ✓ ${result.message}`) : chalk.red(`  ✗ ${result.message}`));
+    console.log(result.success ? success(`  ✓ ${result.message}`) : err(`  ✗ ${result.message}`));
     await ensureGlobalCommand();
     printSummary(instance);
     return;
   }
 
-  console.log(chalk.dim('  Detected clients:'));
-  detected.forEach(c => console.log(chalk.dim(`    ✓ ${c.name}`)));
+  sectionLabel('Detected AI clients on this machine');
+  console.log('');
+  detected.forEach(c => console.log(`    ${success('✓')} ${white(c.name)}`));
   if (notDetected.length > 0) {
-    console.log(chalk.dim('  Not found:'));
     notDetected
       .filter(c => c.id !== 'dotenv')
-      .forEach(c => console.log(chalk.dim(`    ✗ ${c.name}`)));
+      .forEach(c => console.log(`    ${dim('✗')} ${dim(c.name)}`));
   }
+  console.log('');
 
   const chosen = await checkbox<string>({
-    message: 'Install into (space to select, enter to confirm):',
+    message: brand('?') + ' Install into ' + dim('(space to select, enter to confirm)') + brand(':'),
     choices: detected.map(c => ({ name: c.name, value: c.id, checked: c.id !== 'dotenv' })),
   });
 
   if (chosen.length === 0) {
-    console.log(chalk.yellow('\n  No clients selected. Nothing written.'));
+    console.log(warn('\n  No clients selected. Nothing written.'));
     await ensureGlobalCommand();
     printSummary(instance);
     return;
@@ -393,10 +504,10 @@ export async function runSetup(options: { add?: boolean } = {}): Promise<void> {
     if (!client) continue;
     const result = writeClientConfig(client, instance);
     if (result.success) {
-      console.log(chalk.green(`  ✓ ${client.name}: ${result.message}`));
-      if (client.note) console.log(chalk.dim(`    → ${client.note}`));
+      console.log(`  ${success('✓')} ${white(client.name)}: ${dim(result.message)}`);
+      if (client.note) console.log(`    ${dim('→')} ${subtle(client.note)}`);
     } else {
-      console.log(chalk.red(`  ✗ ${client.name}: ${result.message}`));
+      console.log(`  ${err('✗')} ${white(client.name)}: ${err(result.message)}`);
     }
   }
 
@@ -404,29 +515,47 @@ export async function runSetup(options: { add?: boolean } = {}): Promise<void> {
   printSummary(instance);
 }
 
+// ─── Final summary ──────────────────────────────────────────────────────────
 function printSummary(instance: InstanceConfig): void {
   console.log('');
-  console.log(chalk.bold.green('  Setup complete!'));
+  divider();
   console.log('');
-  console.log(chalk.dim('  Instance: ') + chalk.cyan(instance.instanceUrl));
-  console.log(chalk.dim('  Name:     ') + chalk.cyan(instance.name));
-  if (instance.environment) console.log(chalk.dim('  Env:      ') + chalk.cyan(instance.environment));
-  if (instance.group)       console.log(chalk.dim('  Group:    ') + chalk.cyan(instance.group));
-  console.log(chalk.dim('  Tools:    ') + chalk.cyan(instance.toolPackage || 'full'));
-  console.log(chalk.dim('  Write:    ') + chalk.cyan(instance.writeEnabled ? 'enabled' : 'disabled'));
-  console.log(chalk.dim('  NowAssist:') + chalk.cyan(instance.nowAssistEnabled ? ' enabled' : ' disabled'));
+
+  console.log(brand('      ╔╗╔╔═╗╦ ╦  ╔═╗╦╦╔═╦╔╦╗'));
+  console.log(brand('      ║║║║ ║║║║  ╠═╣║╠╩╗║ ║ '));
+  console.log(brand('      ╝╚╝╚═╝╚╩╝  ╩ ╩╩╩ ╩╩ ╩ '));
   console.log('');
-  console.log(chalk.dim('  Restart your AI client to activate, then try:'));
-  console.log(chalk.cyan('    List my 5 most recent open incidents'));
-  console.log(chalk.cyan('    /morning-standup'));
-  console.log(chalk.cyan('    @my-incidents'));
+
+  box([
+    success('  Setup Complete!'),
+    '',
+    `${dim('  Instance:')}   ${accent(instance.instanceUrl)}`,
+    `${dim('  Name:')}       ${white(instance.name)}`,
+    ...(instance.environment ? [`${dim('  Env:')}        ${white(instance.environment)}`] : []),
+    ...(instance.group       ? [`${dim('  Group:')}      ${white(instance.group)}`] : []),
+    `${dim('  Tools:')}      ${white(instance.toolPackage || 'full')}`,
+    `${dim('  Write:')}      ${instance.writeEnabled ? success('enabled') : dim('disabled')}`,
+    `${dim('  NowAssist:')}  ${instance.nowAssistEnabled ? success('enabled') : dim('disabled')}`,
+  ], brand);
+
   console.log('');
-  console.log(chalk.dim('  Manage nowaikit from the terminal:'));
-  console.log(`    ${chalk.cyan('nowaikit setup --add')}        Add another instance`);
-  console.log(`    ${chalk.cyan('nowaikit instances list')}     Show configured instances`);
-  console.log(`    ${chalk.cyan('nowaikit instances remove')}   Remove an instance`);
+  console.log(`  ${accent('▸')} ${white('Get started — restart your AI client, then try:')}`);
+  console.log('');
+  console.log(`    ${brand('❯')} ${white('List my 5 most recent open incidents')}`);
+  console.log(`    ${brand('❯')} ${accent('/morning-standup')}`);
+  console.log(`    ${brand('❯')} ${accent('@my-incidents')}`);
+
+  console.log('');
+  console.log(`  ${accent('▸')} ${white('Manage from the terminal:')}`);
+  console.log('');
+  console.log(`    ${brand('nowaikit setup --add')}         ${dim('Add another instance')}`);
+  console.log(`    ${brand('nowaikit instances list')}      ${dim('Show configured instances')}`);
+  console.log(`    ${brand('nowaikit instances remove')}    ${dim('Remove an instance')}`);
   if (instance.authMode === 'per-user') {
-    console.log(`    ${chalk.cyan('nowaikit auth login')}         Authenticate as yourself`);
+    console.log(`    ${brand('nowaikit auth login')}          ${dim('Authenticate as yourself')}`);
   }
+
+  console.log('');
+  divider();
   console.log('');
 }
