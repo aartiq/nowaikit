@@ -1,6 +1,6 @@
 {
   "name": "nowaikit",
-  "version": "2.5.0",
+  "version": "2.5.1",
   "description": "The Most Comprehensive ServiceNow AI Toolkit — 400+ MCP tools across all modules. Integrates with Claude, ChatGPT, Gemini, Cursor, GitHub Copilot and any LLM.",
   "main": "dist/server.js",
   "bin": {
@@ -9,7 +9,7 @@
   "type": "module",
   "files": [
     "dist/",
-    "desktop/serve.js",
+    "desktop/serve.cjs",
     "desktop/renderer/dist/",
     "instances.example.json",
     ".env.example"
