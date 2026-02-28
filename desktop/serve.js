@@ -69,6 +69,11 @@ const ALLOWED_PROXY_HEADERS = new Set([
   'accept', 'accept-encoding', 'user-agent',
 ]);
 
+// Headers safe to forward to ServiceNow instances
+const ALLOWED_SNOW_HEADERS = new Set([
+  'content-type', 'authorization', 'accept', 'accept-encoding', 'user-agent',
+]);
+
 // ─── Security helpers ────────────────────────────────────────────────────────
 
 /** Check if an origin is allowed for CORS */
@@ -195,6 +200,119 @@ function proxyRequest(req, res, proxyConfig) {
   });
 }
 
+// ─── ServiceNow proxy handler ─────────────────────────────────────────────────
+
+/**
+ * Proxies requests to a ServiceNow instance (bypasses CORS).
+ * Route: /api/snow/{base64url-encoded-instance-url}/{rest-of-path}
+ * Example: /api/snow/aHR0cHM6Ly9kZXYxMjM0NS5zZXJ2aWNlLW5vdy5jb20/api/now/table/incident?sysparm_limit=5
+ */
+function proxySnowRequest(req, res) {
+  // Parse: /api/snow/{encodedBase}/{path...}
+  const after = req.url.slice('/api/snow/'.length);
+  const slashIdx = after.indexOf('/');
+  if (slashIdx < 0) {
+    res.writeHead(400, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Missing instance URL segment' }));
+    return;
+  }
+  const encodedBase = after.slice(0, slashIdx);
+  const restPath = after.slice(slashIdx); // includes leading /
+
+  let instanceUrl;
+  try {
+    instanceUrl = Buffer.from(encodedBase, 'base64url').toString('utf8');
+  } catch {
+    try { instanceUrl = Buffer.from(encodedBase, 'base64').toString('utf8'); } catch {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Invalid base64 instance URL' }));
+      return;
+    }
+  }
+
+  // Validate the instance URL
+  let parsedInstance;
+  try {
+    parsedInstance = new URL(instanceUrl);
+    if (parsedInstance.protocol !== 'https:' && parsedInstance.protocol !== 'http:') {
+      throw new Error('bad protocol');
+    }
+  } catch {
+    res.writeHead(400, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Invalid instance URL' }));
+    return;
+  }
+
+  const target = new URL(restPath, instanceUrl);
+
+  // Collect request body
+  const chunks = [];
+  let totalSize = 0;
+  const MAX_BODY = 10 * 1024 * 1024;
+
+  req.on('data', chunk => {
+    totalSize += chunk.length;
+    if (totalSize > MAX_BODY) {
+      res.writeHead(413, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Request body too large' }));
+      req.destroy();
+      return;
+    }
+    chunks.push(chunk);
+  });
+
+  req.on('end', () => {
+    if (totalSize > MAX_BODY) return;
+    const body = Buffer.concat(chunks);
+
+    const headers = { 'host': target.hostname };
+    for (const [key, value] of Object.entries(req.headers)) {
+      if (ALLOWED_SNOW_HEADERS.has(key.toLowerCase())) {
+        headers[key] = value;
+      }
+    }
+
+    const isHttps = target.protocol === 'https:';
+    const mod = isHttps ? https : http;
+    const options = {
+      hostname: target.hostname,
+      port: isHttps ? 443 : (parseInt(target.port, 10) || 80),
+      path: target.pathname + target.search,
+      method: req.method,
+      headers,
+    };
+
+    const origin = req.headers.origin;
+    const allowedOrigin = isAllowedOrigin(origin) ? (origin || '*') : '';
+
+    const proxyReq = mod.request(options, (proxyRes) => {
+      if (allowedOrigin) {
+        res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
+        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-NowAIKit-Proxy');
+      }
+
+      for (const [key, value] of Object.entries(proxyRes.headers)) {
+        const lower = key.toLowerCase();
+        if (lower.startsWith('access-control-')) continue;
+        if (value) res.setHeader(key, value);
+      }
+
+      res.writeHead(proxyRes.statusCode || 500);
+      proxyRes.pipe(res);
+    });
+
+    proxyReq.on('error', (err) => {
+      console.error(`Snow proxy error -> ${target.hostname}: ${err.message}`);
+      res.writeHead(502, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'ServiceNow instance unreachable. Check the URL and your network.' }));
+    });
+
+    if (body.length > 0) proxyReq.write(body);
+    proxyReq.end();
+  });
+}
+
 // ─── Static file handler ─────────────────────────────────────────────────────
 
 function serveStatic(req, res) {
@@ -267,7 +385,7 @@ const server = http.createServer((req, res) => {
     }
     res.writeHead(204, {
       'Access-Control-Allow-Origin': origin || '*',
-      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-api-key, anthropic-version, X-NowAIKit-Proxy',
       'Access-Control-Max-Age': '86400',
     });
@@ -275,34 +393,41 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  // Common proxy security checks
+  const proxySecurityCheck = () => {
+    if (!req.headers['x-nowaikit-proxy']) {
+      res.writeHead(403, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Missing X-NowAIKit-Proxy header' }));
+      return false;
+    }
+    if (!allowed) {
+      res.writeHead(403, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Origin not allowed' }));
+      return false;
+    }
+    const ip = req.socket.remoteAddress || 'unknown';
+    if (!checkRateLimit(ip)) {
+      res.writeHead(429, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Rate limit exceeded. Try again in a minute.' }));
+      return false;
+    }
+    return true;
+  };
+
   // Check if this is an AI proxy request
   for (const [prefix, config] of Object.entries(AI_PROXIES)) {
     if (req.url.startsWith(prefix)) {
-      // CSRF protection: require custom header (browsers can't set this cross-origin without preflight)
-      if (!req.headers['x-nowaikit-proxy']) {
-        res.writeHead(403, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'Missing X-NowAIKit-Proxy header' }));
-        return;
-      }
-
-      // Origin check
-      if (!allowed) {
-        res.writeHead(403, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'Origin not allowed' }));
-        return;
-      }
-
-      // Rate limiting
-      const ip = req.socket.remoteAddress || 'unknown';
-      if (!checkRateLimit(ip)) {
-        res.writeHead(429, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'Rate limit exceeded. Try again in a minute.' }));
-        return;
-      }
-
+      if (!proxySecurityCheck()) return;
       proxyRequest(req, res, config);
       return;
     }
+  }
+
+  // Check if this is a ServiceNow proxy request
+  if (req.url.startsWith('/api/snow/')) {
+    if (!proxySecurityCheck()) return;
+    proxySnowRequest(req, res);
+    return;
   }
 
   // Serve static files
@@ -316,8 +441,9 @@ server.listen(PORT, HOST, () => {
   if (HOST !== '127.0.0.1' && HOST !== 'localhost') {
     console.log(`  Network: http://${HOST}:${PORT}`);
   }
-  console.log(`\n  AI proxy:  /api/ai/* -> provider APIs (rate-limited, CSRF-protected)`);
-  console.log(`  Static:    ${STATIC_DIR}`);
-  console.log(`\n  All AI providers supported (CORS proxied).`);
+  console.log(`\n  AI proxy:    /api/ai/*   -> provider APIs (CORS proxied)`);
+  console.log(`  Snow proxy:  /api/snow/* -> ServiceNow instances (CORS proxied)`);
+  console.log(`  Static:      ${STATIC_DIR}`);
+  console.log(`\n  All AI providers + ServiceNow instances supported.`);
   console.log(`  Press Ctrl+C to stop.\n`);
 });

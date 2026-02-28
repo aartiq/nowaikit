@@ -50,6 +50,205 @@ function appendAuditEntry(entry: AuditEntry): void {
   saveJSON('nowaikit:audit', all);
 }
 
+// ─── ServiceNow REST helper (browser mode) ──────────────────────────────────
+
+/** Get the active instance config for making ServiceNow API calls */
+function getActiveInstance(): InstanceConfig | null {
+  const instances = getInstances();
+  const activeName = loadJSON<string>('nowaikit:config:activeInstance', '');
+  return instances.find(i => i.name === activeName) || instances[0] || null;
+}
+
+/** Base64url-encode the instance URL for the proxy route */
+function encodeInstanceUrl(url: string): string {
+  // Use base64url encoding (no padding, URL-safe chars)
+  return btoa(url).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+/** Make an authenticated request to ServiceNow via the proxy */
+async function snowFetch(
+  method: string,
+  apiPath: string,
+  body?: unknown,
+): Promise<{ ok: boolean; status: number; data: unknown }> {
+  const instance = getActiveInstance();
+  if (!instance) throw new Error('No ServiceNow instance configured. Add one in Setup.');
+
+  const encoded = encodeInstanceUrl(instance.instanceUrl);
+  const url = `/api/snow/${encoded}${apiPath}`;
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+    'X-NowAIKit-Proxy': '1',
+  };
+
+  if (instance.authMethod === 'basic' && instance.username && instance.password) {
+    headers['Authorization'] = `Basic ${btoa(`${instance.username}:${instance.password}`)}`;
+  }
+
+  const opts: RequestInit = { method, headers };
+  if (body && (method === 'POST' || method === 'PUT' || method === 'PATCH')) {
+    opts.body = JSON.stringify(body);
+  }
+
+  const resp = await fetch(url, opts);
+  if (!resp.ok) {
+    const text = await resp.text().catch(() => '');
+    throw new Error(`ServiceNow ${resp.status}: ${text.slice(0, 200)}`);
+  }
+  const data = await resp.json().catch(() => ({}));
+  return { ok: true, status: resp.status, data };
+}
+
+/** Execute a ServiceNow tool via direct REST API calls through the proxy */
+async function executeSnowTool(name: string, args: Record<string, unknown>): Promise<unknown> {
+  switch (name) {
+    case 'query_records': {
+      const table = args.table as string;
+      if (!table) throw new Error('table is required');
+      const params = new URLSearchParams();
+      if (args.query) params.set('sysparm_query', args.query as string);
+      if (args.fields) params.set('sysparm_fields', args.fields as string);
+      if (args.limit) params.set('sysparm_limit', String(args.limit));
+      if (args.offset) params.set('sysparm_offset', String(args.offset));
+      if (args.orderBy) params.set('sysparm_query', ((args.query || '') + '^ORDERBY' + args.orderBy) as string);
+      params.set('sysparm_display_value', String(args.display_value ?? 'true'));
+      const qs = params.toString();
+      const { data } = await snowFetch('GET', `/api/now/table/${table}?${qs}`);
+      const result = (data as Record<string, unknown>).result;
+      return { count: Array.isArray(result) ? result.length : 0, records: result };
+    }
+    case 'get_record': {
+      const table = args.table as string;
+      const sysId = args.sys_id as string;
+      if (!table || !sysId) throw new Error('table and sys_id are required');
+      const params = new URLSearchParams();
+      if (args.fields) params.set('sysparm_fields', args.fields as string);
+      params.set('sysparm_display_value', 'true');
+      const { data } = await snowFetch('GET', `/api/now/table/${table}/${sysId}?${params}`);
+      return (data as Record<string, unknown>).result;
+    }
+    case 'create_record': {
+      const table = args.table as string;
+      if (!table) throw new Error('table is required');
+      const { data } = await snowFetch('POST', `/api/now/table/${table}`, args.fields || args.data || {});
+      const rec = (data as Record<string, unknown>).result as Record<string, unknown> | undefined;
+      return { sys_id: rec?.sys_id, record: rec };
+    }
+    case 'update_record': {
+      const table = args.table as string;
+      const sysId = args.sys_id as string;
+      if (!table || !sysId) throw new Error('table and sys_id are required');
+      const { data } = await snowFetch('PATCH', `/api/now/table/${table}/${sysId}`, args.fields || args.data || {});
+      return (data as Record<string, unknown>).result;
+    }
+    case 'delete_record': {
+      const table = args.table as string;
+      const sysId = args.sys_id as string;
+      if (!table || !sysId) throw new Error('table and sys_id are required');
+      await snowFetch('DELETE', `/api/now/table/${table}/${sysId}`);
+      return { success: true, deleted: sysId };
+    }
+    case 'get_table_schema': {
+      const table = args.table_name as string || args.table as string;
+      if (!table) throw new Error('table_name is required');
+      const { data } = await snowFetch('GET', `/api/now/table/${table}?sysparm_limit=0`);
+      // Schema from dictionary
+      const { data: dictData } = await snowFetch('GET',
+        `/api/now/table/sys_dictionary?sysparm_query=name=${table}^internal_type!=collection&sysparm_fields=element,column_label,internal_type,max_length,mandatory,reference&sysparm_display_value=true&sysparm_limit=200`
+      );
+      return { table, columns: (dictData as Record<string, unknown>).result };
+    }
+    // Incident shortcuts
+    case 'get_incident': {
+      const num = args.number as string || args.sys_id as string;
+      if (!num) throw new Error('number or sys_id is required');
+      const isId = /^[0-9a-f]{32}$/i.test(num);
+      if (isId) {
+        const { data } = await snowFetch('GET', `/api/now/table/incident/${num}?sysparm_display_value=true`);
+        return (data as Record<string, unknown>).result;
+      }
+      const { data } = await snowFetch('GET', `/api/now/table/incident?sysparm_query=number=${num}&sysparm_display_value=true&sysparm_limit=1`);
+      const records = (data as Record<string, unknown>).result as Array<unknown>;
+      return records?.[0] || { error: `Incident ${num} not found` };
+    }
+    case 'create_incident': {
+      const { data } = await snowFetch('POST', '/api/now/table/incident', args);
+      const rec = (data as Record<string, unknown>).result as Record<string, unknown> | undefined;
+      return { sys_id: rec?.sys_id, number: rec?.number, record: rec };
+    }
+    // Catch-all: try generic table API based on tool name patterns
+    default: {
+      // Tools like list_*, get_*, search_* — attempt generic query
+      const listMatch = name.match(/^list_(.+)$/);
+      const getMatch = name.match(/^get_(.+)$/);
+      const searchMatch = name.match(/^search_(.+)$/);
+
+      if (listMatch || searchMatch) {
+        // Attempt to find the table from args or tool name
+        const table = args.table as string || guessTable(name);
+        if (!table) throw new Error(`Cannot determine ServiceNow table for tool "${name}". Use query_records with an explicit table name.`);
+        const params = new URLSearchParams();
+        if (args.query) params.set('sysparm_query', args.query as string);
+        if (args.fields) params.set('sysparm_fields', args.fields as string);
+        params.set('sysparm_limit', String(args.limit || 25));
+        params.set('sysparm_display_value', 'true');
+        const { data } = await snowFetch('GET', `/api/now/table/${table}?${params}`);
+        const result = (data as Record<string, unknown>).result;
+        return { count: Array.isArray(result) ? result.length : 0, records: result };
+      }
+
+      if (getMatch) {
+        const sysId = args.sys_id as string || args.number as string;
+        const table = args.table as string || guessTable(name);
+        if (!table || !sysId) throw new Error(`Cannot determine table/sys_id for tool "${name}". Use get_record with explicit table and sys_id.`);
+        const isId = /^[0-9a-f]{32}$/i.test(sysId);
+        if (isId) {
+          const { data } = await snowFetch('GET', `/api/now/table/${table}/${sysId}?sysparm_display_value=true`);
+          return (data as Record<string, unknown>).result;
+        }
+        const { data } = await snowFetch('GET', `/api/now/table/${table}?sysparm_query=number=${sysId}&sysparm_display_value=true&sysparm_limit=1`);
+        return ((data as Record<string, unknown>).result as Array<unknown>)?.[0];
+      }
+
+      throw new Error(`Tool "${name}" is not supported in browser mode. Use query_records, get_record, or the desktop app for full tool support.`);
+    }
+  }
+}
+
+/** Map well-known tool names to ServiceNow tables */
+function guessTable(toolName: string): string | null {
+  const map: Record<string, string> = {
+    list_incidents: 'incident', get_incident: 'incident', search_incidents: 'incident',
+    list_problems: 'problem', get_problem: 'problem',
+    list_change_requests: 'change_request', get_change_request: 'change_request',
+    list_tasks: 'task', get_task: 'task',
+    list_users: 'sys_user', get_user: 'sys_user',
+    list_groups: 'sys_user_group', get_group: 'sys_user_group',
+    list_knowledge_bases: 'kb_knowledge_base',
+    search_knowledge: 'kb_knowledge', get_knowledge_article: 'kb_knowledge',
+    list_catalog_items: 'sc_cat_item', get_catalog_item: 'sc_cat_item',
+    list_assets: 'alm_asset', get_asset: 'alm_asset',
+    list_reports: 'sys_report', get_report: 'sys_report',
+    search_cmdb_ci: 'cmdb_ci', get_cmdb_ci: 'cmdb_ci',
+    list_notifications: 'sysevent_email_action', get_notification: 'sysevent_email_action',
+    list_business_rules: 'sys_script', get_business_rule: 'sys_script',
+    list_script_includes: 'sys_script_include', get_script_include: 'sys_script_include',
+    list_client_scripts: 'sys_script_client', get_client_script: 'sys_script_client',
+    list_ui_policies: 'sys_ui_policy', get_ui_policy: 'sys_ui_policy',
+    list_ui_actions: 'sys_ui_action', get_ui_action: 'sys_ui_action',
+    list_acls: 'sys_security_acl', get_acl: 'sys_security_acl',
+    list_scheduled_jobs: 'sysauto', get_scheduled_job: 'sysauto',
+    list_scoped_apps: 'sys_scope', get_scoped_app: 'sys_scope',
+    list_update_sets: 'sys_update_set', get_update_set: 'sys_update_set',
+    list_email_logs: 'sys_email', get_email_log: 'sys_email',
+    list_stories: 'rm_story', get_story: 'rm_story',
+    list_epics: 'rm_epic', get_epic: 'rm_epic',
+    list_software_licenses: 'alm_license',
+  };
+  return map[toolName] || null;
+}
+
 // ─── Browser implementation ──────────────────────────────────────────────────
 
 const webApi: ElectronAPI = {
@@ -211,15 +410,31 @@ const webApi: ElectronAPI = {
     if (!serverRunning) {
       return { success: false, error: 'Server is not running. Start the server first.' };
     }
-    appendAuditEntry({
-      ts: new Date().toISOString(),
-      event: 'tool:call',
-      tool: name,
-      instance: serverInstance,
-      success: true,
-      durationMs: Math.floor(Math.random() * 500) + 50,
-    });
-    return { success: true, result: { message: `Tool "${name}" executed (browser preview mode). Connect via desktop app or MCP client for live results.` } };
+    const start = Date.now();
+    try {
+      const result = await executeSnowTool(name, args);
+      appendAuditEntry({
+        ts: new Date().toISOString(),
+        event: 'tool:call',
+        tool: name,
+        instance: serverInstance,
+        success: true,
+        durationMs: Date.now() - start,
+      });
+      return { success: true, result };
+    } catch (err) {
+      const errMsg = err instanceof Error ? err.message : String(err);
+      appendAuditEntry({
+        ts: new Date().toISOString(),
+        event: 'tool:call',
+        tool: name,
+        instance: serverInstance,
+        success: false,
+        error: errMsg,
+        durationMs: Date.now() - start,
+      });
+      return { success: false, error: errMsg };
+    }
   },
 
   // ── Audit ──
