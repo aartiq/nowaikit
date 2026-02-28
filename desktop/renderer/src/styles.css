@@ -28,7 +28,7 @@
   --accent-dim: #2563eb;
   --accent-bg:  rgba(59,130,246,0.12);
   --accent-glow:rgba(59,130,246,0.25);
-  --accent2:    #0ea5e9;
+  --accent2:    #60a5fa;
 }
 [data-accent="emerald"] {
   --accent:     #22c55e;

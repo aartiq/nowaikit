@@ -153,7 +153,7 @@ server.setRequestHandler(GetPromptRequestSchema, async (request): Promise<any> =
 async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  logger.info(`ServiceNow MCP server running on stdio [${tools.length} tools]`);
+  logger.info(`NowAIKit server running on stdio [${tools.length} tools]`);
 }
 
 main().catch((error) => {

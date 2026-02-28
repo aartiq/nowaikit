@@ -1,6 +1,6 @@
 # Client Setup Guide
 
-Step-by-step setup for connecting the ServiceNow MCP server to each supported AI client.
+Step-by-step setup for connecting NowAIKit to each supported AI client.
 
 ## Prerequisites
 
@@ -19,7 +19,7 @@ Claude Code discovers MCP servers via the `claude mcp add` command.
 ### Basic Auth
 
 ```bash
-claude mcp add servicenow \
+claude mcp add nowaikit \
   --command "node /absolute/path/to/nowaikit/dist/server.js" \
   --env SERVICENOW_INSTANCE_URL=https://yourinstance.service-now.com \
   --env SERVICENOW_AUTH_METHOD=basic \
@@ -31,7 +31,7 @@ claude mcp add servicenow \
 ### OAuth
 
 ```bash
-claude mcp add servicenow \
+claude mcp add nowaikit \
   --command "node /absolute/path/to/nowaikit/dist/server.js" \
   --env SERVICENOW_INSTANCE_URL=https://yourinstance.service-now.com \
   --env SERVICENOW_AUTH_METHOD=oauth \
@@ -68,7 +68,7 @@ See full guide: [clients/claude-code/SETUP.md](../clients/claude-code/SETUP.md)
 ```json
 {
   "mcpServers": {
-    "servicenow": {
+    "nowaikit": {
       "command": "node",
       "args": ["/absolute/path/to/nowaikit/dist/server.js"],
       "env": {
@@ -89,7 +89,7 @@ See full guide: [clients/claude-code/SETUP.md](../clients/claude-code/SETUP.md)
 ```json
 {
   "mcpServers": {
-    "servicenow": {
+    "nowaikit": {
       "command": "node",
       "args": ["/absolute/path/to/nowaikit/dist/server.js"],
       "env": {
@@ -108,7 +108,7 @@ See full guide: [clients/claude-code/SETUP.md](../clients/claude-code/SETUP.md)
 
 Ready-to-edit files: [`clients/claude-desktop/`](../clients/claude-desktop/)
 
-**Verify**: Open Claude Desktop → Settings → Developer → MCP Servers → `servicenow` should show green.
+**Verify**: Open Claude Desktop → Settings → Developer → MCP Servers → `nowaikit` should show green.
 
 ---
 
@@ -204,7 +204,7 @@ Edit `.cursor/mcp.json`:
 ```json
 {
   "mcpServers": {
-    "servicenow": {
+    "nowaikit": {
       "command": "node",
       "args": ["/absolute/path/to/nowaikit/dist/server.js"],
       "env": {
@@ -225,7 +225,7 @@ Edit `.cursor/mcp.json`:
 cp /path/to/nowaikit/clients/cursor/.cursor/mcp.oauth.json .cursor/mcp.json
 ```
 
-**Verify**: Open Cursor → Settings → MCP → `servicenow` should appear in the list.
+**Verify**: Open Cursor → Settings → MCP → `nowaikit` should appear in the list.
 
 See full guide: [clients/cursor/SETUP.md](../clients/cursor/SETUP.md)
 
@@ -248,7 +248,7 @@ Edit `.vscode/mcp.json`:
 ```json
 {
   "servers": {
-    "servicenow": {
+    "nowaikit": {
       "type": "stdio",
       "command": "node",
       "args": ["${workspaceFolder}/../../nowaikit/dist/server.js"],

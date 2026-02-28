@@ -1,7 +1,7 @@
 import { ServiceNowError } from './errors.js';
 
 /**
- * Permission tier utilities for ServiceNow MCP tools.
+ * Permission tier utilities for NowAIKit tools.
  *
  * Tier 0 – Always available (all read tools)
  * Tier 1 – WRITE_ENABLED=true (standard ITSM writes)

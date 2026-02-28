@@ -22,19 +22,21 @@ import { writeClientConfig } from './writers/index.js';
 import type { InstanceConfig } from './config-store.js';
 
 // ─── Brand colors (matches nowaitkit.com — teal/navy palette) ───────────────
+// NOTE: `white` and `subtle` use terminal-adaptive styles so text remains
+//       visible on both dark *and* light (bright-white) terminal backgrounds.
 const teal    = chalk.hex('#00D4AA');        // teal-500 — primary brand
 const navy    = chalk.hex('#0F4C81');        // deep navy — secondary brand
-const bright  = chalk.hex('#33DCBB');        // bright teal — hover/highlight
-const mint    = chalk.hex('#80E8D0');        // mint — code/light accent
+const bright  = chalk.hex('#00B899');        // darker teal — visible on light bg too
+const mint    = chalk.hex('#00997F');        // mint — code/light accent (dark-safe)
 const brand   = teal;                        // primary brand color
-const brandBg = chalk.bgHex('#00D4AA').hex('#050810').bold; // teal badge bg
+const brandBg = chalk.bgHex('#00D4AA').black.bold; // teal badge bg (black text = always visible)
 const accent  = teal;                        // accent (AI highlight)
 const success = chalk.hex('#10B981');        // emerald-500
 const warn    = chalk.hex('#FF6B35');        // amber/orange
 const err     = chalk.hex('#E8466A');        // pink-500
-const dim     = chalk.hex('#4A5670');        // muted text
-const white   = chalk.hex('#F1F3F8');        // text-primary
-const subtle  = chalk.hex('#7E8DA8');        // text-secondary
+const dim     = chalk.gray;                  // terminal-adaptive dim text
+const white   = chalk.bold;                  // terminal-adaptive primary text (works on light + dark)
+const subtle  = chalk.dim;                   // terminal-adaptive secondary text
 
 const TOTAL_STEPS = 7;
 

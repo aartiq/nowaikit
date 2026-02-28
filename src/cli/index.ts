@@ -17,12 +17,14 @@ import { authLogin, authLogout, authWhoami } from './auth.js';
 import { listInstances, removeInstance } from './config-store.js';
 
 // Brand colors (matches nowaitkit.com — teal/navy palette)
+// Terminal-adaptive: white/subtle/dim use chalk built-ins so text stays visible
+// on both dark and light (bright-white) terminal backgrounds.
 const teal    = chalk.hex('#00D4AA');
 const navy    = chalk.hex('#0F4C81');
-const bright  = chalk.hex('#33DCBB');
-const dim     = chalk.hex('#4A5670');
-const white   = chalk.hex('#F1F3F8');
-const subtle  = chalk.hex('#7E8DA8');
+const bright  = chalk.hex('#00B899');
+const dim     = chalk.gray;
+const white   = chalk.bold;
+const subtle  = chalk.dim;
 const success = chalk.hex('#10B981');
 const err     = chalk.hex('#E8466A');
 

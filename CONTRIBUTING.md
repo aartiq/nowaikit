@@ -1,4 +1,4 @@
-# Contributing to ServiceNow MCP
+# Contributing to NowAIKit
 
 Thank you for considering contributing!
 
