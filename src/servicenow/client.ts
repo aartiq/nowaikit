@@ -303,7 +303,18 @@ export class ServiceNowClient {
       }
     }
 
-    throw lastError || new Error('Request failed after retries');
+    // Surface the real cause from Node.js fetch failures
+    if (lastError) {
+      const cause = (lastError as Error & { cause?: Error }).cause;
+      if (cause) {
+        throw new ServiceNowError(
+          `Failed to query records: ${cause.message}`,
+          (cause as Error & { code?: string }).code || 'NETWORK_ERROR'
+        );
+      }
+      throw lastError;
+    }
+    throw new Error('Request failed after retries');
   }
 
   /**
