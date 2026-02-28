@@ -266,28 +266,24 @@ nowaikit setup --add
 nowaikit instances list
 ```
 
-### Option B — Web UI (Browser Dashboard)
-
-Run the NowAIKit dashboard in your browser — no Electron required:
+### Option B — Web Dashboard (one command)
 
 ```bash
-# 1. Clone and build
-git clone https://github.com/aartiq/nowaikit.git
-cd nowaikit
-npm install && npm run build
-
-# 2. Build the web UI
-cd desktop
-npm install && npm run build:web
-
-# 3. Start the web server
-npm run serve
+npx nowaikit web
 ```
 
-Open **http://localhost:4175** — the dashboard includes instance management, settings, and an audit log viewer.
+Opens the NowAIKit dashboard at **http://localhost:4175** — includes instance management, settings, and an audit log viewer.
 
-> **Custom port:** `PORT=3000 npm run serve`
-> **Expose to network:** `HOST=0.0.0.0 npm run serve` (use with caution)
+```bash
+# Custom port
+npx nowaikit web --port 3000
+
+# Expose to network (use with caution)
+npx nowaikit web --host 0.0.0.0
+
+# Don't auto-open browser
+npx nowaikit web --no-open
+```
 
 ### Option C — Desktop App
 

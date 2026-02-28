@@ -4,6 +4,7 @@
  *
  * Commands:
  *   nowaikit setup [--add]   — interactive setup wizard
+ *   nowaikit web             — start the web dashboard in your browser
  *   nowaikit auth login      — per-user OAuth login
  *   nowaikit auth logout     — remove stored token
  *   nowaikit auth whoami     — show current authenticated user
@@ -12,6 +13,10 @@
  */
 import { Command } from 'commander';
 import chalk from 'chalk';
+import { execSync, spawn } from 'child_process';
+import { existsSync } from 'fs';
+import { fileURLToPath } from 'url';
+import path from 'path';
 import { runSetup } from './setup.js';
 import { authLogin, authLogout, authWhoami } from './auth.js';
 import { listInstances, removeInstance } from './config-store.js';
@@ -48,7 +53,7 @@ const program = new Command();
 program
   .name('nowaikit')
   .description('The Most Comprehensive ServiceNow AI Toolkit')
-  .version('2.4.9')
+  .version('2.5.0')
   .addHelpText('before', '')
   .addHelpText('beforeAll', () => {
     cliBanner();
@@ -135,6 +140,68 @@ instances
     } else {
       console.log(`  ${err('✗')} ${white(`Instance "${name}" not found`)}`);
     }
+  });
+
+// ─── web ──────────────────────────────────────────────────────────────────────
+program
+  .command('web')
+  .description('Start the NowAIKit web dashboard in your browser')
+  .option('-p, --port <port>', 'Port to listen on', '4175')
+  .option('--host <host>', 'Host to bind to (use 0.0.0.0 for network)', '127.0.0.1')
+  .option('--no-open', 'Do not auto-open browser')
+  .action((opts: { port: string; host: string; open: boolean }) => {
+    // Locate serve.js relative to this CLI file (dist/cli/index.js -> ../../desktop/serve.js)
+    const cliDir = path.dirname(fileURLToPath(import.meta.url));
+    const pkgRoot = path.resolve(cliDir, '..', '..');
+    const serveJs = path.join(pkgRoot, 'desktop', 'serve.js');
+    const staticDir = path.join(pkgRoot, 'desktop', 'renderer', 'dist');
+
+    if (!existsSync(serveJs)) {
+      console.log('');
+      console.log(err('  Web UI server not found.'));
+      console.log(dim('  If you installed via npm, make sure you have the latest version:'));
+      console.log(teal('    npm install -g nowaikit@latest'));
+      console.log('');
+      process.exit(1);
+    }
+
+    if (!existsSync(staticDir)) {
+      console.log('');
+      console.log(err('  Web UI assets not found.'));
+      console.log(dim('  The web UI may not have been built. If running from source:'));
+      console.log(teal('    cd desktop && npm install && npm run build:web'));
+      console.log('');
+      process.exit(1);
+    }
+
+    cliBanner();
+    console.log(dim('  Starting web dashboard…'));
+    console.log('');
+
+    const child = spawn('node', [serveJs], {
+      stdio: 'inherit',
+      env: {
+        ...process.env,
+        PORT: opts.port,
+        HOST: opts.host,
+      },
+    });
+
+    // Auto-open browser after a short delay
+    if (opts.open) {
+      setTimeout(() => {
+        const url = `http://localhost:${opts.port}`;
+        try {
+          if (process.platform === 'darwin') execSync(`open ${url}`, { stdio: 'ignore' });
+          else if (process.platform === 'win32') execSync(`start ${url}`, { stdio: 'ignore' });
+          else execSync(`xdg-open ${url}`, { stdio: 'ignore' });
+        } catch {
+          // Browser open failed silently — user can open manually
+        }
+      }, 1000);
+    }
+
+    child.on('exit', (code) => process.exit(code ?? 0));
   });
 
 program.parseAsync(process.argv).catch((e: unknown) => {
