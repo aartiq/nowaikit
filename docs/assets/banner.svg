@@ -1,4 +1,4 @@
-<!-- NowAIKit v2.4 banner — 400+ tools, all ServiceNow modules, 15+ AI clients -->
+<!-- NowAIKit v2.5 banner — 400+ tools, all ServiceNow modules, 15+ AI clients -->
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 340" width="1200" height="340">
   <defs>
     <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -58,18 +58,23 @@
   <ellipse cx="200" cy="170" rx="180" ry="120" fill="#00D4AA" opacity="0.04" filter="url(#softGlow)"/>
   <ellipse cx="1050" cy="170" rx="160" ry="100" fill="#0F4C81" opacity="0.05" filter="url(#softGlow)"/>
 
-  <!-- Left bracket decoration -->
+  <!-- Decorative brackets -->
   <text x="52" y="210" font-family="'Courier New', monospace" font-size="140" fill="#00D4AA" opacity="0.08" font-weight="bold">{</text>
   <text x="1095" y="210" font-family="'Courier New', monospace" font-size="140" fill="#0F4C81" opacity="0.08" font-weight="bold">}</text>
 
-  <!-- Logo mark (icon + text), centered at x=600 -->
+  <!-- ─── Logo icon (matches desktop/resources/icon.svg — N + AI sparkle) ─── -->
   <g transform="translate(379, 88)">
     <rect width="60" height="60" rx="13" fill="url(#iconGrad)"/>
-    <svg x="13" y="13" width="34" height="34" viewBox="0 0 32 32" fill="none">
-      <path d="M9 23V9l7 10V9" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-      <circle cx="23" cy="12" r="2.5" fill="#fff" opacity="0.9"/>
-      <circle cx="23" cy="20" r="2.5" fill="#fff" opacity="0.9"/>
-      <line x1="23" y1="14.5" x2="23" y2="17.5" stroke="#fff" stroke-width="1.5" opacity="0.6"/>
+    <!-- Scaled version of icon.svg inner artwork: N stroke + sparkle + line + circle -->
+    <svg x="7" y="7" width="46" height="46" viewBox="0 0 44 46" fill="none">
+      <!-- N letter stroke -->
+      <path d="M5 39V7l15 27V7" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+      <!-- AI sparkle star -->
+      <path d="M34 4l2 7 6 2-6 2-2 7-2-7-6-2 6-2z" fill="#fff" opacity="0.9"/>
+      <!-- Connecting line -->
+      <line x1="34" y1="19" x2="34" y2="28.5" stroke="#fff" stroke-width="1.8" opacity="0.5"/>
+      <!-- AI dot -->
+      <circle cx="34" cy="34" r="4.5" fill="#fff" opacity="0.8"/>
     </svg>
   </g>
 
@@ -111,7 +116,7 @@
     fill="#4A5670"
   >400+ tools · Full module coverage · Works with Claude, ChatGPT, Gemini, Cursor, Copilot &amp; more</text>
 
-  <!-- Stats row -->
+  <!-- ─── Stats row ─── -->
   <line x1="100" y1="268" x2="1100" y2="268" stroke="#162A3A" stroke-width="1"/>
 
   <!-- Stat 1: Tools -->
@@ -119,8 +124,6 @@
     <text x="0" y="0" font-family="'SF Pro Display', system-ui, sans-serif" font-size="22" font-weight="700" fill="#00D4AA" text-anchor="middle">400+</text>
     <text x="0" y="18" font-family="'SF Pro Text', system-ui, sans-serif" font-size="11" fill="#4A5670" text-anchor="middle" letter-spacing="1.5" font-weight="500">TOOLS</text>
   </g>
-
-  <!-- Divider 1 -->
   <line x1="290" y1="278" x2="290" y2="322" stroke="#162A3A" stroke-width="1"/>
 
   <!-- Stat 2: Modules -->
@@ -128,8 +131,6 @@
     <text x="0" y="0" font-family="'SF Pro Display', system-ui, sans-serif" font-size="16" font-weight="700" fill="#0F4C81" text-anchor="middle">FULL</text>
     <text x="0" y="18" font-family="'SF Pro Text', system-ui, sans-serif" font-size="11" fill="#4A5670" text-anchor="middle" letter-spacing="1.5" font-weight="500">MODULE COVERAGE</text>
   </g>
-
-  <!-- Divider 2 -->
   <line x1="510" y1="278" x2="510" y2="322" stroke="#162A3A" stroke-width="1"/>
 
   <!-- Stat 3: Tests -->
@@ -137,8 +138,6 @@
     <text x="0" y="0" font-family="'SF Pro Display', system-ui, sans-serif" font-size="22" font-weight="700" fill="#10B981" text-anchor="middle">61</text>
     <text x="0" y="18" font-family="'SF Pro Text', system-ui, sans-serif" font-size="11" fill="#4A5670" text-anchor="middle" letter-spacing="1.5" font-weight="500">TESTS PASSING</text>
   </g>
-
-  <!-- Divider 3 -->
   <line x1="710" y1="278" x2="710" y2="322" stroke="#162A3A" stroke-width="1"/>
 
   <!-- Stat 4: Examples -->
@@ -146,8 +145,6 @@
     <text x="0" y="0" font-family="'SF Pro Display', system-ui, sans-serif" font-size="22" font-weight="700" fill="#FF6B35" text-anchor="middle">120+</text>
     <text x="0" y="18" font-family="'SF Pro Text', system-ui, sans-serif" font-size="11" fill="#4A5670" text-anchor="middle" letter-spacing="1.5" font-weight="500">EXAMPLES</text>
   </g>
-
-  <!-- Divider 4 -->
   <line x1="930" y1="278" x2="930" y2="322" stroke="#162A3A" stroke-width="1"/>
 
   <!-- Stat 5: AI Clients -->

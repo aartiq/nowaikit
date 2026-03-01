@@ -4,12 +4,12 @@
 
 <br/>
 
-[![AI-Powered](https://img.shields.io/badge/AI--Powered-Claude%20%7C%20ChatGPT%20%7C%20Gemini%20%7C%20Groq%20%7C%20OpenRouter-6366f1?style=flat-square)](https://github.com/aartiq/nowaikit)
-[![Tools](https://img.shields.io/badge/400%2B%20Tools-All%20Modules-0ea5e9?style=flat-square)](docs/TOOLS.md)
+[![AI-Powered](https://img.shields.io/badge/AI--Powered-Claude%20%7C%20ChatGPT%20%7C%20Gemini%20%7C%20Groq%20%7C%20OpenRouter-00D4AA?style=flat-square)](https://github.com/aartiq/nowaikit)
+[![Tools](https://img.shields.io/badge/400%2B%20Tools-All%20Modules-0F4C81?style=flat-square)](docs/TOOLS.md)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-f59e0b?style=flat-square)](LICENSE)
-[![ServiceNow](https://img.shields.io/badge/ServiceNow-Latest%20Release-00c7b4?style=flat-square)](https://developer.servicenow.com)
-[![MCP](https://img.shields.io/badge/MCP-Model%20Context%20Protocol-8b5cf6?style=flat-square)](https://modelcontextprotocol.io)
+[![ServiceNow](https://img.shields.io/badge/ServiceNow-Latest%20Release-00D4AA?style=flat-square)](https://developer.servicenow.com)
+[![MCP](https://img.shields.io/badge/MCP-Model%20Context%20Protocol-0F4C81?style=flat-square)](https://modelcontextprotocol.io)
 [![Node.js](https://img.shields.io/badge/Node.js-20%2B-339933?style=flat-square&logo=node.js&logoColor=white)](https://nodejs.org)
 
 <br/>
