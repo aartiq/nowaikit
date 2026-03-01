@@ -42,3 +42,5 @@ desktop/dist/
 # nowaikit config and token store
 .config/
 nowaikit.org.json
+.mcpregistry_github_token
+.mcpregistry_registry_token
