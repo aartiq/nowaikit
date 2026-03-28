@@ -68,12 +68,14 @@ import { getWorkspaceToolDefinitions, executeWorkspaceToolCall } from './workspa
 import { getMobileToolDefinitions, executeMobileToolCall } from './mobile.js';
 // Deployment & Artifacts
 import { getDeploymentToolDefinitions, executeDeploymentToolCall } from './deployment.js';
+// Fluent / GlideQuery / Batch API
+import { getFluentToolDefinitions, executeFluentToolCall } from './fluent.js';
 
 // ─── Package Definitions ──────────────────────────────────────────────────────
 
 const PACKAGE_TOOL_NAMES: Record<string, string[]> = {
   devops_engineer: [
-    'query_records', 'get_record', 'get_table_schema',
+    'query_records', 'get_record', 'get_table_schema', 'create_record', 'update_record', 'delete_record',
     'list_devops_pipelines', 'get_devops_pipeline', 'list_deployments', 'get_deployment',
     'create_devops_change', 'track_deployment', 'get_devops_insights',
     'create_update_set', 'switch_update_set', 'get_current_update_set', 'list_update_sets',
@@ -87,7 +89,7 @@ const PACKAGE_TOOL_NAMES: Record<string, string[]> = {
     'track_asset_lifecycle', 'get_license_optimization',
   ],
   portal_developer: [
-    'query_records', 'get_record', 'get_table_schema',
+    'query_records', 'get_record', 'get_table_schema', 'create_record', 'update_record', 'delete_record',
     'list_portals', 'get_portal', 'create_portal', 'list_portal_pages', 'get_portal_page', 'create_portal_page',
     'list_portal_widgets', 'get_portal_widget', 'create_portal_widget', 'update_portal_widget',
     'list_widget_instances',
@@ -99,7 +101,7 @@ const PACKAGE_TOOL_NAMES: Record<string, string[]> = {
     'list_changesets', 'get_changeset', 'commit_changeset', 'publish_changeset',
   ],
   integration_engineer: [
-    'query_records', 'get_record', 'get_table_schema',
+    'query_records', 'get_record', 'get_table_schema', 'create_record', 'update_record', 'delete_record',
     'list_rest_messages', 'get_rest_message', 'list_rest_message_functions', 'create_rest_message',
     'list_transform_maps', 'get_transform_map', 'run_transform_map', 'list_transform_field_maps',
     'list_import_sets', 'get_import_set', 'create_import_set_row', 'list_data_sources',
@@ -145,7 +147,7 @@ const PACKAGE_TOOL_NAMES: Record<string, string[]> = {
     'create_catalog_variable', 'create_catalog_ui_policy',
   ],
   system_administrator: [
-    'query_records', 'get_record', 'get_user', 'get_group', 'get_table_schema',
+    'query_records', 'get_record', 'get_user', 'get_group', 'get_table_schema', 'create_record', 'update_record', 'delete_record',
     'list_users', 'create_user', 'update_user', 'list_groups', 'create_group', 'update_group', 'add_user_to_group', 'remove_user_from_group',
     'list_reports', 'get_report', 'create_report', 'update_report', 'run_aggregate_query', 'trend_query', 'export_report_data', 'get_sys_log',
     'list_scheduled_jobs', 'get_scheduled_job', 'create_scheduled_job', 'update_scheduled_job', 'trigger_scheduled_job', 'list_job_run_history',
@@ -164,7 +166,7 @@ const PACKAGE_TOOL_NAMES: Record<string, string[]> = {
     'create_scheduled_report', 'create_kpi',
   ],
   platform_developer: [
-    'query_records', 'get_record', 'get_table_schema',
+    'query_records', 'get_record', 'get_table_schema', 'create_record', 'update_record', 'delete_record',
     'list_scoped_apps', 'get_scoped_app', 'create_scoped_app', 'update_scoped_app',
     'list_business_rules', 'get_business_rule', 'create_business_rule', 'update_business_rule',
     'list_script_includes', 'get_script_include', 'create_script_include', 'update_script_include',
@@ -174,6 +176,7 @@ const PACKAGE_TOOL_NAMES: Record<string, string[]> = {
     'list_acls', 'get_acl', 'create_acl', 'update_acl',
     'list_changesets', 'get_changeset', 'commit_changeset', 'publish_changeset',
     'list_atf_suites', 'get_atf_suite', 'run_atf_suite', 'list_atf_tests', 'get_atf_test', 'run_atf_test', 'get_atf_suite_result', 'list_atf_test_results', 'get_atf_failure_insight',
+    'fluent_query', 'batch_request', 'execute_script',
   ],
   itom_engineer: [
     'query_records', 'get_record', 'get_table_schema',
@@ -190,10 +193,11 @@ const PACKAGE_TOOL_NAMES: Record<string, string[]> = {
     'list_users',
   ],
   ai_developer: [
-    'query_records', 'get_record', 'natural_language_search',
+    'query_records', 'get_record', 'natural_language_search', 'create_record', 'update_record', 'delete_record',
     'nlq_query', 'ai_search', 'generate_summary', 'suggest_resolution', 'categorize_incident',
     'get_virtual_agent_topics', 'trigger_agentic_playbook', 'get_ms_copilot_topics', 'generate_work_notes', 'get_pi_models',
     'search_knowledge', 'get_knowledge_article',
+    'fluent_query', 'batch_request', 'execute_script',
   ],
 };
 
@@ -231,6 +235,7 @@ const ALL_TOOLS = [
   ...getWorkspaceToolDefinitions(),
   ...getMobileToolDefinitions(),
   ...getDeploymentToolDefinitions(),
+  ...getFluentToolDefinitions(),
 ];
 
 // ─── Public API ───────────────────────────────────────────────────────────────
@@ -290,6 +295,7 @@ export async function executeTool(
     () => executeWorkspaceToolCall(client, name, args),
     () => executeMobileToolCall(client, name, args),
     () => executeDeploymentToolCall(client, name, args),
+    () => executeFluentToolCall(client, name, args),
   ];
 
   for (const handler of handlers) {
