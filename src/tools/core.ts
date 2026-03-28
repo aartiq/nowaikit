@@ -60,6 +60,43 @@ export function getCoreToolDefinitions() {
       },
     },
     {
+      name: 'create_record',
+      description: 'Create a new record in any ServiceNow table (requires WRITE_ENABLED=true)',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          table: { type: 'string', description: 'Table name (e.g., "incident", "sys_user_preference")' },
+          fields: { type: 'object', description: 'Key-value pairs for the new record fields' },
+        },
+        required: ['table', 'fields'],
+      },
+    },
+    {
+      name: 'update_record',
+      description: 'Update an existing record in any ServiceNow table (requires WRITE_ENABLED=true)',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          table: { type: 'string', description: 'Table name (e.g., "incident", "sys_user_preference")' },
+          sys_id: { type: 'string', description: '32-character system ID of the record to update' },
+          fields: { type: 'object', description: 'Key-value pairs of fields to update' },
+        },
+        required: ['table', 'sys_id', 'fields'],
+      },
+    },
+    {
+      name: 'delete_record',
+      description: 'Delete a record from any ServiceNow table (requires WRITE_ENABLED=true)',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          table: { type: 'string', description: 'Table name' },
+          sys_id: { type: 'string', description: '32-character system ID of the record to delete' },
+        },
+        required: ['table', 'sys_id'],
+      },
+    },
+    {
       name: 'get_user',
       description: 'Look up user details by email or username',
       inputSchema: {
@@ -272,6 +309,27 @@ export async function executeCoreToolCall(
       if (!p.table || !p.sys_id) throw new ServiceNowError('table and sys_id are required', 'INVALID_REQUEST');
       return await client.getRecord(p.table, p.sys_id, p.fields);
     }
+    case 'create_record': {
+      requireWrite();
+      if (!args.table || !args.fields) throw new ServiceNowError('table and fields are required', 'INVALID_REQUEST');
+      const created = await client.createRecord(args.table, args.fields);
+      return { action: 'created', table: args.table, ...created };
+    }
+
+    case 'update_record': {
+      requireWrite();
+      if (!args.table || !args.sys_id || !args.fields) throw new ServiceNowError('table, sys_id, and fields are required', 'INVALID_REQUEST');
+      const updated = await client.updateRecord(args.table, args.sys_id, args.fields);
+      return { action: 'updated', table: args.table, sys_id: args.sys_id, ...updated };
+    }
+
+    case 'delete_record': {
+      requireWrite();
+      if (!args.table || !args.sys_id) throw new ServiceNowError('table and sys_id are required', 'INVALID_REQUEST');
+      await client.deleteRecord(args.table, args.sys_id);
+      return { action: 'deleted', table: args.table, sys_id: args.sys_id };
+    }
+
     case 'get_user':
       if (!args.user_identifier) throw new ServiceNowError('user_identifier is required', 'INVALID_REQUEST');
       return await client.getUser(args.user_identifier);

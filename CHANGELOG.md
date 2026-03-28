@@ -6,6 +6,24 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ---
 
+## [2.6.0] — 2026-03-28
+
+### Added
+- **Generic CRUD tools** — `create_record`, `update_record`, `delete_record` for any ServiceNow table (requires `WRITE_ENABLED=true`)
+- **Fluent Query** — `fluent_query` tool with GlideQuery-style chained queries (where, select, aggregate, groupBy, orderBy)
+- **Batch API** — `batch_request` tool for multi-operation batching (50-70% fewer round-trips, up to 50 operations per batch)
+- **Server-side scripting** — `execute_script` tool for GlideRecord/GlideQuery execution on the instance
+- Added new tools to `platform_developer`, `ai_developer`, `system_administrator`, `devops_engineer`, `portal_developer`, and `integration_engineer` packages
+
+### Fixed
+- **Permission gating defect** — `executeNowAssistToolCall()` and `executeScriptToolCall()` called permission checks before checking tool name, blocking unrelated tools from executing. Now returns `null` for unrelated tools before checking permissions.
+- `execute_background_script` no longer incorrectly requires `NOW_ASSIST_ENABLED`
+
+### Stats
+- Total tools: **400+** (371 actual, up from 368 in v2.5)
+
+---
+
 ## [2.4.0] — 2026-02-22
 
 ### Added
