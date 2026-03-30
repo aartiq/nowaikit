@@ -38,7 +38,7 @@ const dim     = chalk.gray;                  // terminal-adaptive dim text
 const white   = chalk.bold;                  // terminal-adaptive primary text (works on light + dark)
 const subtle  = chalk.dim;                   // terminal-adaptive secondary text
 
-const TOTAL_STEPS = 7;
+const TOTAL_STEPS = 8;
 
 const TOOL_PACKAGES = [
   { value: 'full',                 name: `${brand('full')}                 ${dim('— all 400+ tools')}` },
@@ -451,17 +451,97 @@ export async function runSetup(options: { add?: boolean } = {}): Promise<void> {
   });
 
   const writeEnabled = await confirm({
-    message: brand('?') + ' Enable write operations ' + dim('(create/update/delete)') + brand('?'),
+    message: brand('?') + ' Enable write operations ' + dim('(create/update/delete records)') + brand('?'),
     default: false,
   });
+
+  let scriptingEnabled = false;
+  let cmdbWriteEnabled = false;
+  let atfEnabled = false;
+
+  if (writeEnabled) {
+    console.log('');
+    sectionLabel('Advanced write permissions');
+    console.log(dim('  These unlock powerful features but should be used carefully in production.'));
+    console.log('');
+
+    scriptingEnabled = await confirm({
+      message: brand('?') + ' Enable script execution ' + dim('(Background Scripts, server-side JS)') + brand('?'),
+      default: false,
+    });
+
+    cmdbWriteEnabled = await confirm({
+      message: brand('?') + ' Enable CMDB write operations ' + dim('(create/update CIs and relationships)') + brand('?'),
+      default: false,
+    });
+
+    atfEnabled = await confirm({
+      message: brand('?') + ' Enable ATF test execution ' + dim('(run Automated Test Framework suites)') + brand('?'),
+      default: false,
+    });
+  }
 
   const nowAssistEnabled = await confirm({
     message: brand('?') + ' Enable Now Assist / AI features' + brand('?'),
     default: false,
   });
 
-  // ─── Step 6: Features & Shortcuts ─────────────────────────────────────────
-  step(6, 'Features & Shortcuts');
+  // ─── Step 6: Power Tools & Capabilities ─────────────────────────────────────
+  step(6, 'Power Tools & Capabilities');
+
+  console.log(`  ${accent('▸')} ${white('Power Tools')} ${dim('— advanced features included in NowAIKit v3.0')}`);
+  console.log('');
+  console.log(`    ${brand('fluent_query')}       ${dim('GlideQuery-style queries from your AI — structured,')}`);
+  console.log(`                       ${dim('no scripts needed. Filter, aggregate, group, sort.')}`);
+  console.log('');
+  console.log(`    ${brand('batch_request')}      ${dim('Bundle up to 50 API calls in one request.')}`);
+  console.log(`                       ${dim('Dramatically faster for bulk operations.')}`);
+  console.log('');
+  console.log(`    ${brand('execute_script')}     ${dim('Run server-side JavaScript directly on your instance.')}`);
+  console.log(`                       ${dim('Requires scripting permission (Step 5).')}`);
+  console.log('');
+  divider();
+  console.log('');
+
+  console.log(`  ${accent('▸')} ${white('26 AI Capabilities')} ${dim('— run directly from terminal (no MCP client needed)')}`);
+  console.log('');
+  const capCategories = [
+    { icon: '🔍', label: 'Scan & Monitor', items: ['health', 'security', 'debt', 'upgrade', 'cmdb', 'automation'] },
+    { icon: '📋', label: 'Review & Audit', items: ['code', 'acls', 'scripts', 'flows'] },
+    { icon: '🔨', label: 'Build & Generate', items: ['business-rule', 'client-script', 'test-plan', 'app', 'flow', 'portal', 'uib', 'catalog', 'rest-api'] },
+    { icon: '⚡', label: 'Operations', items: ['triage', 'deploy', 'risk'] },
+    { icon: '📄', label: 'Documentation', items: ['app', 'release', 'runbook', 'script'] },
+  ];
+  for (const cat of capCategories) {
+    const cmds = cat.items.map(i => brand('/' + cat.label.split(' ')[0].toLowerCase() + '-' + i)).join(dim(', '));
+    console.log(`    ${cat.icon} ${white(cat.label)}: ${cmds}`);
+  }
+  console.log('');
+  console.log(dim('  Run any capability with: ') + brand('npx nowaikit run <capability>'));
+  console.log(dim('  Supports: ') + accent('Anthropic') + dim(', ') + accent('OpenAI') + dim(', ') + accent('Ollama') + dim(' (BYOK — bring your own key)'));
+  console.log('');
+
+  const showMoreCaps = await confirm({
+    message: brand('?') + ' Would you like to list all 26 capabilities in detail' + brand('?'),
+    default: false,
+  });
+
+  if (showMoreCaps) {
+    console.log('');
+    try {
+      const { getCapabilityMeta } = await import('../prompts/index.js');
+      const caps = getCapabilityMeta();
+      for (const c of caps) {
+        console.log(`    ${brand('/' + c.name.padEnd(24))} ${dim(c.description)}`);
+      }
+    } catch {
+      console.log(dim('  (Capability metadata not available — run ') + brand('npx nowaikit capabilities') + dim(' to see the full list)'));
+    }
+    console.log('');
+  }
+
+  // ─── Step 7: Prompts, Shortcuts & Resources ────────────────────────────────
+  step(7, 'Prompts, Shortcuts & Resources');
 
   console.log(`  ${accent('▸')} ${white('Slash Commands')} ${dim('(type / in your AI client)')}`);
   console.log('');
@@ -512,6 +592,9 @@ export async function runSetup(options: { add?: boolean } = {}): Promise<void> {
     clientSecret,
     authMode,
     writeEnabled,
+    scriptingEnabled,
+    cmdbWriteEnabled,
+    atfEnabled,
     toolPackage,
     nowAssistEnabled,
     group: group || undefined,
@@ -526,8 +609,8 @@ export async function runSetup(options: { add?: boolean } = {}): Promise<void> {
     dim(`  ~/.config/nowaikit/instances.json`),
   ], success);
 
-  // ─── Step 7: AI Client Installation ───────────────────────────────────────
-  step(7, 'Install into AI Client(s)');
+  // ─── Step 8: AI Client Installation ───────────────────────────────────────
+  step(8, 'Install into AI Client(s)');
 
   const clients = detectClients();
   const detected = clients.filter(c => c.detected);
@@ -602,6 +685,9 @@ function printSummary(instance: InstanceConfig): void {
     ...(instance.group       ? [`${dim('  Group:')}      ${white(instance.group)}`] : []),
     `${dim('  Tools:')}      ${white(instance.toolPackage || 'full')}`,
     `${dim('  Write:')}      ${instance.writeEnabled ? success('enabled') : dim('disabled')}`,
+    ...(instance.scriptingEnabled ? [`${dim('  Scripting:')}  ${success('enabled')}`] : []),
+    ...(instance.cmdbWriteEnabled ? [`${dim('  CMDB Write:')} ${success('enabled')}`] : []),
+    ...(instance.atfEnabled       ? [`${dim('  ATF:')}        ${success('enabled')}`] : []),
     `${dim('  NowAssist:')}  ${instance.nowAssistEnabled ? success('enabled') : dim('disabled')}`,
   ], brand);
 
@@ -613,11 +699,27 @@ function printSummary(instance: InstanceConfig): void {
   console.log(`    ${brand('❯')} ${accent('@my-incidents')}`);
 
   console.log('');
+  console.log(`  ${accent('▸')} ${white('Power Tools')} ${dim('(available to your AI automatically):')}`);
+  console.log('');
+  console.log(`    ${brand('fluent_query')}          ${dim('Structured queries — no scripts needed')}`);
+  console.log(`    ${brand('batch_request')}         ${dim('Up to 50 API calls in one request')}`);
+  if (instance.scriptingEnabled) {
+    console.log(`    ${brand('execute_script')}        ${dim('Run server-side JS on your instance')}`);
+  }
+  console.log('');
+
+  console.log(`  ${accent('▸')} ${white('Direct Mode')} ${dim('(run capabilities from terminal — no MCP client):')}`);
+  console.log('');
+  console.log(`    ${brand('npx nowaikit capabilities')}    ${dim('List all 26 capabilities')}`);
+  console.log(`    ${brand('npx nowaikit run scan-health')} ${dim('Run a capability directly')}`);
+  console.log('');
+
   console.log(`  ${accent('▸')} ${white('Manage from the terminal:')}`);
   console.log('');
   console.log(`    ${brand('nowaikit setup --add')}         ${dim('Add another instance')}`);
   console.log(`    ${brand('nowaikit instances list')}      ${dim('Show configured instances')}`);
   console.log(`    ${brand('nowaikit instances remove')}    ${dim('Remove an instance')}`);
+  console.log(`    ${brand('nowaikit web')}                 ${dim('Open web dashboard')}`);
   if (instance.authMode === 'per-user') {
     console.log(`    ${brand('nowaikit auth login')}          ${dim('Authenticate as yourself')}`);
   }

@@ -28,9 +28,9 @@ export interface LlmResponse {
 }
 
 const DEFAULT_MODELS: Record<LlmProvider, string> = {
-  anthropic: 'claude-sonnet-4-20250514',
-  openai: 'gpt-4o',
-  ollama: 'llama3.1',
+  anthropic: 'claude-sonnet-4-6-20250514',
+  openai: 'gpt-5.4',
+  ollama: 'llama3.3',
 };
 
 const PROVIDER_URLS: Record<LlmProvider, string> = {

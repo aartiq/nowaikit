@@ -16,6 +16,9 @@ export interface InstanceConfig {
   clientSecret?: string;
   authMode?: 'service-account' | 'per-user' | 'impersonation';
   writeEnabled?: boolean;
+  scriptingEnabled?: boolean;
+  cmdbWriteEnabled?: boolean;
+  atfEnabled?: boolean;
   toolPackage?: string;
   nowAssistEnabled?: boolean;
   group?: string;
