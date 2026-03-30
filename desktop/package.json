@@ -7,7 +7,7 @@
     "name": "aartiq",
     "email": "habenani@gmail.com"
   },
-  "license": "MIT",
+  "license": "SEE LICENSE IN LICENSE",
   "homepage": "https://nowaitkit.com",
   "scripts": {
     "dev": "concurrently \"npm run dev:renderer\" \"npm run dev:main\"",
