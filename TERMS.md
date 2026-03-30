@@ -1,12 +1,13 @@
 # Terms of Use & Legal Disclaimer
 
-**Last updated:** February 2026
+**Last updated:** March 2026
 
-## 1. Open-Source Software
+## 1. Source Available Software
 
-NowAIKit ("the Software") is free, open-source software distributed under the
-[MIT License](./LICENSE). You may use, copy, modify, and distribute the Software
-in accordance with the terms of that license.
+NowAIKit ("the Software") is source available software distributed under the
+[NowAIKit Source Available License](./LICENSE). You may use the Software free of
+charge for personal and commercial purposes. Copying, modification, redistribution,
+and derivative works are not permitted. See the LICENSE file for full terms.
 
 ## 2. Disclaimer of Warranties
 
@@ -50,7 +51,7 @@ session.
 
 ## 6. ServiceNow Disclaimer
 
-NowAIKit is an independent open-source project and is **not an official
+NowAIKit is an independent project and is **not an official
 ServiceNow product**. "ServiceNow" is a trademark of ServiceNow, Inc. Use of
 this software with ServiceNow instances is at your own risk and subject to your
 ServiceNow license agreement.
