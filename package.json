@@ -93,7 +93,7 @@
   "bugs": {
     "url": "https://github.com/aartiq/nowaikit/issues"
   },
-  "license": "MIT",
+  "license": "SEE LICENSE IN LICENSE",
   "overrides": {
     "minimatch": "^10.2.2"
   },

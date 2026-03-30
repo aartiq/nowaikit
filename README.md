@@ -7,7 +7,7 @@
 [![AI-Powered](https://img.shields.io/badge/AI--Powered-Claude%20%7C%20ChatGPT%20%7C%20Gemini%20%7C%20Groq%20%7C%20OpenRouter-00D4AA?style=flat-square)](https://github.com/aartiq/nowaikit)
 [![Tools](https://img.shields.io/badge/400%2B%20Tools-All%20Modules-0F4C81?style=flat-square)](docs/TOOLS.md)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![License: MIT](https://img.shields.io/badge/license-MIT-f59e0b?style=flat-square)](LICENSE)
+[![License: Source Available](https://img.shields.io/badge/license-Source%20Available-f59e0b?style=flat-square)](LICENSE)
 [![ServiceNow](https://img.shields.io/badge/ServiceNow-Latest%20Release-00D4AA?style=flat-square)](https://developer.servicenow.com)
 [![MCP](https://img.shields.io/badge/MCP-Model%20Context%20Protocol-0F4C81?style=flat-square)](https://modelcontextprotocol.io)
 [![Node.js](https://img.shields.io/badge/Node.js-20%2B-339933?style=flat-square&logo=node.js&logoColor=white)](https://nodejs.org)
@@ -18,7 +18,7 @@
 
 ## The Most Comprehensive ServiceNow AI Toolkit
 
-> **400+ tools · 31+ ServiceNow modules · 5-minute setup · MIT licensed · Works with any AI**
+> **400+ tools · 31+ ServiceNow modules · 5-minute setup · Free to use · Works with any AI**
 
 **NowAIKit** is the most comprehensive, production-ready AI toolkit for ServiceNow — and the only one that truly does it all.
 
@@ -26,7 +26,7 @@ Connect **Claude**, **ChatGPT**, **Gemini**, **Cursor**, **GitHub Copilot**, or 
 
 Ask in plain English. Deploy business rules from chat. Run ATF suites on demand. Query dev, staging, and prod simultaneously. Automate across multiple customer tenants without switching tabs. **Your AI, your instance, your rules.**
 
-**Any AI. Any instance. Any scale. 100% open-source.**
+**Any AI. Any instance. Any scale. Free to use.**
 
 > **Keywords:** ServiceNow MCP server · Model Context Protocol · ServiceNow AI · ITSM automation · ServiceNow Claude · ServiceNow ChatGPT · ServiceNow Cursor · ServiceNow Copilot · ServiceNow LLM · ServiceNow agent · MCP tools · ServiceNow API · agentic AI · ServiceNow developer tools
 
@@ -1228,13 +1228,13 @@ Yes. Each AI client gets its own MCP config pointing at the same (or different) 
 Yes. Configure any number of instances (prod, staging, dev, or multiple customer tenants) via `instances.json` or environment variables. Use `list_instances`, `switch_instance`, and `get_current_instance` tools to manage them, or pass `instance: "name"` to any individual tool call. See [docs/MULTI_INSTANCE.md](docs/MULTI_INSTANCE.md).
 
 **Is it free?**
-Completely free and open-source under the MIT license.
+Completely free to use for personal and commercial purposes. See [LICENSE](LICENSE) for details.
 
 ---
 
 ## License
 
-[MIT](LICENSE) — free for personal and commercial use.
+[Source Available](LICENSE) — free to use for personal and commercial purposes. See LICENSE for details.
 
 ---
 
@@ -1242,12 +1242,14 @@ Completely free and open-source under the MIT license.
 
 ### The only ServiceNow AI toolkit you'll ever need.
 
-400+ tools. 31+ modules. Every AI platform. True multi-instance. Open-source forever.
+400+ tools. 31+ modules. Every AI platform. True multi-instance. Free to use.
 
 **NowAIKit** &bull; ServiceNow MCP Server &bull; ServiceNow AI Agent &bull; ServiceNow Claude Integration &bull; ServiceNow ChatGPT &bull; ServiceNow Cursor &bull; ServiceNow Gemini &bull; ServiceNow Automation &bull; ServiceNow Developer Tools &bull; ServiceNow Multi-Instance &bull; ServiceNow MSP
 
 If NowAIKit saves you time, please ⭐ star the repository — it helps others find the project.
 
 [![GitHub Stars](https://img.shields.io/github/stars/aartiq/nowaikit?style=social)](../../stargazers)
+
+Built by Hardik Benani · [AartiQ](https://nowaikit.com)
 
 </div>
