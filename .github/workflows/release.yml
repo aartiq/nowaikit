@@ -25,10 +25,7 @@ jobs:
 
       - name: Package macOS (dmg — x64 + arm64)
         working-directory: desktop
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          EP_GH_IGNORE_EXISTING: true
-        run: npm run package:mac
+        run: npx electron-builder --mac --publish never
 
       - name: Upload macOS artifacts
         uses: actions/upload-artifact@v4
@@ -55,10 +52,7 @@ jobs:
 
       - name: Package Windows (exe)
         working-directory: desktop
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          EP_GH_IGNORE_EXISTING: true
-        run: npm run package:win
+        run: npx electron-builder --win --publish never
 
       - name: Upload Windows artifacts
         uses: actions/upload-artifact@v4
@@ -85,10 +79,7 @@ jobs:
 
       - name: Package Linux (AppImage + deb)
         working-directory: desktop
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          EP_GH_IGNORE_EXISTING: true
-        run: npm run package:linux
+        run: npx electron-builder --linux --publish never
 
       - name: Upload Linux artifacts
         uses: actions/upload-artifact@v4
