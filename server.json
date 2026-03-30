@@ -2,8 +2,8 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.aartiq/nowaikit",
   "title": "NowAIKit — ServiceNow AI Toolkit",
-  "description": "400+ ServiceNow MCP tools with web dashboard and desktop app.",
-  "version": "2.5.3",
+  "description": "400+ ServiceNow MCP tools + 26 AI capabilities + fluent query, batch API, BYOK mode.",
+  "version": "3.0.0",
   "websiteUrl": "https://github.com/aartiq/nowaikit",
   "repository": {
     "url": "https://github.com/aartiq/nowaikit",
@@ -13,7 +13,7 @@
     {
       "registryType": "npm",
       "identifier": "nowaikit",
-      "version": "2.5.3",
+      "version": "3.0.0",
       "transport": {
         "type": "stdio"
       },
