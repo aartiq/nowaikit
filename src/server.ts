@@ -13,7 +13,7 @@ import dotenv from 'dotenv';
 import { instanceManager } from './servicenow/instances.js';
 import { getTools } from './tools/index.js';
 import { getResources, readResource } from './resources/index.js';
-import { getPrompts, resolvePrompt } from './prompts/index.js';
+import { getPrompts, resolvePromptAsync } from './prompts/index.js';
 import { logger } from './utils/logging.js';
 import { ServiceNowError } from './utils/errors.js';
 
@@ -31,7 +31,7 @@ if (!hasLegacy && !hasMulti && !hasConfig) {
 const server = new Server(
   {
     name: 'nowaikit',
-    version: '2.5.1',
+    version: '3.0.0',
   },
   {
     capabilities: {
@@ -140,7 +140,7 @@ server.setRequestHandler(ListPromptsRequestSchema, async () => {
 server.setRequestHandler(GetPromptRequestSchema, async (request): Promise<any> => {
   const { name, arguments: args } = request.params;
 
-  const result = resolvePrompt(name, args as Record<string, string> | undefined);
+  const result = await resolvePromptAsync(name, args as Record<string, string> | undefined);
   if (!result) {
     throw new Error(`Unknown prompt: ${name}`);
   }
