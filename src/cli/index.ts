@@ -10,6 +10,8 @@
  *   nowaikit auth whoami     — show current authenticated user
  *   nowaikit instances list  — list configured instances
  *   nowaikit instances remove <name>  — remove an instance
+ *   nowaikit capabilities    — list all 26 Apex capabilities
+ *   nowaikit run <capability> — run a capability in direct mode (BYOK)
  */
 import { Command } from 'commander';
 import chalk from 'chalk';
@@ -53,7 +55,7 @@ const program = new Command();
 program
   .name('nowaikit')
   .description('The Most Comprehensive ServiceNow AI Toolkit')
-  .version('2.5.1')
+  .version('3.0.0')
   .addHelpText('before', '')
   .addHelpText('beforeAll', () => {
     cliBanner();
@@ -202,6 +204,99 @@ program
     }
 
     child.on('exit', (code) => process.exit(code ?? 0));
+  });
+
+// ─── capabilities ─────────────────────────────────────────────────────────────
+program
+  .command('capabilities')
+  .alias('caps')
+  .description('List all 26 capabilities (scan / review / build / ops / docs)')
+  .action(async () => {
+    cliBanner();
+    const { getCapabilityMeta } = await import('../prompts/index.js');
+    const caps = getCapabilityMeta();
+    const categories = ['scan', 'review', 'build', 'ops', 'docs'] as const;
+    const labels: Record<string, string> = {
+      scan: 'Scan & Monitor',
+      review: 'Review & Audit',
+      build: 'Build & Generate',
+      ops: 'Operations',
+      docs: 'Documentation',
+    };
+
+    for (const cat of categories) {
+      const group = caps.filter(c => c.category === cat);
+      if (group.length === 0) continue;
+      console.log(white(`  ${labels[cat]} (${group.length}):\n`));
+      for (const c of group) {
+        console.log(`  ${teal('/' + c.name)}`);
+        console.log(`  ${dim(c.description)}`);
+        console.log('');
+      }
+    }
+    console.log(dim(`  Total: ${caps.length} capabilities\n`));
+  });
+
+// ─── run (direct mode) ───────────────────────────────────────────────────────
+program
+  .command('run <capability>')
+  .description('Run a capability in direct mode (no MCP client needed — BYOK)')
+  .option('-i, --instance <name>', 'ServiceNow instance name')
+  .option('-p, --provider <provider>', 'LLM provider: anthropic, openai, ollama', 'anthropic')
+  .option('-m, --model <model>', 'LLM model name')
+  .option('-k, --api-key <key>', 'LLM API key (or set *_API_KEY env var)')
+  .option('-o, --output <file>', 'Write output to file')
+  .option('-t, --table <table>', 'Target table name')
+  .option('-s, --scope <scope>', 'Application scope or scan scope')
+  .option('-f, --focus <focus>', 'Review focus: security, performance, all')
+  .action(async (
+    capability: string,
+    options: { instance?: string; provider?: string; model?: string; apiKey?: string; output?: string; table?: string; scope?: string; focus?: string }
+  ) => {
+    cliBanner();
+
+    const ora = (await import('ora')).default;
+    const provider = (options.provider || process.env.LLM_PROVIDER || 'anthropic') as import('../direct/llm-client.js').LlmProvider;
+    const spinner = ora(`Running ${teal(capability)} in direct mode (${provider})...`).start();
+
+    try {
+      const { executeDirectly } = await import('../direct/executor.js');
+
+      const args: Record<string, string> = {};
+      if (options.table) args.table = options.table;
+      if (options.scope) args.scope = options.scope;
+      if (options.focus) args.focus = options.focus;
+
+      const result = await executeDirectly({
+        capability,
+        args,
+        instance: options.instance,
+        llmConfig: {
+          provider,
+          model: options.model,
+          apiKey: options.apiKey,
+        },
+        output: options.output,
+      });
+
+      spinner.succeed(`Capability completed (${result.dataGathered} data points gathered)`);
+
+      if (options.output) {
+        const { writeFileSync: writeFile } = await import('fs');
+        writeFile(options.output, result.content);
+        console.log(`\n  ${success('✓')} Output written to ${white(options.output)}`);
+      } else {
+        console.log('\n' + result.content);
+      }
+
+      if (result.usage) {
+        console.log(dim(`\n  Model: ${result.model} | Input: ${result.usage.input_tokens} tokens | Output: ${result.usage.output_tokens} tokens`));
+      }
+    } catch (error) {
+      spinner.fail('Execution failed');
+      console.error(err(`\n  ${error instanceof Error ? error.message : 'Unknown error'}`));
+      process.exit(1);
+    }
   });
 
 program.parseAsync(process.argv).catch((e: unknown) => {

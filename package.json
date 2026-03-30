@@ -1,8 +1,8 @@
 {
   "name": "nowaikit",
   "mcpName": "io.github.aartiq/nowaikit",
-  "version": "2.6.0",
-  "description": "The Most Comprehensive ServiceNow AI Toolkit — 400+ MCP tools across all modules. Integrates with Claude, ChatGPT, Gemini, Cursor, GitHub Copilot and any LLM.",
+  "version": "3.0.0",
+  "description": "The Most Comprehensive ServiceNow AI Toolkit — 400+ MCP tools + 26 AI capabilities (scan, review, build, ops, docs) + direct BYOK mode. Integrates with Claude, ChatGPT, Gemini, Cursor, GitHub Copilot and any LLM.",
   "main": "dist/server.js",
   "bin": {
     "nowaikit": "dist/cli/index.js"
@@ -74,7 +74,15 @@
     "copilot",
     "typescript",
     "automation",
-    "agentic"
+    "agentic",
+    "apex",
+    "scan",
+    "review",
+    "code-review",
+    "security-audit",
+    "technical-debt",
+    "direct-mode",
+    "byok"
   ],
   "author": "aartiq",
   "homepage": "https://github.com/aartiq/nowaikit#readme",

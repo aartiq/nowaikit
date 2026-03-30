@@ -6,6 +6,9 @@ const mockClient = {
   queryRecords: vi.fn(),
   getRecord: vi.fn(),
   getTableSchema: vi.fn(),
+  createRecord: vi.fn(),
+  updateRecord: vi.fn(),
+  deleteRecord: vi.fn(),
   getUser: vi.fn(),
   getGroup: vi.fn(),
   searchCmdbCi: vi.fn(),
@@ -16,15 +19,14 @@ const mockClient = {
   listActiveEvents: vi.fn(),
   cmdbHealthDashboard: vi.fn(),
   serviceMappingSummary: vi.fn(),
-  createChangeRequest: vi.fn(),
   naturalLanguageSearch: vi.fn(),
   naturalLanguageUpdate: vi.fn(),
 } as unknown as ServiceNowClient;
 
 describe('getCoreToolDefinitions', () => {
-  it('returns 16 core tool definitions', () => {
+  it('returns 24 core tool definitions', () => {
     const tools = getCoreToolDefinitions();
-    expect(tools.length).toBe(16);
+    expect(tools.length).toBe(24);
   });
 
   it('all tools have name, description and inputSchema', () => {
@@ -65,21 +67,22 @@ describe('executeCoreToolCall – get_record', () => {
   });
 });
 
-describe('executeCoreToolCall – create_change_request', () => {
+describe('executeCoreToolCall – create_record', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     process.env.WRITE_ENABLED = 'true';
   });
 
-  it('creates a change request when WRITE_ENABLED=true', async () => {
-    (mockClient.createChangeRequest as ReturnType<typeof vi.fn>).mockResolvedValue({ sys_id: 'xyz', number: 'CHG001' });
-    const result = await executeCoreToolCall(mockClient, 'create_change_request', { short_description: 'Test change', assignment_group: 'IT Ops' });
-    expect(result.summary).toContain('CHG001');
+  it('creates a record when WRITE_ENABLED=true', async () => {
+    (mockClient.createRecord as ReturnType<typeof vi.fn>).mockResolvedValue({ sys_id: 'xyz', number: 'INC001' });
+    const result = await executeCoreToolCall(mockClient, 'create_record', { table: 'incident', fields: { short_description: 'Test' } });
+    expect(result.action).toBe('created');
+    expect(result.sys_id).toBe('xyz');
   });
 
   it('throws when WRITE_ENABLED=false', async () => {
     process.env.WRITE_ENABLED = 'false';
-    await expect(executeCoreToolCall(mockClient, 'create_change_request', { short_description: 'x', assignment_group: 'y' })).rejects.toThrow();
+    await expect(executeCoreToolCall(mockClient, 'create_record', { table: 'incident', fields: { short_description: 'x' } })).rejects.toThrow();
   });
 });
 
