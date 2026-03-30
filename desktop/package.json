@@ -1,6 +1,6 @@
 {
   "name": "nowaikit-desktop",
-  "version": "2.5.1",
+  "version": "3.0.0",
   "description": "NowAIKit Desktop — visual setup wizard, dashboard, tool browser, and audit log viewer",
   "main": "dist/main/index.js",
   "author": {
@@ -34,8 +34,8 @@
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.4",
     "concurrently": "^9.1.2",
-    "electron": "^33.3.1",
-    "electron-builder": "^25.1.8",
+    "electron": "^41.1.0",
+    "electron-builder": "^26.8.1",
     "lucide-react": "^0.468.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
