@@ -84,7 +84,7 @@ export default function App(): React.ReactElement {
   const [page,        setPage]        = useState<Page>('dashboard');
   const [instances,   setInstances]   = useState<AppInstance[]>([]);
   const [serverOnline,setServerOnline]= useState(false);
-  const [serverUrl,   setServerUrl]   = useState('http://localhost:3100');
+  const [serverUrl,   setServerUrl]   = useState('stdio');
   const [appVersion,  setAppVersion]  = useState('');
   const [settings,    setSettings]    = useState<AppSettings>(DEFAULT_SETTINGS);
   const [loading,     setLoading]     = useState(true);
@@ -109,7 +109,7 @@ export default function App(): React.ReactElement {
         a.getAllConfig(),
       ]);
       setAppVersion(versionInfo.app);
-      setServerUrl('http://localhost:3100');
+      setServerUrl('stdio');
 
       // Settings: check if stored under 'settings' key or at top level
       const raw = allConfig as Record<string, unknown>;

@@ -19,7 +19,7 @@
     "node": ">=20.0.0"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && node scripts/extract-tools.mjs",
     "dev": "tsx watch src/server.ts",
     "start": "node dist/server.js",
     "setup": "node dist/cli/index.js setup",
