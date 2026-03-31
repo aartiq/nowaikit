@@ -203,10 +203,13 @@ export default function App(): React.ReactElement {
               onRemove={async name => { await api()?.removeInstance(name); loadData(); }}
               onSetDefault={async name => { await api()?.setConfig('activeInstance', name); loadData(); }}
               onTest={async name => {
-                const inst = instances.find(i => i.name === name);
                 const a = api();
-                if (!inst || !a) return { ok: false, message: 'Not available' };
-                const r = await a.testInstance({ name: inst.name, instanceUrl: inst.url, authMethod: inst.authMethod } as InstanceConfig);
+                if (!a) return { ok: false, message: 'Not available' };
+                // Fetch full instance config (with credentials) from backend
+                const allInstances = await a.listInstances();
+                const fullInst = allInstances.find((i: InstanceConfig) => i.name === name);
+                if (!fullInst) return { ok: false, message: 'Instance not found' };
+                const r = await a.testInstance(fullInst);
                 return { ok: r.success, message: r.success ? 'Connection successful' : (r.error ?? 'Failed') };
               }}
               onAddInstance={() => setFirstRun(true)}
