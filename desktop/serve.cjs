@@ -434,12 +434,25 @@ const server = http.createServer((req, res) => {
   serveStatic(req, res);
 });
 
-server.listen(PORT, HOST, () => {
+// Try preferred port, fall back to alternatives if busy
+const FALLBACK_PORTS = [PORT, PORT + 1, PORT + 2, PORT + 3, PORT + 10, 0];
+let portIndex = 0;
+
+function tryListen() {
+  const tryPort = FALLBACK_PORTS[portIndex];
+  server.listen(tryPort, HOST);
+}
+
+server.on('listening', () => {
+  const actualPort = server.address().port;
+  if (actualPort !== PORT) {
+    console.log(`\n  ⚠ Port ${PORT} was in use, using port ${actualPort} instead.`);
+  }
   console.log(`\n  NowAIKit Web Server`);
   console.log(`  ───────────────────────────────`);
-  console.log(`  Local:   http://localhost:${PORT}`);
+  console.log(`  Local:   http://localhost:${actualPort}`);
   if (HOST !== '127.0.0.1' && HOST !== 'localhost') {
-    console.log(`  Network: http://${HOST}:${PORT}`);
+    console.log(`  Network: http://${HOST}:${actualPort}`);
   }
   console.log(`\n  AI proxy:    /api/ai/*   -> provider APIs (CORS proxied)`);
   console.log(`  Snow proxy:  /api/snow/* -> ServiceNow instances (CORS proxied)`);
@@ -447,3 +460,22 @@ server.listen(PORT, HOST, () => {
   console.log(`\n  All AI providers + ServiceNow instances supported.`);
   console.log(`  Press Ctrl+C to stop.\n`);
 });
+
+server.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    portIndex++;
+    if (portIndex < FALLBACK_PORTS.length) {
+      const next = FALLBACK_PORTS[portIndex] || 'random';
+      console.log(`  Port ${FALLBACK_PORTS[portIndex - 1]} is in use, trying ${next}…`);
+      tryListen();
+    } else {
+      console.error(`  ✕ All ports are in use. Set PORT=<number> to specify a port.`);
+      process.exit(1);
+    }
+  } else {
+    console.error(`  ✕ Server error: ${err.message}`);
+    process.exit(1);
+  }
+});
+
+tryListen();

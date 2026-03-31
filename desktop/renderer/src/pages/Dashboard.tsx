@@ -45,13 +45,8 @@ function StatCard({ label, value, sub, subTitle, accent, valueColor }: {
 }
 
 function ServerPanel({ serverOnline, serverUrl, onRefresh }: { serverOnline: boolean; serverUrl: string; onRefresh: () => void }) {
-  const urlPort = (() => { try { return parseInt(new URL(serverUrl).port || '3100', 10); } catch { return 3100; } })();
-
-  const [port,      setPort]      = useState<number>(urlPort);
   const [busy,      setBusy]      = useState(false);
   const [statusMsg, setStatusMsg] = useState('');
-
-  useEffect(() => { setPort(urlPort); }, [urlPort]);
 
   async function handleStartStop() {
     const a = api();
@@ -105,7 +100,7 @@ function ServerPanel({ serverOnline, serverUrl, onRefresh }: { serverOnline: boo
           {serverOnline ? dot('green') : dot('dim')}
           <span style={{ fontWeight:600, fontSize:'0.88rem' }}>Server</span>
           <span style={{ marginLeft:8, fontSize:'0.78rem', color: serverOnline ? 'var(--green)' : 'var(--dim)' }}>
-            {serverOnline ? `Online · localhost:${port}` : 'Offline'}
+            {serverOnline ? 'Online · MCP Server (stdio)' : 'Offline'}
           </span>
         </div>
 
