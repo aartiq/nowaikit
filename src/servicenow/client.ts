@@ -339,7 +339,7 @@ export class ServiceNowClient {
       queryParams.set('sysparm_fields', params.fields);
     }
 
-    if (params.limit !== undefined) {
+    if (params.limit !== undefined && params.limit > 0) {
       queryParams.set('sysparm_limit', Math.min(params.limit, 1000).toString());
     } else {
       queryParams.set('sysparm_limit', '10'); // Default limit

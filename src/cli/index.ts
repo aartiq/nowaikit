@@ -22,6 +22,7 @@ import path from 'path';
 import { runSetup } from './setup.js';
 import { authLogin, authLogout, authWhoami } from './auth.js';
 import { listInstances, removeInstance } from './config-store.js';
+import { runShortcuts } from './shortcuts.js';
 
 // Brand colors (matches nowaitkit.com — teal/navy palette)
 // Terminal-adaptive: white/subtle/dim use chalk built-ins so text stays visible
@@ -32,6 +33,7 @@ const bright  = chalk.hex('#00B899');
 const dim     = chalk.gray;
 const white   = chalk.bold;
 const subtle  = chalk.dim;
+const gray    = chalk.hex('#8B949E');
 const success = chalk.hex('#10B981');
 const err     = chalk.hex('#E8466A');
 
@@ -41,9 +43,12 @@ function logoText(): string {
 
 function cliBanner(): void {
   console.log('');
-  console.log(bright('  ╔╗╔') + teal('╔═╗') + bright('╦ ╦') + dim('  ') + teal('╔═╗') + bright('╦') + teal('╦╔═') + bright('╦') + teal('╔╦╗'));
-  console.log(teal('  ║║║') + navy('║ ║') + teal('║║║') + dim('  ') + teal('╠═╣') + navy('║') + teal('╠╩╗') + navy('║') + teal(' ║ '));
-  console.log(navy('  ╝╚╝') + teal('╚═╝') + navy('╚╩╝') + dim('  ') + navy('╩ ╩') + teal('╩') + navy('╩ ╩') + teal('╩') + navy(' ╩ ') + dim('  ') + teal('✦'));
+  console.log(teal.bold('  ███╗  ██╗ ██████╗ ██╗    ██╗') + '   ' + gray(' █████╗ ██╗') + '   ' + teal.bold('██╗  ██╗██╗████████╗'));
+  console.log(teal.bold('  ████╗ ██║██╔═══██╗██║    ██║') + '   ' + gray('██╔══██╗██║') + '   ' + teal.bold('██║ ██╔╝██║╚══██╔══╝'));
+  console.log(teal.bold('  ██╔██╗██║██║   ██║██║ █╗ ██║') + '   ' + gray('███████║██║') + '   ' + teal.bold('█████╔╝ ██║   ██║'));
+  console.log(teal.bold('  ██║╚████║██║   ██║██║███╗██║') + '   ' + gray('██╔══██║██║') + '   ' + teal.bold('██╔═██╗ ██║   ██║'));
+  console.log(teal.bold('  ██║ ╚███║╚██████╔╝╚███╔███╔╝') + '   ' + gray('██║  ██║██║') + '   ' + teal.bold('██║  ██╗██║   ██║'));
+  console.log(teal.bold('  ╚═╝  ╚══╝ ╚═════╝  ╚══╝╚══╝') + '   ' + gray('╚═╝  ╚═╝╚═╝') + '   ' + teal.bold('╚═╝  ╚═╝╚═╝   ╚═╝') + '  ' + teal('✦'));
   console.log('');
   console.log(`  ${logoText()}  ${dim('—')} ${subtle('The #1 AI App for ServiceNow')}`);
   console.log(dim('  Connect ') + teal.bold('Any AI') + dim(' to ServiceNow. Instantly.'));
@@ -204,6 +209,14 @@ program
     }
 
     child.on('exit', (code) => process.exit(code ?? 0));
+  });
+
+// ─── shortcuts ────────────────────────────────────────────────────────────────
+program
+  .command('shortcuts')
+  .description('Show all available commands, slash commands, and keyboard shortcuts')
+  .action(() => {
+    runShortcuts();
   });
 
 // ─── capabilities ─────────────────────────────────────────────────────────────

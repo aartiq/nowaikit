@@ -471,9 +471,11 @@ const webApi: ElectronAPI = {
     model: string;
     messages: Array<{ role: string; content: unknown }>;
     tools?: Array<{ name: string; description: string; inputSchema?: Record<string, unknown> }>;
+    baseUrl?: string;
   }) => {
     const { provider, apiKey, model, messages, tools: toolDefs } = params;
-    if (!apiKey) return { error: 'No API key configured' };
+    const isLocalProvider = provider === 'ollama' || provider === 'lmstudio';
+    if (!apiKey && !isLocalProvider) return { error: 'No API key configured' };
 
     const chatStart = Date.now();
     const logChat = (prov: string, mdl: string, toolCount: number, success: boolean, durationMs: number, usage?: { inputTokens: number; outputTokens: number }, error?: string) => {
@@ -581,6 +583,8 @@ const webApi: ElectronAPI = {
           openai: '/api/ai/openai/v1/chat/completions',
           groq: '/api/ai/groq/openai/v1/chat/completions',
           openrouter: '/api/ai/openrouter/api/v1/chat/completions',
+          ollama: '/api/ai/ollama/v1/chat/completions',
+          lmstudio: '/api/ai/lmstudio/v1/chat/completions',
         };
         const url = proxyEndpoints[provider];
         if (!url) return { error: `Unknown provider: ${provider}` };
@@ -615,9 +619,11 @@ const webApi: ElectronAPI = {
         const openaiTools = toolDefs?.map(t => ({ type: 'function', function: { name: t.name, description: t.description, parameters: t.inputSchema || { type: 'object', properties: {} } } }));
         if (openaiTools && openaiTools.length > 0) body.tools = openaiTools;
 
+        const fetchHeaders: Record<string, string> = { 'Content-Type': 'application/json', 'X-NowAIKit-Proxy': '1' };
+        if (apiKey) fetchHeaders['Authorization'] = `Bearer ${apiKey}`;
         const res = await fetch(url, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}`, 'X-NowAIKit-Proxy': '1' },
+          headers: fetchHeaders,
           body: JSON.stringify(body),
         });
         if (!res.ok) { const e = sanitizeError(`API error ${res.status}: ${await res.text()}`); logChat(provider, model, toolDefs?.length || 0, false, Date.now() - chatStart, undefined, e); return { error: e }; }

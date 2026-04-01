@@ -4,6 +4,21 @@
   "version": "3.0.0",
   "description": "The Most Comprehensive ServiceNow AI Toolkit — 400+ MCP tools + 26 AI capabilities (scan, review, build, ops, docs) + direct BYOK mode. Integrates with Claude, ChatGPT, Gemini, Cursor, GitHub Copilot and any LLM.",
   "main": "dist/server.js",
+  "types": "dist/server.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/server.d.ts",
+      "import": "./dist/server.js"
+    },
+    "./sdk": {
+      "types": "./dist/sdk/index.d.ts",
+      "import": "./dist/sdk/index.js"
+    },
+    "./client": {
+      "types": "./dist/servicenow/client.d.ts",
+      "import": "./dist/servicenow/client.js"
+    }
+  },
   "bin": {
     "nowaikit": "dist/cli/index.js"
   },
@@ -82,7 +97,9 @@
     "security-audit",
     "technical-debt",
     "direct-mode",
-    "byok"
+    "byok",
+    "sdk",
+    "servicenow-sdk"
   ],
   "author": "aartiq",
   "homepage": "https://github.com/aartiq/nowaikit#readme",

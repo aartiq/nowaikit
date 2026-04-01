@@ -54,6 +54,22 @@ export function OpenRouterIcon({ size = 16, color = 'currentColor', style }: Ico
   );
 }
 
+export function OllamaIcon({ size = 16, color = 'currentColor', style }: IconProps) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} fill={color} viewBox="0 0 24 24" style={style}>
+      <path d="M12 2C8.5 2 6 4.5 6 7.5c0 1.5.6 2.8 1.5 3.8-.3.5-.5 1.1-.5 1.7v5c0 1.7 1.3 3 3 3h4c1.7 0 3-1.3 3-3v-5c0-.6-.2-1.2-.5-1.7.9-1 1.5-2.3 1.5-3.8C18 4.5 15.5 2 12 2zm-2 8.5c-.6 0-1-.7-1-1.5s.4-1.5 1-1.5 1 .7 1 1.5-.4 1.5-1 1.5zm4 0c-.6 0-1-.7-1-1.5s.4-1.5 1-1.5 1 .7 1 1.5-.4 1.5-1 1.5zm-4.5 3.5c0-.3.2-.5.5-.5h4c.3 0 .5.2.5.5s-.2.5-.5.5h-4c-.3 0-.5-.2-.5-.5z"/>
+    </svg>
+  );
+}
+
+export function LMStudioIcon({ size = 16, color = 'currentColor', style }: IconProps) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} fill={color} viewBox="0 0 24 24" style={style}>
+      <path d="M4 3h16c1.1 0 2 .9 2 2v10c0 1.1-.9 2-2 2h-6l-4 4v-4H4c-1.1 0-2-.9-2-2V5c0-1.1.9-2 2-2zm1 3v2h2V6H5zm0 3v2h2V9H5zm0 3v2h2v-2H5zm4-6v8h6V6H9zm7 0v2h2V6h-2zm0 3v2h2V9h-2z"/>
+    </svg>
+  );
+}
+
 /** Map provider ID to its icon component */
 export const PROVIDER_ICONS: Record<string, React.FC<IconProps>> = {
   anthropic:  ClaudeIcon,
@@ -61,4 +77,6 @@ export const PROVIDER_ICONS: Record<string, React.FC<IconProps>> = {
   google:     GeminiIcon,
   groq:       GroqIcon,
   openrouter: OpenRouterIcon,
+  ollama:     OllamaIcon,
+  lmstudio:   LMStudioIcon,
 };

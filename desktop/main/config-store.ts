@@ -260,6 +260,7 @@ export class ConfigStore {
   set(key: string, value: unknown): void {
     (this.config as unknown as Record<string, unknown>)[key] = value;
     this.save();
+    if (key === 'activeInstance') this.syncToMcpConfig();
   }
 
   getAll(): AppConfig {
@@ -283,6 +284,7 @@ export class ConfigStore {
       this.config.activeInstance = instance.name;
     }
     this.save();
+    this.syncToMcpConfig();
     return { success: true };
   }
 
@@ -294,7 +296,44 @@ export class ConfigStore {
       this.config.activeInstance = this.config.instances[0]?.name;
     }
     this.save();
+    this.syncToMcpConfig();
     return { success: true };
+  }
+
+  // ── MCP Config Sync ──
+  // The MCP server reads ~/.config/nowaikit/instances.json (with `defaultInstance` key).
+  // The desktop app uses its own config.json (with `activeInstance` key).
+  // This method syncs desktop state → instances.json so the MCP server stays in sync.
+
+  private syncToMcpConfig(): void {
+    try {
+      const mcpPath = join(this.configPath, '..', 'instances.json');
+      const instances: Record<string, Record<string, unknown>> = {};
+      for (const inst of this.config.instances) {
+        const raw = inst as unknown as Record<string, unknown>;
+        const pwd = typeof inst.password === 'string' ? this.decrypt(inst.password) : undefined;
+        const secret = typeof inst.clientSecret === 'string' ? this.decrypt(inst.clientSecret) : undefined;
+        instances[inst.name] = {
+          name: inst.name,
+          instanceUrl: inst.instanceUrl,
+          authMethod: inst.authMethod || 'basic',
+          username: inst.username,
+          password: pwd,
+          clientId: inst.clientId,
+          clientSecret: secret,
+          writeEnabled: inst.writeEnabled ?? true,
+          addedAt: raw.addedAt || new Date().toISOString(),
+        };
+      }
+      const mcpConfig = {
+        version: 1,
+        defaultInstance: this.config.activeInstance || this.config.instances[0]?.name || '',
+        instances,
+      };
+      writeFileSync(mcpPath, JSON.stringify(mcpConfig, null, 2), 'utf8');
+    } catch {
+      // Non-critical — MCP config sync is best-effort
+    }
   }
 
   // ── Audit Log ──

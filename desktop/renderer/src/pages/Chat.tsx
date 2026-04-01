@@ -100,12 +100,16 @@ function ToolCard({ tu, result }: { tu: CPTool; result?: CPResult }) {
 }
 
 // ── Provider / model config ───────────────────────────────────────────────────
+const LOCAL_PROVIDERS = new Set<AiProviderId>(['ollama', 'lmstudio']);
+
 const PROVIDER_META: { id: AiProviderId; label: string }[] = [
   { id: 'anthropic',  label: 'Claude' },
   { id: 'openai',     label: 'ChatGPT' },
   { id: 'google',     label: 'Gemini' },
   { id: 'groq',       label: 'Groq' },
   { id: 'openrouter', label: 'OpenRouter' },
+  { id: 'ollama',     label: 'Ollama' },
+  { id: 'lmstudio',   label: 'LM Studio' },
 ];
 
 const MODELS_BY_PROVIDER: Record<AiProviderId, { value: string; label: string }[]> = {
@@ -148,6 +152,24 @@ const MODELS_BY_PROVIDER: Record<AiProviderId, { value: string; label: string }[
     { value: 'meta-llama/llama-4-maverick-17b-128e-instruct',    label: 'Llama 4 Maverick' },
     { value: 'meta-llama/llama-3.3-70b-instruct',                label: 'Llama 3.3 70B' },
     { value: 'google/gemma-2-9b-it:free',                        label: 'Gemma 2 9B (free)' },
+  ],
+  ollama: [
+    { value: 'llama3.3:latest',       label: 'Llama 3.3 70B' },
+    { value: 'llama3.2:latest',       label: 'Llama 3.2 3B' },
+    { value: 'qwen3:latest',          label: 'Qwen 3' },
+    { value: 'deepseek-r1:latest',    label: 'DeepSeek R1' },
+    { value: 'gemma3:latest',         label: 'Gemma 3' },
+    { value: 'phi4:latest',           label: 'Phi-4' },
+    { value: 'mistral:latest',        label: 'Mistral' },
+    { value: 'granite3.3:latest',     label: 'Granite 3.3' },
+  ],
+  lmstudio: [
+    { value: 'llama-3.3-70b',         label: 'Llama 3.3 70B' },
+    { value: 'qwen3-8b',              label: 'Qwen 3 8B' },
+    { value: 'deepseek-r1-distill',   label: 'DeepSeek R1 Distill' },
+    { value: 'gemma-3-9b',            label: 'Gemma 3 9B' },
+    { value: 'phi-4',                 label: 'Phi-4' },
+    { value: 'mistral-7b',            label: 'Mistral 7B' },
   ],
 };
 
@@ -287,8 +309,9 @@ async function callProviderApi(
   messages: ChatMessage[],
   tools: ToolDef[],
   onUpdate: (msgs: ChatMessage[]) => void,
+  baseUrl?: string,
 ): Promise<{ messages?: ChatMessage[]; error?: string }> {
-  if (!apiKey) return { error: 'No API key configured. Go to Settings to add one.' };
+  if (!apiKey && !LOCAL_PROVIDERS.has(provider as AiProviderId)) return { error: 'No API key configured. Go to Settings to add one.' };
 
   const a = unifiedApi;
 
@@ -306,6 +329,7 @@ async function callProviderApi(
         provider, apiKey, model,
         messages: apiMessages,
         tools: tools.length > 0 ? tools : undefined,
+        baseUrl,
       });
 
       if (result.error) return { error: result.error };
@@ -457,7 +481,8 @@ export default function Chat({ settings, serverUrl, instances }: Props): React.R
   }, [slashOpen]);
 
   const activeProvider = settings.providers[provider];
-  const hasKey   = Boolean(activeProvider?.apiKey);
+  const isLocal  = LOCAL_PROVIDERS.has(provider);
+  const hasKey   = isLocal || Boolean(activeProvider?.apiKey);
   const active   = instances.find(i => i.active);
   const displayItems = toDisplayItems(messages);
 
@@ -516,6 +541,7 @@ export default function Chat({ settings, serverUrl, instances }: Props): React.R
       const result = await callProviderApi(
         provider, activeProvider?.apiKey ?? '', model, newMessages, relevantTools,
         (updatedMsgs) => setMessages(updatedMsgs), // live update as tools execute
+        activeProvider?.baseUrl,
       );
       setLoading(false);
       if (result.error) { setError(result.error); return; }
@@ -561,7 +587,7 @@ export default function Chat({ settings, serverUrl, instances }: Props): React.R
           {/* Provider selector */}
           <div style={{ display:'flex', border:'1px solid var(--border)', borderRadius:6, overflow:'hidden' }}>
             {PROVIDER_META.map(p => {
-              const hasProviderKey = Boolean(settings.providers[p.id]?.apiKey);
+              const hasProviderKey = LOCAL_PROVIDERS.has(p.id) || Boolean(settings.providers[p.id]?.apiKey);
               return (
                 <button key={p.id} onClick={() => setProvider(p.id)} style={{
                   padding:'5px 12px', border:'none', fontSize:'0.78rem', cursor:'pointer',
@@ -587,7 +613,7 @@ export default function Chat({ settings, serverUrl, instances }: Props): React.R
       </div>
 
       {/* No API key warning */}
-      {!hasKey && (
+      {!hasKey && !isLocal && (
         <div style={{ background:'rgba(251,191,36,0.1)', border:'1px solid rgba(251,191,36,0.3)', borderRadius:8, padding:'12px 16px', marginBottom:16, fontSize:'0.875rem', color:'var(--yellow)' }}>
           No API key for <strong>{PROVIDER_META.find(p => p.id === provider)?.label}</strong>. Go to <strong>Settings → AI Providers</strong> to add your key.
         </div>

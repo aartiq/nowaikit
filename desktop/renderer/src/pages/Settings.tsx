@@ -12,6 +12,8 @@ interface Props {
 }
 
 // ── Provider meta ──────────────────────────────────────────────────────────────
+const LOCAL_PROVIDERS = new Set<AiProviderId>(['ollama', 'lmstudio']);
+
 const PROVIDERS: {
   id: AiProviderId;
   label: string;
@@ -108,6 +110,42 @@ const PROVIDERS: {
       'Paste the key in the field that appears',
     ],
   },
+  {
+    id: 'ollama',
+    label: 'Ollama (Local)',
+    icon: '🦙',
+    keyLabel: 'Base URL',
+    keyPlaceholder: 'http://localhost:11434',
+    portalUrl: 'https://ollama.com/download',
+    portalLabel: 'Ollama',
+    subscriptionNote: 'Ollama runs AI models locally on your machine — completely free, private, and offline. No API key needed.',
+    signInSteps: [
+      'Download Ollama from ollama.com/download',
+      'Install and open — it runs in the background',
+      'Open Terminal and pull a model: ollama pull llama3.3',
+      'Wait for download (models are 2–40 GB depending on size)',
+      'Verify it\'s running: open http://localhost:11434 in browser — should show "Ollama is running"',
+      'Come back here — no API key needed, just keep the default URL',
+    ],
+  },
+  {
+    id: 'lmstudio',
+    label: 'LM Studio (Local)',
+    icon: '🖥',
+    keyLabel: 'Base URL',
+    keyPlaceholder: 'http://localhost:1234',
+    portalUrl: 'https://lmstudio.ai',
+    portalLabel: 'LM Studio',
+    subscriptionNote: 'LM Studio provides a visual interface to download and run AI models locally — free for personal use. No API key needed.',
+    signInSteps: [
+      'Download LM Studio from lmstudio.ai',
+      'Install and launch the application',
+      'Go to the "Discover" tab and download a model (e.g., Llama 3.3, Qwen 3, DeepSeek R1)',
+      'Go to the "Developer" tab on the left sidebar',
+      'Click "Start Server" — it will start on port 1234',
+      'Come back here — no API key needed, just keep the default URL',
+    ],
+  },
 ];
 
 const MODELS_BY_PROVIDER: Record<AiProviderId, { value: string; label: string; desc: string }[]> = {
@@ -151,6 +189,24 @@ const MODELS_BY_PROVIDER: Record<AiProviderId, { value: string; label: string; d
     { value: 'meta-llama/llama-3.3-70b-instruct',                label: 'Llama 3.3 70B',       desc: 'Free — strong general-purpose' },
     { value: 'google/gemma-2-9b-it:free',                        label: 'Gemma 2 9B',          desc: 'Free — lightweight Google model' },
   ],
+  ollama: [
+    { value: 'llama3.3:latest',       label: 'Llama 3.3 70B',    desc: 'Best quality open model' },
+    { value: 'llama3.2:latest',       label: 'Llama 3.2 3B',     desc: 'Fast & lightweight' },
+    { value: 'qwen3:latest',          label: 'Qwen 3',           desc: 'Strong multilingual reasoning' },
+    { value: 'deepseek-r1:latest',    label: 'DeepSeek R1',      desc: 'Advanced reasoning model' },
+    { value: 'gemma3:latest',         label: 'Gemma 3',          desc: 'Google open model' },
+    { value: 'phi4:latest',           label: 'Phi-4',            desc: 'Microsoft compact model' },
+    { value: 'mistral:latest',        label: 'Mistral',          desc: 'Efficient general-purpose' },
+    { value: 'granite3.3:latest',     label: 'Granite 3.3',      desc: 'IBM enterprise model' },
+  ],
+  lmstudio: [
+    { value: 'llama-3.3-70b',         label: 'Llama 3.3 70B',    desc: 'Best quality open model' },
+    { value: 'qwen3-8b',              label: 'Qwen 3 8B',        desc: 'Strong multilingual reasoning' },
+    { value: 'deepseek-r1-distill',   label: 'DeepSeek R1 Distill', desc: 'Reasoning distilled model' },
+    { value: 'gemma-3-9b',            label: 'Gemma 3 9B',       desc: 'Google open model' },
+    { value: 'phi-4',                 label: 'Phi-4',            desc: 'Microsoft compact model' },
+    { value: 'mistral-7b',            label: 'Mistral 7B',       desc: 'Efficient general-purpose' },
+  ],
 };
 
 const ACCENTS: { id: ThemeAccent; color: string; label: string }[] = [
@@ -181,12 +237,22 @@ export default function Settings({ settings, onSave, activeInstance, onNavigate 
   const [testing,      setTesting]      = useState(false);
   const [testResult,   setTestResult]   = useState<{ ok: boolean; msg: string } | null>(null);
 
+  // Local provider state (Ollama, LM Studio)
+  const [detectedModels, setDetectedModels] = useState<{ value: string; label: string }[]>([]);
+  const [detecting,      setDetecting]      = useState(false);
+
   // Reset test result when key or tab changes
   function resetTest() { setTestResult(null); }
 
   function setProviderKey(pid: AiProviderId, key: string) {
     resetTest();
     setDraft(d => ({ ...d, providers: { ...d.providers, [pid]: { ...d.providers[pid], apiKey: key } } }));
+  }
+
+  function setProviderBaseUrl(pid: AiProviderId, url: string) {
+    resetTest();
+    setDetectedModels([]);
+    setDraft(d => ({ ...d, providers: { ...d.providers, [pid]: { ...d.providers[pid], baseUrl: url } } }));
   }
 
   async function save() {
@@ -214,6 +280,8 @@ export default function Settings({ settings, onSave, activeInstance, onNavigate 
   }
 
   async function testKey() {
+    const isLocal = LOCAL_PROVIDERS.has(tab);
+    if (isLocal) { await testLocalConnection(); return; }
     const key = draft.providers[tab]?.apiKey ?? '';
     if (!key) { setTestResult({ ok: false, msg: 'Enter a key first' }); return; }
     setTesting(true);
@@ -237,6 +305,68 @@ export default function Settings({ settings, onSave, activeInstance, onNavigate 
       setTestResult({ ok: false, msg: 'Validation error' });
     } finally {
       setTesting(false);
+    }
+  }
+
+  // Fetch with proxy fallback: try proxy path first (browser mode), fall back to direct (Electron/CORS-allowed)
+  async function localFetch(directUrl: string, proxyPath: string): Promise<Response> {
+    try {
+      const res = await fetch(proxyPath, { signal: AbortSignal.timeout(5000), headers: { 'X-NowAIKit-Proxy': '1' } });
+      if (res.status === 404 || res.status === 403) throw new Error('proxy_unavailable');
+      return res;
+    } catch {
+      return fetch(directUrl, { signal: AbortSignal.timeout(5000) });
+    }
+  }
+
+  async function testLocalConnection() {
+    const baseUrl = draft.providers[tab]?.baseUrl || (tab === 'ollama' ? 'http://localhost:11434' : 'http://localhost:1234');
+    setTesting(true);
+    setTestResult(null);
+    try {
+      const directUrl = tab === 'ollama' ? `${baseUrl}/api/tags` : `${baseUrl}/v1/models`;
+      const proxyPath = tab === 'ollama' ? '/api/ai/ollama/api/tags' : '/api/ai/lmstudio/v1/models';
+      const res = await localFetch(directUrl, proxyPath);
+      if (res.ok) {
+        setTestResult({ ok: true, msg: 'Connected — server is running' });
+      } else {
+        setTestResult({ ok: false, msg: `Server responded with status ${res.status}` });
+      }
+    } catch {
+      const name = tab === 'ollama' ? 'Ollama' : 'LM Studio';
+      setTestResult({ ok: false, msg: `Cannot reach server — make sure ${name} is running` });
+    } finally {
+      setTesting(false);
+    }
+  }
+
+  async function detectModels() {
+    const baseUrl = draft.providers[tab]?.baseUrl || (tab === 'ollama' ? 'http://localhost:11434' : 'http://localhost:1234');
+    setDetecting(true);
+    setDetectedModels([]);
+    try {
+      if (tab === 'ollama') {
+        const res = await localFetch(`${baseUrl}/api/tags`, '/api/ai/ollama/api/tags');
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json() as { models?: Array<{ name: string; size?: number }> };
+        const models = (data.models || []).map(m => ({ value: m.name, label: m.name }));
+        setDetectedModels(models);
+        if (models.length === 0) setTestResult({ ok: false, msg: 'No models found. Pull one first: ollama pull llama3.3' });
+        else setTestResult({ ok: true, msg: `Found ${models.length} model${models.length > 1 ? 's' : ''}` });
+      } else {
+        const res = await localFetch(`${baseUrl}/v1/models`, '/api/ai/lmstudio/v1/models');
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json() as { data?: Array<{ id: string }> };
+        const models = (data.data || []).map(m => ({ value: m.id, label: m.id }));
+        setDetectedModels(models);
+        if (models.length === 0) setTestResult({ ok: false, msg: 'No models loaded. Download one in LM Studio first.' });
+        else setTestResult({ ok: true, msg: `Found ${models.length} model${models.length > 1 ? 's' : ''}` });
+      }
+    } catch {
+      const name = tab === 'ollama' ? 'Ollama' : 'LM Studio';
+      setTestResult({ ok: false, msg: `Cannot reach ${name} — make sure it's running` });
+    } finally {
+      setDetecting(false);
     }
   }
 
@@ -324,14 +454,15 @@ export default function Settings({ settings, onSave, activeInstance, onNavigate 
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12 }}>
           <div style={{ fontSize:'0.7rem', fontWeight:700, color:'var(--dim)', textTransform:'uppercase', letterSpacing:'0.08em' }}>AI Providers</div>
           <div style={{ fontSize:'0.72rem', color:'var(--dim)' }}>
-            {PROVIDERS.filter(p => draft.providers[p.id]?.apiKey).length}/{PROVIDERS.length} connected
+            {PROVIDERS.filter(p => LOCAL_PROVIDERS.has(p.id) || draft.providers[p.id]?.apiKey).length}/{PROVIDERS.length} connected
           </div>
         </div>
 
         {/* Provider card grid — each card is self-contained and expands on click */}
         <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
           {PROVIDERS.map(p => {
-            const hasKey = Boolean(draft.providers[p.id]?.apiKey);
+            const isLocal = LOCAL_PROVIDERS.has(p.id);
+            const hasKey = isLocal || Boolean(draft.providers[p.id]?.apiKey);
             const isExpanded = tab === p.id;
             const providerModels = MODELS_BY_PROVIDER[p.id];
             const prov = draft.providers[p.id];
@@ -351,7 +482,7 @@ export default function Settings({ settings, onSave, activeInstance, onNavigate 
                       if (!MODELS_BY_PROVIDER[p.id].find(m => m.value === d.model)) updated.model = MODELS_BY_PROVIDER[p.id][0].value;
                       return updated;
                     });
-                    setSignInMode('none'); resetTest(); setShowKey(false);
+                    setSignInMode('none'); resetTest(); setShowKey(false); setDetectedModels([]);
                   }
                 }} style={{
                   width:'100%', display:'flex', alignItems:'center', gap:14,
@@ -378,10 +509,11 @@ export default function Settings({ settings, onSave, activeInstance, onNavigate 
                     <span style={{
                       display:'inline-flex', alignItems:'center', gap:5,
                       padding:'3px 10px', borderRadius:12, fontSize:'0.72rem', fontWeight:500,
-                      background:'rgba(34,197,94,0.12)', color:'var(--green)',
+                      background: isLocal ? 'rgba(99,102,241,0.12)' : 'rgba(34,197,94,0.12)',
+                      color: isLocal ? 'var(--accent)' : 'var(--green)',
                     }}>
-                      <span style={{ width:6, height:6, borderRadius:'50%', background:'var(--green)' }} />
-                      Active
+                      <span style={{ width:6, height:6, borderRadius:'50%', background: isLocal ? 'var(--accent)' : 'var(--green)' }} />
+                      {isLocal ? 'Local' : 'Active'}
                     </span>
                   ) : (
                     <span style={{
@@ -470,59 +602,141 @@ export default function Settings({ settings, onSave, activeInstance, onNavigate 
                     {/* ── Default state: sign-in + key + model picker ──────── */}
                     {signInMode === 'none' && (
                       <div>
-                        {/* Sign In CTA */}
-                        <button
-                          className="btn-primary"
-                          onClick={handleSignIn}
-                          style={{ display:'flex', alignItems:'center', gap:10, marginBottom:16, fontSize:'0.85rem' }}
-                        >
-                          {currentProvider.icon} Sign in to {currentProvider.label.split('(')[0].trim()}
-                          <span style={{ opacity:0.7, fontSize:'0.72rem' }}>→ opens portal</span>
-                        </button>
+                        {isLocal ? (
+                          /* ── Local provider UI (Ollama / LM Studio) ──────── */
+                          <>
+                            {/* Setup guide CTA */}
+                            <button
+                              className="btn-primary"
+                              onClick={handleSignIn}
+                              style={{ display:'flex', alignItems:'center', gap:10, marginBottom:16, fontSize:'0.85rem' }}
+                            >
+                              {currentProvider.icon} {currentProvider.portalLabel} Setup Guide
+                              <span style={{ opacity:0.7, fontSize:'0.72rem' }}>→ opens download page</span>
+                            </button>
 
-                        {/* Divider */}
-                        <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:16 }}>
-                          <div style={{ flex:1, height:1, background:'var(--border)' }} />
-                          <span style={{ fontSize:'0.7rem', color:'var(--dim)', textTransform:'uppercase', letterSpacing:'0.06em' }}>or paste API key directly</span>
-                          <div style={{ flex:1, height:1, background:'var(--border)' }} />
-                        </div>
+                            {/* Setup steps */}
+                            <ol style={{ margin:'0 0 16px', padding:'0 0 0 20px', color:'var(--text2)', fontSize:'0.82rem', lineHeight:2 }}>
+                              {currentProvider.signInSteps.map((step, i) => (
+                                <li key={i}>{step}</li>
+                              ))}
+                            </ol>
 
-                        {/* API key input */}
-                        <div style={{ marginBottom:6, fontWeight:500, fontSize:'0.85rem' }}>{currentProvider.keyLabel}</div>
-                        <div style={{ display:'flex', gap:8, marginBottom:8 }}>
-                          <input
-                            className="input"
-                            type={showKey ? 'text' : 'password'}
-                            value={prov.apiKey}
-                            onChange={e => setProviderKey(tab, e.target.value)}
-                            placeholder={currentProvider.keyPlaceholder}
-                            style={{ fontFamily:'monospace', fontSize:'0.85rem', flex:1 }}
-                          />
-                          <button className="btn-ghost" onClick={() => setShowKey(s => !s)} style={{ flexShrink:0, padding:'8px 14px' }}>
-                            {showKey ? 'Hide' : 'Show'}
-                          </button>
-                          <button
-                            className="btn-ghost"
-                            onClick={testKey}
-                            disabled={testing || !prov.apiKey}
-                            style={{ flexShrink:0, padding:'8px 14px', opacity: (!prov.apiKey || testing) ? 0.5 : 1 }}
-                          >
-                            {testing ? 'Testing…' : 'Test'}
-                          </button>
-                        </div>
+                            {/* Base URL input */}
+                            <div style={{ marginBottom:6, fontWeight:500, fontSize:'0.85rem' }}>{currentProvider.keyLabel}</div>
+                            <div style={{ display:'flex', gap:8, marginBottom:8 }}>
+                              <input
+                                className="input"
+                                type="text"
+                                value={prov.baseUrl || ''}
+                                onChange={e => setProviderBaseUrl(tab, e.target.value)}
+                                placeholder={currentProvider.keyPlaceholder}
+                                style={{ fontFamily:'monospace', fontSize:'0.85rem', flex:1 }}
+                              />
+                              <button
+                                className="btn-ghost"
+                                onClick={testLocalConnection}
+                                disabled={testing}
+                                style={{ flexShrink:0, padding:'8px 14px', opacity: testing ? 0.5 : 1 }}
+                              >
+                                {testing ? 'Testing…' : 'Test Connection'}
+                              </button>
+                              <button
+                                className="btn-ghost"
+                                onClick={detectModels}
+                                disabled={detecting}
+                                style={{ flexShrink:0, padding:'8px 14px', opacity: detecting ? 0.5 : 1 }}
+                              >
+                                {detecting ? 'Detecting…' : 'Detect Models'}
+                              </button>
+                            </div>
 
-                        {/* Key status */}
-                        {testResult ? (
-                          <div style={{ fontSize:'0.78rem', color: testResult.ok ? 'var(--green)' : 'var(--red)', marginBottom:16 }}>
-                            {testResult.ok ? '✓ ' : '✗ '}{testResult.msg}
-                          </div>
-                        ) : prov.apiKey ? (
-                          <div style={{ fontSize:'0.78rem', color:'var(--green)', marginBottom:16 }}>✓ Key configured — click Test to verify</div>
+                            {/* Status */}
+                            {testResult && (
+                              <div style={{ fontSize:'0.78rem', color: testResult.ok ? 'var(--green)' : 'var(--red)', marginBottom:16 }}>
+                                {testResult.ok ? '✓ ' : '✗ '}{testResult.msg}
+                              </div>
+                            )}
+
+                            {/* Detected models list */}
+                            {detectedModels.length > 0 && (
+                              <div style={{ marginBottom:16, background:'var(--surface2)', border:'1px solid var(--border)', borderRadius:6, padding:'10px 14px' }}>
+                                <div style={{ fontSize:'0.72rem', color:'var(--dim)', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:8 }}>
+                                  Detected Models ({detectedModels.length})
+                                </div>
+                                <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
+                                  {detectedModels.map(m => (
+                                    <button key={m.value} onClick={() => setDraft(d => ({ ...d, model: m.value }))} style={{
+                                      padding:'4px 10px', borderRadius:4, fontSize:'0.78rem', cursor:'pointer',
+                                      background: draft.model === m.value ? 'var(--accent)' : 'var(--surface3)',
+                                      color: draft.model === m.value ? '#fff' : 'var(--text2)',
+                                      border: `1px solid ${draft.model === m.value ? 'var(--accent)' : 'var(--border)'}`,
+                                    }}>
+                                      {m.label}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </>
                         ) : (
-                          <div style={{ fontSize:'0.78rem', color:'var(--dim)', marginBottom:16 }}>No key set — this provider is unavailable</div>
+                          /* ── Cloud provider UI ──────────────────────────── */
+                          <>
+                            {/* Sign In CTA */}
+                            <button
+                              className="btn-primary"
+                              onClick={handleSignIn}
+                              style={{ display:'flex', alignItems:'center', gap:10, marginBottom:16, fontSize:'0.85rem' }}
+                            >
+                              {currentProvider.icon} Sign in to {currentProvider.label.split('(')[0].trim()}
+                              <span style={{ opacity:0.7, fontSize:'0.72rem' }}>→ opens portal</span>
+                            </button>
+
+                            {/* Divider */}
+                            <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:16 }}>
+                              <div style={{ flex:1, height:1, background:'var(--border)' }} />
+                              <span style={{ fontSize:'0.7rem', color:'var(--dim)', textTransform:'uppercase', letterSpacing:'0.06em' }}>or paste API key directly</span>
+                              <div style={{ flex:1, height:1, background:'var(--border)' }} />
+                            </div>
+
+                            {/* API key input */}
+                            <div style={{ marginBottom:6, fontWeight:500, fontSize:'0.85rem' }}>{currentProvider.keyLabel}</div>
+                            <div style={{ display:'flex', gap:8, marginBottom:8 }}>
+                              <input
+                                className="input"
+                                type={showKey ? 'text' : 'password'}
+                                value={prov.apiKey}
+                                onChange={e => setProviderKey(tab, e.target.value)}
+                                placeholder={currentProvider.keyPlaceholder}
+                                style={{ fontFamily:'monospace', fontSize:'0.85rem', flex:1 }}
+                              />
+                              <button className="btn-ghost" onClick={() => setShowKey(s => !s)} style={{ flexShrink:0, padding:'8px 14px' }}>
+                                {showKey ? 'Hide' : 'Show'}
+                              </button>
+                              <button
+                                className="btn-ghost"
+                                onClick={testKey}
+                                disabled={testing || !prov.apiKey}
+                                style={{ flexShrink:0, padding:'8px 14px', opacity: (!prov.apiKey || testing) ? 0.5 : 1 }}
+                              >
+                                {testing ? 'Testing…' : 'Test'}
+                              </button>
+                            </div>
+
+                            {/* Key status */}
+                            {testResult ? (
+                              <div style={{ fontSize:'0.78rem', color: testResult.ok ? 'var(--green)' : 'var(--red)', marginBottom:16 }}>
+                                {testResult.ok ? '✓ ' : '✗ '}{testResult.msg}
+                              </div>
+                            ) : prov.apiKey ? (
+                              <div style={{ fontSize:'0.78rem', color:'var(--green)', marginBottom:16 }}>✓ Key configured — click Test to verify</div>
+                            ) : (
+                              <div style={{ fontSize:'0.78rem', color:'var(--dim)', marginBottom:16 }}>No key set — this provider is unavailable</div>
+                            )}
+                          </>
                         )}
 
-                        {/* ── Inline model picker ─────────────────────────── */}
+                        {/* ── Inline model picker (shared by all) ─────────── */}
                         <div style={{ borderTop:'1px solid var(--border)', paddingTop:16 }}>
                           <div style={{ fontWeight:500, marginBottom:10, fontSize:'0.85rem' }}>Default Model</div>
                           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:6 }}>

@@ -10,6 +10,7 @@
 import { itsmPrompts } from './itsm.js';
 import { loadUserPrompts } from './user-prompts.js';
 import type { CapabilityDefinition, CapabilityCategory } from './types.js';
+import { loadConfig } from '../cli/config-store.js';
 
 export type { CapabilityDefinition, CapabilityCategory } from './types.js';
 
@@ -128,6 +129,35 @@ async function loadProExtensions(): Promise<void> {
   }
 }
 
+// ─── Apex feature flag ──────────────────────────────────────────────────────
+
+/**
+ * Check if Apex AI Skills are enabled.
+ * Disabled via NOWAIKIT_APEX_ENABLED=false env var or apexEnabled=false on the
+ * active instance in the config store. Defaults to enabled.
+ */
+function isApexEnabled(): boolean {
+  // Env var override (fastest check)
+  const envFlag = process.env.NOWAIKIT_APEX_ENABLED;
+  if (envFlag !== undefined) {
+    return envFlag !== 'false' && envFlag !== '0';
+  }
+
+  // Check config store — if *any* instance has apexEnabled explicitly false, respect it.
+  // Typically the default instance is the one that matters.
+  try {
+    const config = loadConfig();
+    const defaultInst = config.instances[config.defaultInstance];
+    if (defaultInst && defaultInst.apexEnabled === false) {
+      return false;
+    }
+  } catch {
+    // Config not available — default to enabled
+  }
+
+  return true;
+}
+
 // ─── Public API ─────────────────────────────────────────────────────────────
 
 /** All prompts merged (ITSM + user-defined + capabilities). Lightweight — no capability module loading. */
@@ -139,6 +169,11 @@ export function getPrompts(): McpPrompt[] {
     description: p.description,
     arguments: p.arguments,
   }));
+
+  // Only include Apex capabilities if enabled
+  if (!isApexEnabled()) {
+    return [...itsmMapped, ...userPrompts];
+  }
 
   const capMapped = capabilityMeta.map(c => ({
     name: c.name,
@@ -167,13 +202,15 @@ export async function resolvePromptAsync(name: string, args?: Record<string, str
     };
   }
 
-  // 2. Check capabilities (lazy-load)
-  const capMeta = capabilityMeta.find(c => c.name === name);
-  if (capMeta) {
-    await loadProExtensions();
-    const cap = await loadCapability(capMeta.file);
-    const messages = cap.buildPrompt(args);
-    return { description: cap.description, messages };
+  // 2. Check capabilities (lazy-load) — only if Apex is enabled
+  if (isApexEnabled()) {
+    const capMeta = capabilityMeta.find(c => c.name === name);
+    if (capMeta) {
+      await loadProExtensions();
+      const cap = await loadCapability(capMeta.file);
+      const messages = cap.buildPrompt(args);
+      return { description: cap.description, messages };
+    }
   }
 
   return null;
@@ -185,7 +222,7 @@ export function resolvePrompt(name: string, args?: Record<string, string>): GetP
   const prompt = allTemplated.find(p => p.name === name);
   if (!prompt) {
     // Check if it's a capability — return a minimal prompt directing to use async
-    const capMeta = capabilityMeta.find(c => c.name === name);
+    const capMeta = isApexEnabled() ? capabilityMeta.find(c => c.name === name) : undefined;
     if (capMeta) {
       // Synchronous fallback: build a lightweight redirect prompt
       return {
@@ -217,11 +254,13 @@ export function resolvePrompt(name: string, args?: Record<string, string>): GetP
 
 /** Get capability metadata for CLI listing. Lightweight — no module loading. */
 export function getCapabilityMeta(): CapabilityMeta[] {
+  if (!isApexEnabled()) return [];
   return [...capabilityMeta];
 }
 
 /** Get full capability definitions (loads all modules). For direct execution. */
 export async function getCapabilities(): Promise<CapabilityDefinition[]> {
+  if (!isApexEnabled()) return [];
   await loadProExtensions();
   const loaded: CapabilityDefinition[] = [];
   for (const meta of capabilityMeta) {

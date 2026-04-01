@@ -253,9 +253,11 @@ function registerIpcHandlers() {
     model: string;
     messages: Array<{ role: string; content: unknown }>;
     tools?: Array<{ name: string; description: string; inputSchema?: Record<string, unknown> }>;
+    baseUrl?: string;
   }) => {
-    const { provider, apiKey, model, messages, tools: toolDefs } = params;
-    if (!apiKey) return { error: 'No API key configured' };
+    const { provider, apiKey, model, messages, tools: toolDefs, baseUrl } = params;
+    const isLocalProvider = provider === 'ollama' || provider === 'lmstudio';
+    if (!apiKey && !isLocalProvider) return { error: 'No API key configured' };
 
     const chatStart = Date.now();
     const toolCount = toolDefs?.length || 0;
@@ -391,11 +393,13 @@ Set the limit parameter to match what user asks for (e.g. "5 most recent" → li
         return { content, stop_reason: hasToolUse ? 'tool_use' : 'end_turn', usage: gUsage ? { inputTokens: gUsage.promptTokenCount || 0, outputTokens: gUsage.candidatesTokenCount || 0 } : undefined };
 
       } else {
-        // OpenAI-compatible (OpenAI, Groq, OpenRouter)
+        // OpenAI-compatible (OpenAI, Groq, OpenRouter, Ollama, LM Studio)
         const endpoints: Record<string, string> = {
           openai: 'https://api.openai.com/v1/chat/completions',
           groq: 'https://api.groq.com/openai/v1/chat/completions',
           openrouter: 'https://openrouter.ai/api/v1/chat/completions',
+          ollama: `${baseUrl || 'http://localhost:11434'}/v1/chat/completions`,
+          lmstudio: `${baseUrl || 'http://localhost:1234'}/v1/chat/completions`,
         };
         const url = endpoints[provider];
         if (!url) return { error: `Unknown provider: ${provider}` };
@@ -437,9 +441,11 @@ Set the limit parameter to match what user asks for (e.g. "5 most recent" → li
         const body: Record<string, unknown> = { model, messages: oaiMessages };
         if (openaiTools && openaiTools.length > 0) body.tools = openaiTools;
 
+        const fetchHeaders: Record<string, string> = { 'Content-Type': 'application/json' };
+        if (apiKey) fetchHeaders['Authorization'] = `Bearer ${apiKey}`;
         const res = await fetch(url, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+          headers: fetchHeaders,
           body: JSON.stringify(body),
         });
         if (!res.ok) {

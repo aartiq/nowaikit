@@ -56,11 +56,13 @@ const MIME = {
 // ─── AI provider proxy config ────────────────────────────────────────────────
 
 const AI_PROXIES = {
-  '/api/ai/anthropic': { target: 'https://api.anthropic.com', strip: '/api/ai/anthropic' },
-  '/api/ai/openai':    { target: 'https://api.openai.com',    strip: '/api/ai/openai' },
-  '/api/ai/google':    { target: 'https://generativelanguage.googleapis.com', strip: '/api/ai/google' },
-  '/api/ai/groq':      { target: 'https://api.groq.com',      strip: '/api/ai/groq' },
-  '/api/ai/openrouter': { target: 'https://openrouter.ai',    strip: '/api/ai/openrouter' },
+  '/api/ai/anthropic':  { target: 'https://api.anthropic.com', strip: '/api/ai/anthropic' },
+  '/api/ai/openai':     { target: 'https://api.openai.com',    strip: '/api/ai/openai' },
+  '/api/ai/google':     { target: 'https://generativelanguage.googleapis.com', strip: '/api/ai/google' },
+  '/api/ai/groq':       { target: 'https://api.groq.com',      strip: '/api/ai/groq' },
+  '/api/ai/openrouter': { target: 'https://openrouter.ai',     strip: '/api/ai/openrouter' },
+  '/api/ai/ollama':     { target: 'http://localhost:11434',     strip: '/api/ai/ollama' },
+  '/api/ai/lmstudio':   { target: 'http://localhost:1234',      strip: '/api/ai/lmstudio' },
 };
 
 // Headers that are safe to forward to upstream AI providers
@@ -159,9 +161,11 @@ function proxyRequest(req, res, proxyConfig) {
       }
     }
 
+    const isTargetHttps = target.protocol === 'https:';
+    const mod = isTargetHttps ? https : http;
     const options = {
       hostname: target.hostname,
-      port: 443,
+      port: isTargetHttps ? 443 : (parseInt(target.port, 10) || 80),
       path: target.pathname + target.search,
       method: req.method,
       headers,
@@ -170,7 +174,7 @@ function proxyRequest(req, res, proxyConfig) {
     const origin = req.headers.origin;
     const allowedOrigin = isAllowedOrigin(origin) ? (origin || '*') : '';
 
-    const proxyReq = https.request(options, (proxyRes) => {
+    const proxyReq = mod.request(options, (proxyRes) => {
       // Set CORS headers for the allowed origin
       if (allowedOrigin) {
         res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
