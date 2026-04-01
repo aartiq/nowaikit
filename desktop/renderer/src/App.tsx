@@ -17,11 +17,12 @@ import Sidebar   from './components/Sidebar.js';
 export type Page = 'dashboard' | 'chat' | 'tools' | 'instances' | 'logs' | 'settings';
 export type ThemeMode   = 'dark' | 'light';
 export type ThemeAccent = 'teal' | 'navy' | 'blue' | 'emerald' | 'amber';
-export type AiProviderId = 'anthropic' | 'openai' | 'google' | 'groq' | 'openrouter';
+export type AiProviderId = 'anthropic' | 'openai' | 'google' | 'groq' | 'openrouter' | 'ollama' | 'lmstudio';
 
 export interface ProviderSettings {
   apiKey: string;
   authMethod: 'apiKey' | 'login';
+  baseUrl?: string;
 }
 
 export interface AppInstance {
@@ -37,6 +38,8 @@ export interface AppSettings {
     google:     ProviderSettings;
     groq:       ProviderSettings;
     openrouter: ProviderSettings;
+    ollama:     ProviderSettings;
+    lmstudio:   ProviderSettings;
   };
   activeProvider: AiProviderId;
   model: string;
@@ -49,6 +52,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
     google:     { apiKey: '', authMethod: 'apiKey' },
     groq:       { apiKey: '', authMethod: 'apiKey' },
     openrouter: { apiKey: '', authMethod: 'apiKey' },
+    ollama:     { apiKey: '', authMethod: 'apiKey', baseUrl: 'http://localhost:11434' },
+    lmstudio:   { apiKey: '', authMethod: 'apiKey', baseUrl: 'http://localhost:1234' },
   },
   activeProvider: 'anthropic',
   model: 'claude-sonnet-4-6',

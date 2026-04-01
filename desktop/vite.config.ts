@@ -46,6 +46,16 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/ai\/openrouter/, ''),
       },
+      '/api/ai/ollama': {
+        target: 'http://localhost:11434',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/ai\/ollama/, ''),
+      },
+      '/api/ai/lmstudio': {
+        target: 'http://localhost:1234',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/ai\/lmstudio/, ''),
+      },
     },
   },
   preview: {

@@ -82,6 +82,7 @@ interface ElectronAPI {
     model: string;
     messages: Array<{ role: string; content: unknown }>;
     tools?: Array<{ name: string; description: string; inputSchema?: Record<string, unknown> }>;
+    baseUrl?: string;
   }) => Promise<{ content?: Array<{ type: string; text?: string; id?: string; name?: string; input?: Record<string, unknown> }>; stop_reason?: string; error?: string; usage?: { inputTokens: number; outputTokens: number } }>;
 }
 
