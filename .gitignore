@@ -45,3 +45,9 @@ nowaikit.org.json
 .mcpregistry_github_token
 .mcpregistry_registry_token
 homebrew-tap/
+
+# Dev session files
+CLAUDE.md
+PROGRESS.md
+LEARNINGS.md
+.claude/
