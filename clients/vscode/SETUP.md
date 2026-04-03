@@ -31,7 +31,7 @@ Edit `.vscode/mcp.json`:
 ```json
 {
   "servers": {
-    "servicenow": {
+    "nowaikit": {
       "type": "stdio",
       "command": "node",
       "args": ["/ABSOLUTE/PATH/TO/servicenow-mcp/dist/server.js"],
@@ -53,7 +53,7 @@ Edit `.vscode/mcp.json`:
 ```json
 {
   "servers": {
-    "servicenow": {
+    "nowaikit": {
       "type": "stdio",
       "command": "node",
       "args": ["/ABSOLUTE/PATH/TO/servicenow-mcp/dist/server.js"],
