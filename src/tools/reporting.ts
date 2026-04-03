@@ -1,5 +1,5 @@
 /**
- * Reporting & Analytics tools — ServiceNow Reporting API.
+ * Reporting & Analytics tools — ServiceNow Reporting API + branded report generation.
  * All tools are Tier 0 (read-only) unless noted.
  * ServiceNow API: GET /api/now/reporting, /api/now/stats/{table}, /api/now/pa/widget/{sys_id}
  */
@@ -261,6 +261,20 @@ export function getReportingToolDefinitions() {
         required: ['name', 'table', 'aggregate'],
       },
     },
+    {
+      name: 'generate_report',
+      description: 'Generate a branded PDF or PPTX report from capability analysis results. Call this after completing a scan, review, or audit to create a management-ready document with charts, tables, and ServiceNow links.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          content: { type: 'string', description: 'Full markdown analysis to convert into a branded report' },
+          format: { type: 'string', enum: ['pdf', 'pptx'], description: 'Output format: pdf (branded document) or pptx (slide deck)' },
+          title: { type: 'string', description: 'Report title (e.g. "Instance Health Scan", "Security Audit Report")' },
+          capability: { type: 'string', description: 'Capability name that produced the analysis (e.g. "scan-health", "review-code")' },
+        },
+        required: ['content', 'format', 'title'],
+      },
+    },
   ];
 }
 
@@ -443,6 +457,26 @@ export async function executeReportingToolCall(
         unit: args.unit || '',
       });
       return { ...result, summary: `Created KPI "${args.name}" (${args.aggregate} on ${args.table})` };
+    }
+    case 'generate_report': {
+      if (!args.content || !args.format || !args.title)
+        throw new ServiceNowError('content, format, and title are required', 'INVALID_REQUEST');
+      if (args.format !== 'pdf' && args.format !== 'pptx')
+        throw new ServiceNowError('format must be "pdf" or "pptx"', 'INVALID_REQUEST');
+      const { generateReport } = await import('../reports/index.js');
+      const reportResult = await generateReport(args.content, args.format, {
+        title: args.title,
+        instanceUrl: (client as any).baseUrl || '',
+        instanceName: args.capability || 'instance',
+        capability: args.capability,
+      });
+      return {
+        success: true,
+        file_path: reportResult.filePath,
+        size_bytes: reportResult.sizeBytes,
+        format: args.format,
+        message: `Report saved to ${reportResult.filePath} (${Math.round(reportResult.sizeBytes / 1024)} KB)`,
+      };
     }
     default:
       return null;

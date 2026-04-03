@@ -294,6 +294,8 @@ const capability: CapabilityDefinition = {
             '',
             'Beginning technical debt analysis. Every finding must include artifact type, name,',
             'evidence, and estimated cleanup effort.',
+            '',
+            'After presenting your analysis, offer to generate a branded PDF or PPTX report by calling the `generate_report` tool with your full analysis.',
           ].join('\n'),
         },
       },

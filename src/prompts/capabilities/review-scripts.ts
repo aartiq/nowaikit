@@ -150,6 +150,8 @@ const capability: CapabilityDefinition = {
             '| `query_records` | Fetch catalog client scripts, ACL scripts, transform scripts |',
             '',
             'I will now begin the bulk script scan.',
+            '',
+            'After presenting your analysis, offer to generate a branded PDF or PPTX report by calling the `generate_report` tool with your full analysis.',
           ].join('\n'),
         },
       },

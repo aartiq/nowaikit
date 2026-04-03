@@ -96,6 +96,18 @@ export type {
 // ─── Instance Manager ────────────────────────────────────────────────────────
 export { instanceManager } from '../servicenow/instances.js';
 
+// ─── Report Generation ──────────────────────────────────────────────────────
+export { generateReport, parseMarkdown } from '../reports/index.js';
+export type {
+  ReportData,
+  ReportFormat,
+  ReportOptions,
+  ReportResult,
+  ReportFinding,
+  ReportMetrics,
+  Severity,
+} from '../reports/types.js';
+
 // ─── Error Types ─────────────────────────────────────────────────────────────
 export { ServiceNowError } from '../utils/errors.js';
 

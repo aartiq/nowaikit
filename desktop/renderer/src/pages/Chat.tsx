@@ -70,6 +70,59 @@ function renderInline(text: string, key: number): React.ReactNode {
   );
 }
 
+// ── Report export helper ─────────────────────────────────────────────────────
+async function downloadReport(markdown: string, format: 'pdf' | 'pptx') {
+  const res = await fetch('/api/report/generate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ markdown, title: 'NowAIKit Chat Export', format }),
+  });
+  if (!res.ok) throw new Error(`Report generation failed: ${res.status}`);
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `chat-export-${Date.now()}.${format}`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+/** Check if text qualifies for report export (long + has markdown headings) */
+function isExportable(text: string): boolean {
+  return text.length > 500 && /^#{1,3}\s/m.test(text);
+}
+
+function ExportToolbar({ text }: { text: string }) {
+  const [busy, setBusy] = useState<'pdf' | 'pptx' | null>(null);
+
+  async function handleExport(format: 'pdf' | 'pptx') {
+    setBusy(format);
+    try { await downloadReport(text, format); }
+    catch { /* toast/notification could go here */ }
+    finally { setBusy(null); }
+  }
+
+  const btnStyle: React.CSSProperties = {
+    background:'var(--surface)', border:'1px solid var(--border)', borderRadius:4,
+    color:'var(--text2)', padding:'2px 8px', fontSize:'0.7rem', fontWeight:600,
+    cursor:'pointer', transition:'all .15s',
+  };
+
+  return (
+    <div style={{ display:'flex', alignItems:'center', gap:6, marginTop:4 }}>
+      <span style={{ fontSize:'0.68rem', color:'var(--dim)' }}>Export:</span>
+      <button onClick={() => handleExport('pdf')}  disabled={busy !== null} style={{ ...btnStyle, opacity: busy ? 0.5 : 1 }}>
+        {busy === 'pdf' ? '…' : 'PDF'}
+      </button>
+      <button onClick={() => handleExport('pptx')} disabled={busy !== null} style={{ ...btnStyle, opacity: busy ? 0.5 : 1 }}>
+        {busy === 'pptx' ? '…' : 'PPTX'}
+      </button>
+    </div>
+  );
+}
+
 // ── Collapsible tool call card ────────────────────────────────────────────────
 function ToolCard({ tu, result }: { tu: CPTool; result?: CPResult }) {
   const [open, setOpen] = useState(false);
@@ -650,13 +703,17 @@ export default function Chat({ settings, serverUrl, instances }: Props): React.R
               </div>
             </div>
           );
-          if (item.kind === 'assistant') return (
-            <div key={i} style={{ display:'flex', justifyContent:'flex-start', marginBottom:6 }}>
-              <div style={{ background:'var(--surface2)', borderRadius:8, padding:'10px 12px', maxWidth:'88%', fontSize:'0.85rem', lineHeight:1.5 }}>
-                {renderMd((item.parts[0] as CPText).text)}
+          if (item.kind === 'assistant') {
+            const text = (item.parts[0] as CPText).text;
+            return (
+              <div key={i} style={{ display:'flex', justifyContent:'flex-start', marginBottom:6 }}>
+                <div style={{ background:'var(--surface2)', borderRadius:8, padding:'10px 12px', maxWidth:'88%', fontSize:'0.85rem', lineHeight:1.5 }}>
+                  {renderMd(text)}
+                  {isExportable(text) && <ExportToolbar text={text} />}
+                </div>
               </div>
-            </div>
-          );
+            );
+          }
           if (item.kind === 'tool') return (
             <div key={i} style={{ maxWidth:'95%', marginBottom:4 }}>
               <ToolCard tu={item.tu} result={item.result} />

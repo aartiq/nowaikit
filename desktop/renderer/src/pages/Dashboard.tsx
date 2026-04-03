@@ -44,6 +44,98 @@ function StatCard({ label, value, sub, subTitle, accent, valueColor }: {
   );
 }
 
+// ── Report generation helper ────────────────────────────────────────────────
+async function downloadReport(markdown: string, title: string, format: 'pdf' | 'pptx') {
+  const res = await fetch('/api/report/generate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ markdown, title, format }),
+  });
+  if (!res.ok) throw new Error(`Report generation failed: ${res.status}`);
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${title.replace(/[^a-zA-Z0-9_-]/g, '_') || 'report'}.${format}`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+// ── Report generation card ──────────────────────────────────────────────────
+function ReportCard() {
+  const [title,     setTitle]     = useState('');
+  const [markdown,  setMarkdown]  = useState('');
+  const [format,    setFormat]    = useState<'pdf' | 'pptx'>('pdf');
+  const [busy,      setBusy]      = useState(false);
+  const [statusMsg, setStatusMsg] = useState('');
+
+  async function handleGenerate() {
+    if (!markdown.trim()) { setStatusMsg('Paste some markdown content first'); return; }
+    setBusy(true); setStatusMsg('Generating…');
+    try {
+      await downloadReport(markdown, title || 'NowAIKit Report', format);
+      setStatusMsg(`${format.toUpperCase()} downloaded`);
+    } catch (e) {
+      setStatusMsg(`Error: ${e instanceof Error ? e.message : 'unknown'}`);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const radioStyle = (active: boolean): React.CSSProperties => ({
+    padding:'5px 14px', borderRadius:5, fontSize:'0.8rem', fontWeight:600, cursor:'pointer',
+    background: active ? 'var(--accent)' : 'var(--surface2)',
+    color: active ? '#fff' : 'var(--text2)',
+    border: active ? 'none' : '1px solid var(--border)',
+    transition:'all .15s',
+  });
+
+  return (
+    <div className="card" style={{ marginBottom:28, overflow:'hidden' }}>
+      <div style={{ padding:'12px 16px', borderBottom:'1px solid var(--border)', display:'flex', alignItems:'center', gap:8 }}>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+        <span style={{ fontSize:'0.7rem', color:'var(--dim)', textTransform:'uppercase', letterSpacing:'0.07em' }}>Generate Report</span>
+      </div>
+      <div style={{ padding:'14px 16px', display:'flex', flexDirection:'column', gap:10 }}>
+        <input
+          value={title}
+          onChange={e => setTitle(e.target.value)}
+          placeholder="Report title (optional)"
+          style={{ background:'var(--surface2)', border:'1px solid var(--border)', borderRadius:6, color:'var(--text)', padding:'8px 12px', fontSize:'0.85rem', outline:'none' }}
+        />
+        <textarea
+          value={markdown}
+          onChange={e => setMarkdown(e.target.value)}
+          placeholder="Paste markdown content here (analysis results, capability output, etc.)"
+          rows={5}
+          style={{ background:'var(--surface2)', border:'1px solid var(--border)', borderRadius:6, color:'var(--text)', padding:'8px 12px', fontSize:'0.82rem', resize:'vertical', outline:'none', minHeight:80, lineHeight:1.5 }}
+        />
+        <div style={{ display:'flex', alignItems:'center', gap:12, flexWrap:'wrap' }}>
+          <span style={{ fontSize:'0.78rem', color:'var(--dim)' }}>Format:</span>
+          <button onClick={() => setFormat('pdf')}  style={radioStyle(format === 'pdf')}>PDF</button>
+          <button onClick={() => setFormat('pptx')} style={radioStyle(format === 'pptx')}>PPTX</button>
+          <div style={{ flex:1 }} />
+          <button
+            onClick={handleGenerate}
+            disabled={busy || !markdown.trim()}
+            className="btn-primary"
+            style={{ padding:'8px 18px', fontSize:'0.82rem', borderRadius:6, opacity: (busy || !markdown.trim()) ? 0.5 : 1 }}
+          >
+            {busy ? 'Generating…' : 'Generate & Download'}
+          </button>
+        </div>
+        {statusMsg && (
+          <div style={{ fontSize:'0.78rem', color: statusMsg.startsWith('Error') ? 'var(--red)' : 'var(--text2)' }}>
+            {statusMsg}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function ServerPanel({ serverOnline, serverUrl, onRefresh }: { serverOnline: boolean; serverUrl: string; onRefresh: () => void }) {
   const [busy,      setBusy]      = useState(false);
   const [statusMsg, setStatusMsg] = useState('');
@@ -201,6 +293,9 @@ export default function Dashboard({ instances, serverOnline, appVersion, serverU
           Manage Instances
         </button>
       </div>
+
+      {/* Report generation */}
+      <ReportCard />
 
       {/* Instance list */}
       <div className="card" style={{ overflow:'hidden' }}>

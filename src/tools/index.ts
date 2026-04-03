@@ -163,7 +163,7 @@ const PACKAGE_TOOL_NAMES: Record<string, string[]> = {
     'bulk_get_properties', 'bulk_set_properties', 'list_property_categories',
     'get_current_update_set', 'list_update_sets',
     'create_update_set', 'switch_update_set', 'complete_update_set', 'preview_update_set', 'ensure_active_update_set',
-    'create_scheduled_report', 'create_kpi',
+    'create_scheduled_report', 'create_kpi', 'generate_report',
   ],
   platform_developer: [
     'query_records', 'get_record', 'get_table_schema', 'create_record', 'update_record', 'delete_record',
@@ -176,7 +176,7 @@ const PACKAGE_TOOL_NAMES: Record<string, string[]> = {
     'list_acls', 'get_acl', 'create_acl', 'update_acl',
     'list_changesets', 'get_changeset', 'commit_changeset', 'publish_changeset',
     'list_atf_suites', 'get_atf_suite', 'run_atf_suite', 'list_atf_tests', 'get_atf_test', 'run_atf_test', 'get_atf_suite_result', 'list_atf_test_results', 'get_atf_failure_insight',
-    'fluent_query', 'batch_request', 'execute_script',
+    'fluent_query', 'batch_request', 'execute_script', 'generate_report',
   ],
   itom_engineer: [
     'query_records', 'get_record', 'get_table_schema',
@@ -197,7 +197,7 @@ const PACKAGE_TOOL_NAMES: Record<string, string[]> = {
     'nlq_query', 'ai_search', 'generate_summary', 'suggest_resolution', 'categorize_incident',
     'get_virtual_agent_topics', 'trigger_agentic_playbook', 'get_ms_copilot_topics', 'generate_work_notes', 'get_pi_models',
     'search_knowledge', 'get_knowledge_article',
-    'fluent_query', 'batch_request', 'execute_script',
+    'fluent_query', 'batch_request', 'execute_script', 'generate_report',
   ],
 };
 

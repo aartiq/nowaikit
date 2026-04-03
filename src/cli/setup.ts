@@ -8,10 +8,11 @@
  *   4.  Connection test (with auto-fix suggestions on failure)
  *   5.  Permission tier / tool package
  *   6.  Component selection — MCP Server / SDK / Apex AI Skills (checkbox multi-select)
- *   7.  Power Tools & Capabilities overview
- *   8.  Prompts, Shortcuts & Resources
- *   9.  AI Client Installation
- *   10. Auto-Configuration (npm link, starter file, client config)
+ *   7.  AI Provider — Ollama/LM Studio auto-detect, cloud API key (shown when Apex enabled)
+ *   8.  Power Tools & Capabilities overview
+ *   9.  Prompts, Shortcuts & Resources
+ *   10. AI Client Installation
+ *   11. Auto-Configuration (npm link, starter file, client config)
  */
 import { input, password, select, checkbox, confirm } from '@inquirer/prompts';
 import chalk from 'chalk';
@@ -24,6 +25,7 @@ import { addInstance, loadConfig } from './config-store.js';
 import { detectClients } from './detect-clients.js';
 import { writeClientConfig } from './writers/index.js';
 import type { InstanceConfig, IntegrationMode } from './config-store.js';
+import type { LlmProvider } from '../direct/llm-client.js';
 
 // ─── Brand colors (matches nowaitkit.com — teal/navy palette) ───────────────
 // NOTE: `white` and `subtle` use terminal-adaptive styles so text remains
@@ -43,7 +45,7 @@ const dim     = chalk.gray;                  // terminal-adaptive dim text
 const white   = chalk.bold;                  // terminal-adaptive primary text (works on light + dark)
 const subtle  = chalk.dim;                   // terminal-adaptive secondary text
 
-const TOTAL_STEPS = 10;
+const TOTAL_STEPS = 11;
 
 const TOOL_PACKAGES = [
   { value: 'full',                 name: `${brand('full')}                 ${dim('— all 400+ tools')}` },
@@ -272,6 +274,49 @@ async function ensureGlobalCommand(): Promise<void> {
       console.log(brand('    npx nowaikit instances list') + dim(' # use npx instead'));
     }
   }
+}
+
+// ─── Local AI provider auto-detection ────────────────────────────────────────
+interface DetectedProvider {
+  running: boolean;
+  models: string[];
+}
+
+async function detectLocalProviders(): Promise<{ ollama: DetectedProvider; lmstudio: DetectedProvider }> {
+  const result = {
+    ollama: { running: false, models: [] as string[] },
+    lmstudio: { running: false, models: [] as string[] },
+  };
+
+  // Ollama: GET http://localhost:11434/api/tags
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 2000);
+    const res = await fetch('http://localhost:11434/api/tags', { signal: controller.signal });
+    clearTimeout(timeout);
+    if (res.ok) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const data = await res.json() as any;
+      result.ollama.running = true;
+      result.ollama.models = (data.models || []).map((m: { name: string }) => m.name.replace(/:latest$/, ''));
+    }
+  } catch { /* not running */ }
+
+  // LM Studio: GET http://localhost:1234/v1/models
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 2000);
+    const res = await fetch('http://localhost:1234/v1/models', { signal: controller.signal });
+    clearTimeout(timeout);
+    if (res.ok) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const data = await res.json() as any;
+      result.lmstudio.running = true;
+      result.lmstudio.models = (data.data || []).map((m: { id: string }) => m.id);
+    }
+  } catch { /* not running */ }
+
+  return result;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -668,8 +713,156 @@ export async function runSetup(options: { add?: boolean } = {}): Promise<void> {
     console.log('');
   }
 
-  // ─── Step 7: Power Tools & Capabilities ─────────────────────────────────────
-  step(7, 'Power Tools & Capabilities');
+  // ─── Step 7: AI Provider (for Apex capabilities) ──────────────────────────
+  let aiProvider: LlmProvider | undefined;
+  let aiModel: string | undefined;
+  let aiApiKey: string | undefined;
+  let aiBaseUrl: string | undefined;
+
+  if (apexEnabled) {
+    step(7, 'AI Provider');
+
+    sectionLabel('Configure the LLM for Apex AI capabilities (direct mode)');
+    console.log(dim('  Apex capabilities like scan-health need an LLM for analysis.'));
+    console.log(dim('  MCP mode (Claude Desktop, Cursor) uses the host AI — no key needed there.'));
+    console.log('');
+
+    const detectSpinner = ora({ text: dim('  Detecting local AI providers…'), color: 'cyan' }).start();
+    const localProviders = await detectLocalProviders();
+    detectSpinner.stop();
+
+    if (localProviders.ollama.running) {
+      const modelList = localProviders.ollama.models.length > 0
+        ? localProviders.ollama.models.slice(0, 5).join(', ')
+        : 'no models pulled yet';
+      console.log(`  ${success('✓')} Ollama detected at localhost:11434 (${dim(modelList)})`);
+    } else {
+      console.log(`  ${dim('✗')} Ollama not detected`);
+    }
+    if (localProviders.lmstudio.running) {
+      const modelList = localProviders.lmstudio.models.length > 0
+        ? localProviders.lmstudio.models.slice(0, 3).join(', ')
+        : 'model loaded';
+      console.log(`  ${success('✓')} LM Studio detected at localhost:1234 (${dim(modelList)})`);
+    } else {
+      console.log(`  ${dim('✗')} LM Studio not detected`);
+    }
+    console.log('');
+
+    // Build choices — detected providers first
+    type ProviderChoice = { name: string; value: LlmProvider | 'skip' };
+    const providerChoices: ProviderChoice[] = [];
+
+    if (localProviders.ollama.running) {
+      providerChoices.push({
+        name: `${brand('Ollama')} ${dim('(local — detected, running)')}`,
+        value: 'ollama',
+      });
+    } else {
+      providerChoices.push({
+        name: `${dim('Ollama')} ${dim('(local — not detected)')}`,
+        value: 'ollama',
+      });
+    }
+
+    if (localProviders.lmstudio.running) {
+      providerChoices.push({
+        name: `${brand('LM Studio')} ${dim('(local — detected, running)')}`,
+        value: 'lmstudio',
+      });
+    } else {
+      providerChoices.push({
+        name: `${dim('LM Studio')} ${dim('(local — not detected)')}`,
+        value: 'lmstudio',
+      });
+    }
+
+    providerChoices.push(
+      { name: `${accent('Anthropic')} ${dim('(cloud — requires API key)')}`, value: 'anthropic' },
+      { name: `${accent('OpenAI')} ${dim('(cloud — requires API key)')}`, value: 'openai' },
+      { name: `${subtle('Skip')} ${dim('(configure later with --provider flag or env var)')}`, value: 'skip' as LlmProvider | 'skip' },
+    );
+
+    const selectedProvider = await select<LlmProvider | 'skip'>({
+      message: brand('?') + ' Select AI provider' + brand(':'),
+      choices: providerChoices,
+      default: localProviders.ollama.running ? 'ollama'
+        : localProviders.lmstudio.running ? 'lmstudio'
+        : undefined,
+    });
+
+    if (selectedProvider !== 'skip') {
+      aiProvider = selectedProvider;
+
+      // Model selection for local providers with detected models
+      if (selectedProvider === 'ollama' && localProviders.ollama.models.length > 0) {
+        const modelChoices = localProviders.ollama.models.map(m => ({
+          name: brand(m),
+          value: m,
+        }));
+        aiModel = await select<string>({
+          message: brand('?') + ' Select Ollama model' + brand(':'),
+          choices: modelChoices,
+        });
+        console.log(`  ${success('✓')} Ollama configured with ${accent(aiModel)} — no API key needed`);
+      } else if (selectedProvider === 'lmstudio' && localProviders.lmstudio.models.length > 0) {
+        const modelChoices = localProviders.lmstudio.models.map(m => ({
+          name: brand(m),
+          value: m,
+        }));
+        aiModel = await select<string>({
+          message: brand('?') + ' Select LM Studio model' + brand(':'),
+          choices: modelChoices,
+        });
+        console.log(`  ${success('✓')} LM Studio configured with ${accent(aiModel)} — no API key needed`);
+      } else if (selectedProvider === 'ollama') {
+        aiModel = await input({
+          message: brand('?') + ' Ollama model name ' + dim('(e.g. llama3.3, codellama)') + brand(':'),
+          default: 'llama3.3',
+        });
+        console.log(`  ${success('✓')} Ollama configured with ${accent(aiModel)} — no API key needed`);
+      } else if (selectedProvider === 'lmstudio') {
+        console.log(`  ${success('✓')} LM Studio configured — uses whatever model is loaded`);
+      } else if (selectedProvider === 'anthropic') {
+        aiApiKey = await password({
+          message: brand('?') + ' Anthropic API key ' + dim('(sk-ant-...)') + brand(':'),
+          mask: '•',
+        });
+        aiModel = await input({
+          message: brand('?') + ' Model ' + dim('(Enter for default)') + brand(':'),
+          default: 'claude-sonnet-4-6-20250514',
+        });
+        console.log(`  ${success('✓')} Anthropic configured with ${accent(aiModel)}`);
+      } else if (selectedProvider === 'openai') {
+        aiApiKey = await password({
+          message: brand('?') + ' OpenAI API key ' + dim('(sk-...)') + brand(':'),
+          mask: '•',
+        });
+        aiModel = await input({
+          message: brand('?') + ' Model ' + dim('(Enter for default)') + brand(':'),
+          default: 'gpt-5.4',
+        });
+        console.log(`  ${success('✓')} OpenAI configured with ${accent(aiModel)}`);
+      }
+
+      // Custom base URL option for advanced users
+      const useCustomUrl = await confirm({
+        message: brand('?') + ' Use a custom API endpoint URL' + brand('?'),
+        default: false,
+      });
+      if (useCustomUrl) {
+        aiBaseUrl = await input({
+          message: brand('?') + ' Custom endpoint URL' + brand(':'),
+        });
+      }
+    } else {
+      console.log(`  ${dim('→')} AI provider skipped — use --provider flag or environment variables when running capabilities.`);
+    }
+    console.log('');
+  }
+
+  // ─── Step 8: Power Tools & Capabilities ─────────────────────────────────────
+  step(8, 'Power Tools & Capabilities');
 
   console.log(`  ${accent('▸')} ${white('Power Tools')} ${dim('— advanced features included in NowAIKit v3.0')}`);
   console.log('');
@@ -701,6 +894,8 @@ export async function runSetup(options: { add?: boolean } = {}): Promise<void> {
     }
     console.log('');
     console.log(dim('  Run any capability with: ') + brand('npx nowaikit run <capability>'));
+    console.log(dim('  Supports: markdown, ') + accent('PDF (branded)') + dim(', ') + accent('PPTX (slide deck)') + dim(' output'));
+    console.log(dim('  Generate reports:      ') + brand('npx nowaikit report scan-health --format pdf'));
     console.log(dim('  Supports: ') + accent('Anthropic') + dim(', ') + accent('OpenAI') + dim(', ') + accent('Ollama') + dim(' (BYOK — bring your own key)'));
     console.log('');
 
@@ -727,8 +922,8 @@ export async function runSetup(options: { add?: boolean } = {}): Promise<void> {
     console.log('');
   }
 
-  // ─── Step 8: Prompts, Shortcuts & Resources ────────────────────────────────
-  step(8, 'Prompts, Shortcuts & Resources');
+  // ─── Step 9: Prompts, Shortcuts & Resources ────────────────────────────────
+  step(9, 'Prompts, Shortcuts & Resources');
 
   console.log(`  ${accent('▸')} ${white('Slash Commands')} ${dim('(type / in your AI client)')}`);
   console.log('');
@@ -788,6 +983,10 @@ export async function runSetup(options: { add?: boolean } = {}): Promise<void> {
     mcpEnabled,
     sdkEnabled,
     apexEnabled,
+    aiProvider,
+    aiModel,
+    aiApiKey,
+    aiBaseUrl,
     group: group || undefined,
     environment,
     addedAt: new Date().toISOString(),
@@ -800,8 +999,8 @@ export async function runSetup(options: { add?: boolean } = {}): Promise<void> {
     dim(`  ~/.config/nowaikit/instances.json`),
   ], success);
 
-  // ─── Step 9: AI Client Installation ───────────────────────────────────────
-  step(9, 'Install into AI Client(s)');
+  // ─── Step 10: AI Client Installation ──────────────────────────────────────
+  step(10, 'Install into AI Client(s)');
 
   // SDK-only mode: skip MCP client configuration
   if (!mcpEnabled) {
@@ -878,14 +1077,14 @@ export async function runSetup(options: { add?: boolean } = {}): Promise<void> {
   printSummary(instance);
 }
 
-// ─── Step 10: Auto-Configuration ──────────────────────────────────────────────
+// ─── Step 11: Auto-Configuration ──────────────────────────────────────────────
 async function runAutoConfiguration(
   instance: InstanceConfig,
   mcpEnabled: boolean,
   sdkEnabled: boolean,
   chosenClientIds: string[]
 ): Promise<void> {
-  step(10, 'Auto-Configuration');
+  step(11, 'Auto-Configuration');
 
   // npm link (already handled by ensureGlobalCommand, but we surface it here)
   console.log(`  ${accent('▸')} ${white('Global command')} ${dim('— already handled by npm link above')}`);
@@ -1031,6 +1230,7 @@ function printSummary(instance: InstanceConfig): void {
     `${dim('  MCP:')}        ${instance.mcpEnabled !== false ? success('enabled') : dim('disabled')}`,
     `${dim('  SDK:')}        ${instance.sdkEnabled ? success('enabled') : dim('disabled')}`,
     `${dim('  Apex:')}       ${instance.apexEnabled !== false ? success('enabled') : dim('disabled')}`,
+    ...(instance.aiProvider ? [`${dim('  AI:')}         ${success(instance.aiProvider)}${instance.aiModel ? dim(' / ' + instance.aiModel) : ''}`] : []),
   ], brand);
 
   // ── What's Next ──────────────────────────────────────────────────────────
@@ -1075,6 +1275,7 @@ function printSummary(instance: InstanceConfig): void {
   console.log('');
   console.log(`    ${brand('npx nowaikit capabilities')}    ${dim('List all 26 capabilities')}`);
   console.log(`    ${brand('npx nowaikit run scan-health')} ${dim('Run a capability directly')}`);
+  console.log(`    ${brand('npx nowaikit report scan-health')} ${dim('Generate branded PDF report')}`);
   console.log(`    ${brand('nowaikit shortcuts')}           ${dim('Show all commands & keyboard shortcuts')}`);
   console.log('');
 

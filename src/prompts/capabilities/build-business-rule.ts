@@ -87,6 +87,8 @@ const capability: CapabilityDefinition = {
             '- Boundary / null-field scenario.',
             '- Role-based test if applicable.',
             '- Conflict test with the rules identified in Step 2.',
+            '',
+            'After presenting your analysis, offer to generate a branded PDF or PPTX report by calling the `generate_report` tool with your full analysis.',
           ].join('\n'),
         },
       },

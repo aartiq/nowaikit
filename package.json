@@ -17,6 +17,10 @@
     "./client": {
       "types": "./dist/servicenow/client.d.ts",
       "import": "./dist/servicenow/client.js"
+    },
+    "./reports": {
+      "types": "./dist/reports/index.d.ts",
+      "import": "./dist/reports/index.js"
     }
   },
   "bin": {
@@ -121,6 +125,8 @@
     "commander": "^14.0.3",
     "dotenv": "^16.4.5",
     "ora": "^9.3.0",
+    "pdfmake": "^0.3.7",
+    "pptxgenjs": "^4.0.1",
     "zod": "^3.22.4"
   },
   "devDependencies": {

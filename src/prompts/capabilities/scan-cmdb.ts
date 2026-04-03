@@ -460,6 +460,8 @@ const capability: CapabilityDefinition = {
             '',
             'Beginning CMDB health scan. Every finding must include its Finding ID, severity,',
             'category, affected CI count, concrete evidence, and a specific recommendation.',
+            '',
+            'After presenting your analysis, offer to generate a branded PDF or PPTX report by calling the `generate_report` tool with your full analysis.',
           ].join('\n'),
         },
       },

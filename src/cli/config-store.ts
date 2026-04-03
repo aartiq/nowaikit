@@ -5,6 +5,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
 import { homedir } from 'os';
 import { join } from 'path';
+import type { LlmProvider } from '../direct/llm-client.js';
 
 /** Integration mode — how NowAIKit is consumed. */
 export type IntegrationMode = 'mcp' | 'sdk' | 'both';
@@ -36,6 +37,14 @@ export interface InstanceConfig {
   sdkEnabled?: boolean;
   /** Apex AI Skills: enable 26 scan/review/build/ops/docs capabilities */
   apexEnabled?: boolean;
+  /** AI provider for direct mode capabilities */
+  aiProvider?: LlmProvider;
+  /** AI model name (e.g. 'claude-sonnet-4-6', 'llama3.3') */
+  aiModel?: string;
+  /** API key for cloud providers (Anthropic/OpenAI) */
+  aiApiKey?: string;
+  /** Custom base URL override for the AI provider endpoint */
+  aiBaseUrl?: string;
   group?: string;
   environment?: string;
   addedAt: string;

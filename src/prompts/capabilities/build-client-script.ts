@@ -151,6 +151,8 @@ const capability: CapabilityDefinition = {
             '',
             '### Step 7 — Create the Artifact(s)',
             `Use **create_client_script** with the final script, table="${table}", type="${type}"${type === 'onChange' ? `, field="${field}"` : ''}. If a Script Include was generated in Step 5, create it as well. Report the sys_id(s) of all created artifacts.`,
+            '',
+            'After presenting your analysis, offer to generate a branded PDF or PPTX report by calling the `generate_report` tool with your full analysis.',
           ].join('\n'),
         },
       },

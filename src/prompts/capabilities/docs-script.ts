@@ -233,6 +233,8 @@ const capability: CapabilityDefinition = {
             '---',
             '',
             'Starting script documentation.',
+            '',
+            'After presenting your analysis, offer to generate a branded PDF or PPTX report by calling the `generate_report` tool with your full analysis.',
           ].join('\n'),
         },
       },

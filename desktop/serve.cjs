@@ -374,6 +374,87 @@ function serveStatic(req, res) {
   });
 }
 
+// ─── Report generation handler ───────────────────────────────────────────────
+
+/**
+ * POST /api/report/generate
+ * Body: { markdown, format, title, instanceUrl, instanceName, capability }
+ * Returns: binary file with appropriate Content-Type
+ */
+function handleReportGenerate(req, res) {
+  const chunks = [];
+  let totalSize = 0;
+  const MAX_BODY = 10 * 1024 * 1024;
+
+  req.on('data', chunk => {
+    totalSize += chunk.length;
+    if (totalSize > MAX_BODY) {
+      res.writeHead(413, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Request body too large' }));
+      req.destroy();
+      return;
+    }
+    chunks.push(chunk);
+  });
+
+  req.on('end', async () => {
+    if (totalSize > MAX_BODY) return;
+
+    try {
+      const body = JSON.parse(Buffer.concat(chunks).toString());
+      const { markdown, format, title, instanceUrl, instanceName, capability } = body;
+
+      if (!markdown || !format || !title) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'markdown, format, and title are required' }));
+        return;
+      }
+
+      if (format !== 'pdf' && format !== 'pptx') {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'format must be "pdf" or "pptx"' }));
+        return;
+      }
+
+      // Dynamic import of the report module (ESM from CJS)
+      const reportModule = await import(path.resolve(__dirname, '..', 'dist', 'reports', 'index.js'));
+      const result = await reportModule.generateReport(markdown, format, {
+        title,
+        instanceUrl: instanceUrl || '',
+        instanceName: instanceName || 'instance',
+        capability: capability || '',
+      });
+
+      // Read generated file and send it
+      const fileBuffer = fs.readFileSync(result.filePath);
+      const contentType = format === 'pdf' ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
+      const fileName = path.basename(result.filePath);
+
+      const origin = req.headers.origin;
+      const allowedOrigin = isAllowedOrigin(origin) ? (origin || '*') : '';
+
+      const headers = {
+        'Content-Type': contentType,
+        'Content-Disposition': `attachment; filename="${fileName}"`,
+        'Content-Length': fileBuffer.length,
+      };
+      if (allowedOrigin) {
+        headers['Access-Control-Allow-Origin'] = allowedOrigin;
+      }
+
+      res.writeHead(200, headers);
+      res.end(fileBuffer);
+
+      // Cleanup temp file
+      try { fs.unlinkSync(result.filePath); } catch { /* ignore */ }
+    } catch (err) {
+      console.error('Report generation error:', err.message || err);
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Report generation failed: ' + (err.message || 'unknown error') }));
+    }
+  });
+}
+
 // ─── HTTP server ─────────────────────────────────────────────────────────────
 
 const server = http.createServer((req, res) => {
@@ -431,6 +512,13 @@ const server = http.createServer((req, res) => {
   if (req.url.startsWith('/api/snow/')) {
     if (!proxySecurityCheck()) return;
     proxySnowRequest(req, res);
+    return;
+  }
+
+  // Report generation endpoint
+  if (req.url === '/api/report/generate' && req.method === 'POST') {
+    if (!proxySecurityCheck()) return;
+    handleReportGenerate(req, res);
     return;
   }
 

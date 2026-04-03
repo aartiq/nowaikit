@@ -129,6 +129,8 @@ const capability: CapabilityDefinition = {
             '| `list_groups` | Check group role assignments for impact analysis |',
             '',
             'I will now begin the ACL coverage analysis.',
+            '',
+            'After presenting your analysis, offer to generate a branded PDF or PPTX report by calling the `generate_report` tool with your full analysis.',
           ].join('\n'),
         },
       },

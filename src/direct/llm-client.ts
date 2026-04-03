@@ -5,7 +5,7 @@
  * Users bring their own API key (BYOK) — no vendor lock-in.
  */
 
-export type LlmProvider = 'anthropic' | 'openai' | 'ollama';
+export type LlmProvider = 'anthropic' | 'openai' | 'ollama' | 'lmstudio';
 
 export interface LlmConfig {
   provider: LlmProvider;
@@ -31,12 +31,14 @@ const DEFAULT_MODELS: Record<LlmProvider, string> = {
   anthropic: 'claude-sonnet-4-6-20250514',
   openai: 'gpt-5.4',
   ollama: 'llama3.3',
+  lmstudio: 'auto',
 };
 
 const PROVIDER_URLS: Record<LlmProvider, string> = {
   anthropic: 'https://api.anthropic.com/v1/messages',
   openai: 'https://api.openai.com/v1/chat/completions',
   ollama: 'http://localhost:11434/api/chat',
+  lmstudio: 'http://localhost:1234/v1/chat/completions',
 };
 
 function resolveConfig(config: LlmConfig): { url: string; model: string; apiKey: string } {
@@ -45,7 +47,8 @@ function resolveConfig(config: LlmConfig): { url: string; model: string; apiKey:
   const model = config.model || DEFAULT_MODELS[provider];
   const apiKey = config.apiKey || process.env[`${provider.toUpperCase()}_API_KEY`] || '';
 
-  if (provider !== 'ollama' && !apiKey) {
+  const localProviders: LlmProvider[] = ['ollama', 'lmstudio'];
+  if (!localProviders.includes(provider) && !apiKey) {
     throw new Error(`API key required for ${provider}. Set ${provider.toUpperCase()}_API_KEY or pass --api-key`);
   }
 
@@ -157,6 +160,8 @@ export async function callLlm(config: LlmConfig, messages: LlmMessage[]): Promis
       return callOpenAI(url, model, apiKey, messages, maxTokens);
     case 'ollama':
       return callOllama(url, model, apiKey, messages);
+    case 'lmstudio':
+      return callOpenAI(url, model, apiKey, messages, maxTokens);
     default:
       throw new Error(`Unsupported provider: ${config.provider}`);
   }
