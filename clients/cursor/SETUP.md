@@ -29,7 +29,7 @@ Edit `.cursor/mcp.json`:
 ```json
 {
   "mcpServers": {
-    "servicenow": {
+    "nowaikit": {
       "command": "node",
       "args": ["/ABSOLUTE/PATH/TO/servicenow-mcp/dist/server.js"],
       "env": {
@@ -50,7 +50,7 @@ Edit `.cursor/mcp.json`:
 ```json
 {
   "mcpServers": {
-    "servicenow": {
+    "nowaikit": {
       "command": "node",
       "args": ["/ABSOLUTE/PATH/TO/servicenow-mcp/dist/server.js"],
       "env": {
