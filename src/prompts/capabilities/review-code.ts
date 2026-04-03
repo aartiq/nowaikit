@@ -145,6 +145,8 @@ const capability: CapabilityDefinition = {
             '| `get_table_schema` | Understand table structure for context |',
             '',
             'I will now review your artifact.',
+            '',
+            'After presenting your analysis, offer to generate a branded PDF or PPTX report by calling the `generate_report` tool with your full analysis.',
           ].join('\n'),
         },
       },

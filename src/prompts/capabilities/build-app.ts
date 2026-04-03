@@ -232,6 +232,8 @@ const capability: CapabilityDefinition = {
             '| Catalog Items | N | list |',
             '| ATF Tests | N | pass/fail |',
             '| Update Set | sys_id | name |',
+            '',
+            'After presenting your analysis, offer to generate a branded PDF or PPTX report by calling the `generate_report` tool with your full analysis.',
           ].join('\n'),
         },
       },

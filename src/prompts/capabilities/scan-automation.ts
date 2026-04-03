@@ -461,6 +461,8 @@ const capability: CapabilityDefinition = {
             '',
             'Beginning automation conflict scan. Every finding must include its Finding ID,',
             'severity, category, involved rules, concrete evidence, and a specific recommendation.',
+            '',
+            'After presenting your analysis, offer to generate a branded PDF or PPTX report by calling the `generate_report` tool with your full analysis.',
           ].join('\n'),
         },
       },

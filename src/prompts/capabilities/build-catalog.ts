@@ -131,6 +131,8 @@ const capability: CapabilityDefinition = {
               ? `Category: **${category}**`
               : 'Category: to be determined from requirement analysis',
             `Fulfillment type: **${fulfillmentType}**`,
+            '',
+            'After presenting your analysis, offer to generate a branded PDF or PPTX report by calling the `generate_report` tool with your full analysis.',
           ].join('\n'),
         },
       },

@@ -289,6 +289,8 @@ const capability: CapabilityDefinition = {
             '- Special characters in input — verify sanitization',
             '- Empty body on POST/PUT (400)',
             '- Wrong Content-Type header (415)',
+            '',
+            'After presenting your analysis, offer to generate a branded PDF or PPTX report by calling the `generate_report` tool with your full analysis.',
           ].join('\n'),
         },
       },

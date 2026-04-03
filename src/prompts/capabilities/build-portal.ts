@@ -126,6 +126,8 @@ const capability: CapabilityDefinition = {
             table !== '<not specified>'
               ? `Primary table: **${table}**`
               : 'Primary table: to be determined from requirement analysis',
+              '',
+              'After presenting your analysis, offer to generate a branded PDF or PPTX report by calling the `generate_report` tool with your full analysis.',
           ].join('\n'),
         },
       },

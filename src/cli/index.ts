@@ -21,7 +21,7 @@ import { fileURLToPath } from 'url';
 import path from 'path';
 import { runSetup } from './setup.js';
 import { authLogin, authLogout, authWhoami } from './auth.js';
-import { listInstances, removeInstance } from './config-store.js';
+import { listInstances, removeInstance, getDefaultInstance, loadConfig } from './config-store.js';
 import { runShortcuts } from './shortcuts.js';
 
 // Brand colors (matches nowaitkit.com — teal/navy palette)
@@ -255,21 +255,52 @@ program
   .command('run <capability>')
   .description('Run a capability in direct mode (no MCP client needed — BYOK)')
   .option('-i, --instance <name>', 'ServiceNow instance name')
-  .option('-p, --provider <provider>', 'LLM provider: anthropic, openai, ollama', 'anthropic')
+  .option('-p, --provider <provider>', 'LLM provider: anthropic, openai, ollama, lmstudio')
   .option('-m, --model <model>', 'LLM model name')
   .option('-k, --api-key <key>', 'LLM API key (or set *_API_KEY env var)')
   .option('-o, --output <file>', 'Write output to file')
   .option('-t, --table <table>', 'Target table name')
   .option('-s, --scope <scope>', 'Application scope or scan scope')
   .option('-f, --focus <focus>', 'Review focus: security, performance, all')
+  .option('--format <format>', 'Output format: md (default), pdf, pptx')
   .action(async (
     capability: string,
-    options: { instance?: string; provider?: string; model?: string; apiKey?: string; output?: string; table?: string; scope?: string; focus?: string }
+    options: { instance?: string; provider?: string; model?: string; apiKey?: string; output?: string; table?: string; scope?: string; focus?: string; format?: string }
   ) => {
     cliBanner();
 
     const ora = (await import('ora')).default;
-    const provider = (options.provider || process.env.LLM_PROVIDER || 'anthropic') as import('../direct/llm-client.js').LlmProvider;
+
+    // Load stored AI config from instance config (CLI flags override)
+    const config = loadConfig();
+    const instanceConfig = options.instance
+      ? config.instances[options.instance]
+      : getDefaultInstance();
+
+    const storedProvider = instanceConfig?.aiProvider;
+    const storedModel = instanceConfig?.aiModel;
+    const storedApiKey = instanceConfig?.aiApiKey;
+    const storedBaseUrl = instanceConfig?.aiBaseUrl;
+
+    // Resolution order: CLI flag > env var > stored config > default
+    const provider = (options.provider || process.env.LLM_PROVIDER || storedProvider || 'anthropic') as import('../direct/llm-client.js').LlmProvider;
+    const model = options.model || storedModel;
+    const apiKey = options.apiKey || storedApiKey;
+    const baseUrl = storedBaseUrl;
+
+    // If no provider configured and no env vars set, show helpful guidance
+    const localProviders = ['ollama', 'lmstudio'];
+    if (!localProviders.includes(provider) && !apiKey && !process.env[`${provider.toUpperCase()}_API_KEY`]) {
+      console.log('');
+      console.log(err('  AI analysis requires an LLM provider. Options:'));
+      console.log('');
+      console.log(`    ${teal('1.')} Run ${teal('npx nowaikit setup')} to configure ${dim('(Ollama recommended — free, local)')}`);
+      console.log(`    ${teal('2.')} Set ${teal('ANTHROPIC_API_KEY')} or ${teal('OPENAI_API_KEY')} environment variable`);
+      console.log(`    ${teal('3.')} Use ${teal('--provider ollama')} for local Ollama ${dim('(no API key needed)')}`);
+      console.log('');
+      process.exit(1);
+    }
+
     const spinner = ora(`Running ${teal(capability)} in direct mode (${provider})...`).start();
 
     try {
@@ -286,15 +317,50 @@ program
         instance: options.instance,
         llmConfig: {
           provider,
-          model: options.model,
-          apiKey: options.apiKey,
+          model,
+          apiKey,
+          baseUrl,
         },
         output: options.output,
       });
 
       spinner.succeed(`Capability completed (${result.dataGathered} data points gathered)`);
 
-      if (options.output) {
+      const reportFormat = options.format?.toLowerCase();
+      if (reportFormat === 'pdf' || reportFormat === 'pptx') {
+        // Generate branded report
+        const reportSpinner = ora(`Generating ${reportFormat.toUpperCase()} report...`).start();
+        try {
+          const { generateReport } = await import('../reports/index.js');
+          const config = loadConfig();
+          const instConfig = options.instance
+            ? config.instances[options.instance]
+            : getDefaultInstance();
+          const instName = options.instance || config.defaultInstance || 'instance';
+
+          const reportResult = await generateReport(result.content, reportFormat, {
+            title: capability.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
+            instanceUrl: instConfig?.instanceUrl || '',
+            instanceName: instName,
+            capability,
+            outputDir: options.output ? undefined : undefined,
+          });
+
+          // If -o flag specified, use that as output path
+          if (options.output) {
+            const { renameSync } = await import('fs');
+            renameSync(reportResult.filePath, options.output);
+            reportSpinner.succeed(`Report saved to ${white(options.output)} (${Math.round(reportResult.sizeBytes / 1024)} KB)`);
+          } else {
+            reportSpinner.succeed(`Report saved to ${white(reportResult.filePath)} (${Math.round(reportResult.sizeBytes / 1024)} KB)`);
+          }
+        } catch (reportError) {
+          reportSpinner.fail('Report generation failed');
+          console.error(err(`\n  ${reportError instanceof Error ? reportError.message : 'Unknown error'}`));
+          // Still output the markdown as fallback
+          console.log('\n' + result.content);
+        }
+      } else if (options.output) {
         const { writeFileSync: writeFile } = await import('fs');
         writeFile(options.output, result.content);
         console.log(`\n  ${success('✓')} Output written to ${white(options.output)}`);
@@ -310,6 +376,32 @@ program
       console.error(err(`\n  ${error instanceof Error ? error.message : 'Unknown error'}`));
       process.exit(1);
     }
+  });
+
+// ─── report (convenience alias for run --format) ────────────────────────────
+program
+  .command('report <capability>')
+  .description('Generate a branded report — shortcut for `run <capability> --format pdf`')
+  .option('-i, --instance <name>', 'ServiceNow instance name')
+  .option('-p, --provider <provider>', 'LLM provider: anthropic, openai, ollama, lmstudio')
+  .option('-m, --model <model>', 'LLM model name')
+  .option('-k, --api-key <key>', 'LLM API key')
+  .option('-o, --output <file>', 'Output file path')
+  .option('-t, --table <table>', 'Target table name')
+  .option('-s, --scope <scope>', 'Application scope or scan scope')
+  .option('--format <format>', 'Output format: pdf (default), pptx', 'pdf')
+  .action(async (capability: string, options: any) => {
+    // Delegate to `run` with format defaulting to pdf
+    const args = ['run', capability];
+    if (options.instance) args.push('-i', options.instance);
+    if (options.provider) args.push('-p', options.provider);
+    if (options.model) args.push('-m', options.model);
+    if (options.apiKey) args.push('-k', options.apiKey);
+    if (options.output) args.push('-o', options.output);
+    if (options.table) args.push('-t', options.table);
+    if (options.scope) args.push('-s', options.scope);
+    args.push('--format', options.format || 'pdf');
+    await program.parseAsync(['node', 'nowaikit', ...args]);
   });
 
 program.parseAsync(process.argv).catch((e: unknown) => {

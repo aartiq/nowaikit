@@ -266,6 +266,9 @@ export function SetupWizard() {
                 Enable Now Assist / AI tools (NLQ, AI Search, Agentic Playbooks)
               </label>
             </div>
+            <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: '8px 0 16px', lineHeight: 1.5 }}>
+              AI Skills generate branded PDF &amp; PPTX reports with charts and ServiceNow links.
+            </p>
             <div style={{ display: 'flex', gap: 8 }}>
               <button className="btn btn-secondary" onClick={prev}>Back</button>
               <button className="btn btn-primary" onClick={next}>Next</button>
