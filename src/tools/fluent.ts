@@ -9,9 +9,25 @@
  * These tools give AI agents a modern, expressive way to interact with ServiceNow
  * that mirrors the GlideQuery API developers use in the platform.
  */
+import { execFile as execFileCb } from 'child_process';
+import { promisify } from 'util';
 import type { ServiceNowClient } from '../servicenow/client.js';
 import { ServiceNowError } from '../utils/errors.js';
-import { requireWrite } from '../utils/permissions.js';
+import { requireWrite, requireFluent } from '../utils/permissions.js';
+
+const execFileAsync = promisify(execFileCb);
+
+async function runNowSdk(args: string[], timeoutMs = 30000): Promise<{ stdout: string; stderr: string }> {
+  try {
+    const result = await execFileAsync('npx', ['@servicenow/sdk', ...args], { timeout: timeoutMs, maxBuffer: 10 * 1024 * 1024 });
+    return { stdout: result.stdout, stderr: result.stderr };
+  } catch (error: any) {
+    if (error.code === 'ENOENT') {
+      throw new ServiceNowError('now-sdk not found. Install with: npm i -g @servicenow/sdk', 'FLUENT_NOT_INSTALLED');
+    }
+    throw new ServiceNowError(`now-sdk error: ${error.stderr || error.message}`, 'FLUENT_ERROR');
+  }
+}
 
 export function getFluentToolDefinitions() {
   return [
@@ -128,6 +144,63 @@ export function getFluentToolDefinitions() {
           },
         },
         required: ['script'],
+      },
+    },
+    {
+      name: 'fluent_explain',
+      description:
+        'Run `npx @servicenow/sdk explain <topic>` to get SDK documentation on a topic. ' +
+        'Returns explanations of fluent APIs, types, patterns, and best practices.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          topic: {
+            type: 'string',
+            description: 'Topic to explain (e.g., "GlideQuery", "table API", "scoped app")',
+          },
+        },
+        required: ['topic'],
+      },
+    },
+    {
+      name: 'fluent_init',
+      description:
+        'Initialize a new ServiceNow fluent/now-sdk project. Runs `npx @servicenow/sdk init`. ' +
+        'REQUIRES FLUENT_ENABLED=true and WRITE_ENABLED=true.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          name: { type: 'string', description: 'Project name' },
+          template: { type: 'string', description: 'Project template (optional)' },
+          directory: { type: 'string', description: 'Target directory (optional, defaults to cwd)' },
+        },
+        required: ['name'],
+      },
+    },
+    {
+      name: 'fluent_build',
+      description:
+        'Build a ServiceNow fluent/now-sdk project. Runs `npx @servicenow/sdk build`. ' +
+        'REQUIRES FLUENT_ENABLED=true and WRITE_ENABLED=true.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          directory: { type: 'string', description: 'Project directory (optional, defaults to cwd)' },
+        },
+        required: [],
+      },
+    },
+    {
+      name: 'fluent_validate',
+      description:
+        'Validate a ServiceNow fluent/now-sdk project. Runs `npx @servicenow/sdk validate`. ' +
+        'REQUIRES FLUENT_ENABLED=true.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          directory: { type: 'string', description: 'Project directory (optional, defaults to cwd)' },
+        },
+        required: [],
       },
     },
   ];
@@ -315,6 +388,42 @@ export async function executeFluentToolCall(
 
       const result = await client.executeScript(script, args.scope);
       return result;
+    }
+
+    case 'fluent_explain': {
+      const topic = args.topic;
+      if (!topic) throw new ServiceNowError('topic is required', 'INVALID_REQUEST');
+      const result = await runNowSdk(['explain', topic], 30000);
+      return { topic, output: result.stdout, stderr: result.stderr || undefined };
+    }
+
+    case 'fluent_init': {
+      requireFluent();
+      requireWrite();
+      const name = args.name;
+      if (!name) throw new ServiceNowError('name is required', 'INVALID_REQUEST');
+      const initArgs = ['init', '--name', name];
+      if (args.template) initArgs.push('--template', args.template);
+      if (args.directory) initArgs.push('--directory', args.directory);
+      const result = await runNowSdk(initArgs, 60000);
+      return { action: 'project_initialized', name, output: result.stdout, stderr: result.stderr || undefined };
+    }
+
+    case 'fluent_build': {
+      requireFluent();
+      requireWrite();
+      const buildArgs = ['build'];
+      if (args.directory) buildArgs.push('--directory', args.directory);
+      const result = await runNowSdk(buildArgs, 120000);
+      return { action: 'build_completed', output: result.stdout, stderr: result.stderr || undefined };
+    }
+
+    case 'fluent_validate': {
+      requireFluent();
+      const validateArgs = ['validate'];
+      if (args.directory) validateArgs.push('--directory', args.directory);
+      const result = await runNowSdk(validateArgs, 60000);
+      return { action: 'validation_completed', output: result.stdout, stderr: result.stderr || undefined };
     }
 
     default:

@@ -70,6 +70,17 @@ import { getMobileToolDefinitions, executeMobileToolCall } from './mobile.js';
 import { getDeploymentToolDefinitions, executeDeploymentToolCall } from './deployment.js';
 // Fluent / GlideQuery / Batch API
 import { getFluentToolDefinitions, executeFluentToolCall } from './fluent.js';
+// Now Assist Skills
+import { getNowAssistSkillsToolDefinitions, executeNowAssistSkillsToolCall } from './now-assist-skills.js';
+// AI Agents & Agentic Workflows
+import { getAiAgentsToolDefinitions, executeAiAgentsToolCall } from './ai-agents.js';
+// CMDB Reconciliation (duplicates, orphans, stale)
+import { getCmdbReconciliationToolDefinitions, executeCmdbReconciliationToolCall } from './cmdb-reconciliation.js';
+// Orchestration (playbooks)
+import { getOrchestrationToolDefinitions, executeOrchestrationToolCall } from './orchestration.js';
+// Dynamic Schema Discovery
+import { getDiscoveryToolDefinitions, executeDiscoveryToolCall, executeDynamicToolCall } from './discovery.js';
+import { schemaCache } from './schema-cache.js';
 
 // ─── Package Definitions ──────────────────────────────────────────────────────
 
@@ -164,6 +175,9 @@ const PACKAGE_TOOL_NAMES: Record<string, string[]> = {
     'get_current_update_set', 'list_update_sets',
     'create_update_set', 'switch_update_set', 'complete_update_set', 'preview_update_set', 'ensure_active_update_set',
     'create_scheduled_report', 'create_kpi', 'generate_report',
+    // v4.0 additions
+    'cmdb_find_duplicates', 'cmdb_find_orphans', 'cmdb_find_stale', 'cmdb_reconcile',
+    'discover_table',
   ],
   platform_developer: [
     'query_records', 'get_record', 'get_table_schema', 'create_record', 'update_record', 'delete_record',
@@ -177,6 +191,9 @@ const PACKAGE_TOOL_NAMES: Record<string, string[]> = {
     'list_changesets', 'get_changeset', 'commit_changeset', 'publish_changeset',
     'list_atf_suites', 'get_atf_suite', 'run_atf_suite', 'list_atf_tests', 'get_atf_test', 'run_atf_test', 'get_atf_suite_result', 'list_atf_test_results', 'get_atf_failure_insight',
     'fluent_query', 'batch_request', 'execute_script', 'generate_report',
+    // v4.0 Fluent SDK + discovery
+    'fluent_explain', 'fluent_init', 'fluent_build', 'fluent_validate',
+    'discover_table',
   ],
   itom_engineer: [
     'query_records', 'get_record', 'get_table_schema',
@@ -184,6 +201,9 @@ const PACKAGE_TOOL_NAMES: Record<string, string[]> = {
     'list_discovery_schedules', 'list_mid_servers', 'list_active_events',
     'run_aggregate_query', 'trend_query',
     'create_ci_relationship', 'cmdb_impact_analysis', 'run_discovery_scan',
+    // v4.0 CMDB reconciliation
+    'cmdb_find_duplicates', 'cmdb_find_orphans', 'cmdb_find_stale', 'cmdb_reconcile',
+    'discover_table',
   ],
   agile_manager: [
     'query_records', 'get_record', 'get_user',
@@ -198,6 +218,12 @@ const PACKAGE_TOOL_NAMES: Record<string, string[]> = {
     'get_virtual_agent_topics', 'trigger_agentic_playbook', 'get_ms_copilot_topics', 'generate_work_notes', 'get_pi_models',
     'search_knowledge', 'get_knowledge_article',
     'fluent_query', 'batch_request', 'execute_script', 'generate_report',
+    // v4.0 additions
+    'create_now_assist_skill', 'list_now_assist_skills', 'get_now_assist_skill', 'test_now_assist_skill',
+    'create_ai_agent', 'list_ai_agents', 'get_ai_agent', 'create_agentic_workflow',
+    'create_playbook', 'execute_playbook', 'list_playbooks',
+    'ml_similar_incidents', 'ml_auto_categorize',
+    'discover_table',
   ],
 };
 
@@ -236,25 +262,31 @@ const ALL_TOOLS = [
   ...getMobileToolDefinitions(),
   ...getDeploymentToolDefinitions(),
   ...getFluentToolDefinitions(),
+  ...getNowAssistSkillsToolDefinitions(),
+  ...getAiAgentsToolDefinitions(),
+  ...getCmdbReconciliationToolDefinitions(),
+  ...getOrchestrationToolDefinitions(),
+  ...getDiscoveryToolDefinitions(),
 ];
 
 // ─── Public API ───────────────────────────────────────────────────────────────
 
 export function getTools() {
   const packageName = (process.env.MCP_TOOL_PACKAGE || 'full').toLowerCase();
+  const dynamicTools = schemaCache.getGeneratedTools();
 
   if (packageName === 'full') {
-    return ALL_TOOLS;
+    return [...ALL_TOOLS, ...dynamicTools];
   }
 
   const allowed = PACKAGE_TOOL_NAMES[packageName];
   if (!allowed) {
     console.error(`[WARN] Unknown MCP_TOOL_PACKAGE "${packageName}". Using "full".`);
-    return ALL_TOOLS;
+    return [...ALL_TOOLS, ...dynamicTools];
   }
 
   const allowedSet = new Set(allowed);
-  return ALL_TOOLS.filter(t => allowedSet.has(t.name));
+  return [...ALL_TOOLS.filter(t => allowedSet.has(t.name)), ...dynamicTools];
 }
 
 export async function executeTool(
@@ -296,6 +328,12 @@ export async function executeTool(
     () => executeMobileToolCall(client, name, args),
     () => executeDeploymentToolCall(client, name, args),
     () => executeFluentToolCall(client, name, args),
+    () => executeNowAssistSkillsToolCall(client, name, args),
+    () => executeAiAgentsToolCall(client, name, args),
+    () => executeCmdbReconciliationToolCall(client, name, args),
+    () => executeOrchestrationToolCall(client, name, args),
+    () => executeDiscoveryToolCall(client, name, args),
+    () => executeDynamicToolCall(client, name, args),
   ];
 
   for (const handler of handlers) {
