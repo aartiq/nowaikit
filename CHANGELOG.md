@@ -6,6 +6,96 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ---
 
+## [4.0.0] — 2026-04-25
+
+### Added
+
+#### Multi-Transport Support
+- **SSE Transport** (`TRANSPORT=sse`) — Server-Sent Events over HTTP, enabling remote MCP connections
+- **Streamable HTTP Transport** (`TRANSPORT=http`) — MCP 2025-03-26 spec compliant streaming
+- **Bearer token auth** via `NOWAIKIT_API_KEY` env var for HTTP transports
+- **CORS configuration** via `CORS_ORIGIN` env var
+- **Health endpoint** at `GET /health` with server status, tool count, transport type
+
+#### A2A (Agent-to-Agent) Protocol
+- **Agent Card** at `GET /.well-known/agent.json` — automatic discovery by A2A-compatible agents
+- **Task execution** — `POST /a2a/tasks/send` for synchronous tool invocation via A2A
+- **SSE streaming** — `POST /a2a/tasks/sendSubscribe` for streaming task updates
+- **Task management** — `GET /a2a/tasks/:id`, `POST /a2a/tasks/:id/cancel`
+- Tools mapped to A2A skills by domain (Incident Management, CMDB, Security, etc.)
+
+#### HTTP REST API
+- `GET /api/tools` — List all tools with schemas
+- `POST /api/tool` — Execute any tool via REST
+- `GET /api/resources`, `GET /api/resource?uri=...` — Read MCP resources
+- `GET /api/prompts` — List slash commands
+- `GET /api/instances`, `POST /api/instances/switch` — Instance management
+
+#### Web Dashboard
+- Dark-theme dashboard at `GET /` when HTTP transport is active
+- Tool explorer with search, tool executor, instance status
+
+#### Dynamic Schema Discovery
+- **`discover_table`** — Reads table schema from `sys_dictionary` at runtime
+- Generates dynamic CRUD tools: `dynamic_query_<table>`, `dynamic_get_<table>`, `dynamic_create_<table>`, `dynamic_update_<table>`, `dynamic_delete_<table>`
+- 30-minute TTL cache, schema fallback via record probing
+
+#### Now Assist Skill Management
+- `create_now_assist_skill` — Create Now Assist skills with input/output schemas
+- `list_now_assist_skills` — Query available skills
+- `get_now_assist_skill` — Get skill details
+- `test_now_assist_skill` — Test skill execution via Now Assist API
+
+#### AI Agent Framework
+- `create_ai_agent` — Create AI agents with automatic ACL generation
+- `list_ai_agents`, `get_ai_agent` — Query and inspect agents
+- `create_agentic_workflow` — Create agent workflow definitions
+
+#### CMDB Reconciliation Engine
+- `cmdb_find_duplicates` — Detect duplicate CIs by configurable matching fields
+- `cmdb_find_orphans` — Find CIs with no relationships
+- `cmdb_find_stale` — Find CIs not updated in N days
+- `cmdb_reconcile` — Merge, retire, or remove with dry-run support
+
+#### Multi-Agent Orchestration
+- `create_playbook` — Define reusable multi-step tool chains
+- `execute_playbook` — Execute playbooks with context passing between steps
+- `list_playbooks` — Query playbook definitions
+
+#### Fluent / now-sdk Integration
+- `fluent_explain` — Look up ServiceNow platform conventions via now-sdk
+- `fluent_init` — Scaffold new Fluent applications
+- `fluent_build` — Build Fluent projects
+- `fluent_validate` — Validate Fluent code
+- New `FLUENT_ENABLED` permission tier
+
+#### ML Enhancements
+- `ml_similar_incidents` — Find similar past incidents by keyword analysis
+- `ml_auto_categorize` — Auto-categorize records based on description analysis
+
+#### Encoded Query Reference
+- `@query-syntax` MCP resource — comprehensive ServiceNow query syntax documentation
+- Includes operators, date functions, dot-walking, common patterns, anti-patterns
+- Prevents LLM hallucination on encoded query syntax
+
+#### ATF Suite Generation Capability
+- `build-atf-suite` Apex capability — generates runnable ATF test suites from any artifact
+- Supports basic, standard, and comprehensive coverage levels
+
+### Changed
+- Server version bumped to 4.0.0
+- `server.ts` refactored with `createServer()` factory for transport flexibility
+- `getTools()` now includes dynamically discovered tables
+- Tool router extended with discovery and dynamic tool handlers
+
+### Stats
+- Total static tools: **394** (up from 371 in v3.1)
+- Dynamic tools: **unlimited** (via discover_table)
+- New test coverage: **195 tests** (up from 88)
+- New capabilities: **27** (up from 26)
+
+---
+
 ## [2.6.0] — 2026-03-28
 
 ### Added

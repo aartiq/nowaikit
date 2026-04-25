@@ -58,6 +58,19 @@ export function requireAtf(): void {
   }
 }
 
+export function requireFluent(): void {
+  if (process.env.FLUENT_ENABLED !== 'true') {
+    throw new ServiceNowError(
+      'Fluent/now-sdk operations are disabled. Set FLUENT_ENABLED=true to enable.',
+      'FLUENT_NOT_ENABLED'
+    );
+  }
+}
+
+export function isFluentEnabled(): boolean {
+  return process.env.FLUENT_ENABLED === 'true';
+}
+
 export function isWriteEnabled(): boolean {
   return process.env.WRITE_ENABLED === 'true';
 }

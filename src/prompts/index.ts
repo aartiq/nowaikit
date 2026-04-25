@@ -77,6 +77,8 @@ const capabilityMeta: CapabilityMeta[] = [
   { name: 'docs-release', title: 'Generate Release Notes', description: 'Generate release notes from update set — categorize changes, highlight breaking changes', category: 'docs', file: 'docs-release', arguments: [{ name: 'updateset', description: 'update set name or sys_id', required: true }, { name: 'version', description: 'version number', required: false }] },
   { name: 'docs-runbook', title: 'Generate Runbook', description: 'Operational runbook — incident response, health checks, escalation, recovery procedures', category: 'docs', file: 'docs-runbook', arguments: [{ name: 'service', description: 'service, CI, or application name', required: true }] },
   { name: 'docs-script', title: 'Document Script', description: 'Detailed script documentation — JSDoc, explanation, usage examples, dependencies, security', category: 'docs', file: 'docs-script', arguments: [{ name: 'script', description: 'script name or pasted code', required: true }] },
+  // v4.0 addition
+  { name: 'build-atf-suite', title: 'Generate ATF Test Suite', description: 'AI-generates runnable ATF test suites from business rules, script includes, flows, or any artifact', category: 'build', file: 'build-atf-suite', arguments: [{ name: 'target', description: 'artifact name/sys_id or feature description', required: true }, { name: 'coverage', description: 'basic, standard, comprehensive. Default: standard', required: false }] },
 ];
 
 // Cache for loaded capability modules (lazy-load on first resolve)
