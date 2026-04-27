@@ -830,7 +830,7 @@ export async function runSetup(options: { add?: boolean } = {}): Promise<void> {
         });
         aiModel = await input({
           message: brand('?') + ' Model ' + dim('(Enter for default)') + brand(':'),
-          default: 'claude-sonnet-4-6-20250514',
+          default: 'claude-sonnet-4-6',
         });
         console.log(`  ${success('✓')} Anthropic configured with ${accent(aiModel)}`);
       } else if (selectedProvider === 'openai') {
