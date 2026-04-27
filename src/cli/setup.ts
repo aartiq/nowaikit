@@ -319,6 +319,49 @@ async function detectLocalProviders(): Promise<{ ollama: DetectedProvider; lmstu
   return result;
 }
 
+/** Fetch available models from Anthropic API, filtered to latest chat models. */
+async function fetchAnthropicModels(apiKey: string): Promise<string[]> {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+    const res = await fetch('https://api.anthropic.com/v1/models', {
+      headers: { 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
+      signal: controller.signal,
+    });
+    clearTimeout(timeout);
+    if (!res.ok) return [];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const data = await res.json() as any;
+    const models: string[] = (data.data || [])
+      .map((m: { id: string }) => m.id)
+      .filter((id: string) => /^claude-/.test(id) && !/-\d{8}$/.test(id))
+      .sort();
+    return models;
+  } catch { return []; }
+}
+
+/** Fetch available models from OpenAI API, filtered to latest GPT chat models. */
+async function fetchOpenAIModels(apiKey: string): Promise<string[]> {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+    const res = await fetch('https://api.openai.com/v1/models', {
+      headers: { 'Authorization': `Bearer ${apiKey}` },
+      signal: controller.signal,
+    });
+    clearTimeout(timeout);
+    if (!res.ok) return [];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const data = await res.json() as any;
+    const models: string[] = (data.data || [])
+      .map((m: { id: string }) => m.id)
+      .filter((id: string) => /^gpt-/.test(id) && !id.includes('instruct') && !id.includes('realtime') && !id.includes('audio') && !id.includes('search'))
+      .sort()
+      .reverse();
+    return models;
+  } catch { return []; }
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // MAIN SETUP FLOW
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -828,20 +871,38 @@ export async function runSetup(options: { add?: boolean } = {}): Promise<void> {
           message: brand('?') + ' Anthropic API key ' + dim('(sk-ant-...)') + brand(':'),
           mask: '•',
         });
-        aiModel = await input({
-          message: brand('?') + ' Model ' + dim('(Enter for default)') + brand(':'),
-          default: 'claude-sonnet-4-6',
-        });
+        // Fetch available models from Anthropic API
+        const anthropicModels = await fetchAnthropicModels(aiApiKey);
+        if (anthropicModels.length > 0) {
+          aiModel = await select<string>({
+            message: brand('?') + ' Select model' + brand(':'),
+            choices: anthropicModels.map(m => ({ name: brand(m), value: m })),
+          });
+        } else {
+          aiModel = await input({
+            message: brand('?') + ' Model ' + dim('(API fetch failed — enter manually)') + brand(':'),
+            default: 'claude-sonnet-4-7',
+          });
+        }
         console.log(`  ${success('✓')} Anthropic configured with ${accent(aiModel)}`);
       } else if (selectedProvider === 'openai') {
         aiApiKey = await password({
           message: brand('?') + ' OpenAI API key ' + dim('(sk-...)') + brand(':'),
           mask: '•',
         });
-        aiModel = await input({
-          message: brand('?') + ' Model ' + dim('(Enter for default)') + brand(':'),
-          default: 'gpt-5.4',
-        });
+        // Fetch available models from OpenAI API
+        const openaiModels = await fetchOpenAIModels(aiApiKey);
+        if (openaiModels.length > 0) {
+          aiModel = await select<string>({
+            message: brand('?') + ' Select model' + brand(':'),
+            choices: openaiModels.map(m => ({ name: brand(m), value: m })),
+          });
+        } else {
+          aiModel = await input({
+            message: brand('?') + ' Model ' + dim('(API fetch failed — enter manually)') + brand(':'),
+            default: 'gpt-5.5',
+          });
+        }
         console.log(`  ${success('✓')} OpenAI configured with ${accent(aiModel)}`);
       }
 
