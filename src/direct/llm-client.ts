@@ -28,8 +28,8 @@ export interface LlmResponse {
 }
 
 const DEFAULT_MODELS: Record<LlmProvider, string> = {
-  anthropic: 'claude-sonnet-4-6-20250514',
-  openai: 'gpt-5.4',
+  anthropic: 'claude-sonnet-4-7',
+  openai: 'gpt-5.5',
   ollama: 'llama3.3',
   lmstudio: 'auto',
 };
