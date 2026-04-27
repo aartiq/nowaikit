@@ -16,12 +16,17 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
 import { execSync, spawn } from 'child_process';
-import { existsSync } from 'fs';
+import { existsSync, readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import path from 'path';
 import { runSetup } from './setup.js';
 import { authLogin, authLogout, authWhoami } from './auth.js';
 import { listInstances, removeInstance, getDefaultInstance, loadConfig } from './config-store.js';
+
+// Read version from package.json so it stays in sync
+const __cliDir = path.dirname(fileURLToPath(import.meta.url));
+const __pkgJson = JSON.parse(readFileSync(path.resolve(__cliDir, '..', '..', 'package.json'), 'utf8'));
+const CLI_VERSION: string = __pkgJson.version;
 import { runShortcuts } from './shortcuts.js';
 
 // Brand colors (matches nowaitkit.com — teal/navy palette)
@@ -55,12 +60,46 @@ function cliBanner(): void {
   console.log('');
 }
 
+/** Non-blocking update check — prints a notice if a newer version exists on npm. */
+async function checkForUpdate(): Promise<void> {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 3000);
+    const res = await fetch('https://registry.npmjs.org/nowaikit/latest', {
+      signal: controller.signal,
+    });
+    clearTimeout(timeout);
+    if (!res.ok) return;
+    const data = await res.json() as { version?: string };
+    const latest = data.version;
+    if (!latest || latest === CLI_VERSION) return;
+
+    // Simple semver comparison: split into parts and compare numerically
+    const cur = CLI_VERSION.split('.').map(Number);
+    const lat = latest.split('.').map(Number);
+    const isNewer = lat[0] > cur[0]
+      || (lat[0] === cur[0] && lat[1] > cur[1])
+      || (lat[0] === cur[0] && lat[1] === cur[1] && lat[2] > cur[2]);
+    if (!isNewer) return;
+
+    console.log('');
+    console.log(chalk.hex('#FF6B35')(`  ⬆  Update available: ${CLI_VERSION} → ${latest}`));
+    console.log(dim(`     Run ${teal('npx nowaikit@latest')} to update`));
+    console.log('');
+  } catch {
+    // Network error, timeout, offline — skip silently
+  }
+}
+
+// Fire update check in background (non-blocking — doesn't delay CLI startup)
+const updateCheckPromise = checkForUpdate();
+
 const program = new Command();
 
 program
   .name('nowaikit')
   .description('The Most Comprehensive ServiceNow AI Toolkit')
-  .version('3.0.0')
+  .version(CLI_VERSION)
   .addHelpText('before', '')
   .addHelpText('beforeAll', () => {
     cliBanner();
@@ -404,7 +443,10 @@ program
     await program.parseAsync(['node', 'nowaikit', ...args]);
   });
 
-program.parseAsync(process.argv).catch((e: unknown) => {
-  console.error(err('Error:'), e instanceof Error ? e.message : e);
-  process.exit(1);
+// Await update check (already running in background) then run CLI
+updateCheckPromise.finally(() => {
+  program.parseAsync(process.argv).catch((e: unknown) => {
+    console.error(err('Error:'), e instanceof Error ? e.message : e);
+    process.exit(1);
+  });
 });
