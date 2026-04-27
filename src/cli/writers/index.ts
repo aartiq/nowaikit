@@ -19,6 +19,9 @@ function buildEnvBlock(instance: InstanceConfig): Record<string, string> {
     SERVICENOW_INSTANCE_URL: instance.instanceUrl,
     SERVICENOW_AUTH_METHOD: instance.authMethod,
     WRITE_ENABLED: instance.writeEnabled ? 'true' : 'false',
+    SCRIPTING_ENABLED: instance.scriptingEnabled ? 'true' : 'false',
+    CMDB_WRITE_ENABLED: instance.cmdbWriteEnabled ? 'true' : 'false',
+    ATF_ENABLED: instance.atfEnabled ? 'true' : 'false',
     MCP_TOOL_PACKAGE: instance.toolPackage || 'full',
   };
   if (instance.authMethod === 'basic') {
@@ -33,9 +36,7 @@ function buildEnvBlock(instance: InstanceConfig): Record<string, string> {
   if (instance.authMode && instance.authMode !== 'service-account') {
     env['SERVICENOW_AUTH_MODE'] = instance.authMode;
   }
-  if (instance.nowAssistEnabled) {
-    env['NOWASSIST_ENABLED'] = 'true';
-  }
+  env['NOW_ASSIST_ENABLED'] = instance.nowAssistEnabled ? 'true' : 'false';
   if (instance.group) {
     env['SN_INSTANCE_GROUP'] = instance.group;
   }
