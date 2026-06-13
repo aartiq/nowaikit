@@ -16,6 +16,7 @@ import { getPrompts, resolvePromptAsync } from './prompts/index.js';
 import { logger } from './utils/logging.js';
 import { ServiceNowError } from './utils/errors.js';
 import { connectTransport } from './transport/index.js';
+import { VERSION, SERVER_NAME } from './utils/version.js';
 
 dotenv.config();
 
@@ -33,8 +34,8 @@ if (!hasLegacy && !hasMulti && !hasConfig) {
 export function createServer(): Server {
   const server = new Server(
     {
-      name: 'nowaikit',
-      version: '4.0.0',
+      name: SERVER_NAME,
+      version: VERSION,
     },
     {
       capabilities: {

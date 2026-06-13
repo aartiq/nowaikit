@@ -9,6 +9,7 @@
 import type { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { logger } from '../utils/logging.js';
+import { VERSION, SERVER_NAME } from '../utils/version.js';
 import { createHttpServer, type NowAIKitHttpServer } from './http-server.js';
 
 export type TransportType = 'stdio' | 'sse' | 'http';
@@ -127,8 +128,8 @@ function addHealthRoute(httpServer: NowAIKitHttpServer): void {
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({
       status: 'ok',
-      name: 'nowaikit',
-      version: '4.0.0',
+      name: SERVER_NAME,
+      version: VERSION,
       transport: getTransportType(),
       tools_count: tools.length,
       timestamp: new Date().toISOString(),

@@ -6,6 +6,7 @@ import type { NowAIKitHttpServer } from '../transport/http-server.js';
 import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { VERSION } from '../utils/version.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -62,7 +63,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 <body>
 <div class="header">
   <h1>NowAIKit</h1>
-  <span class="version">v4.0.0</span>
+  <span class="version">v${VERSION}</span>
   <span class="version" id="transport"></span>
 </div>
 <div class="container">

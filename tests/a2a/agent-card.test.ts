@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { buildAgentCard } from '../../src/a2a/agent-card.js';
+import { VERSION } from '../../src/utils/version.js';
 
 describe('buildAgentCard', () => {
   const savedApiKey = process.env.NOWAIKIT_API_KEY;
@@ -28,7 +29,9 @@ describe('buildAgentCard', () => {
     expect(card).toBeDefined();
     expect(typeof card).toBe('object');
     expect(card.name).toBe('NowAIKit');
-    expect(card.version).toBe('4.0.0');
+    // Version is single-sourced from package.json — assert it matches, not a literal.
+    expect(card.version).toBe(VERSION);
+    expect(card.version).toMatch(/^\d+\.\d+\.\d+/);
   });
 
   it('includes all required fields', () => {

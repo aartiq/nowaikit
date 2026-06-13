@@ -5,6 +5,7 @@
 import type { AgentCard, AgentSkill } from './types.js';
 import { getTools } from '../tools/index.js';
 import { isAuthRequired } from '../transport/auth-middleware.js';
+import { VERSION } from '../utils/version.js';
 
 /** Categorize tools into skills by domain prefix. */
 const DOMAIN_MAP: Record<string, { name: string; description: string; tags: string[] }> = {
@@ -59,7 +60,7 @@ export function buildAgentCard(): AgentCard {
     name: 'NowAIKit',
     description: 'The most comprehensive ServiceNow AI toolkit — 400+ tools covering ITSM, CMDB, HRSD, CSM, SecOps, GRC, DevOps, and more.',
     url: baseUrl,
-    version: '4.0.0',
+    version: VERSION,
     capabilities: {
       streaming: true,
       pushNotifications: false,

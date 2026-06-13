@@ -823,6 +823,7 @@ export async function runSetup(options: { add?: boolean } = {}): Promise<void> {
     providerChoices.push(
       { name: `${accent('Anthropic')} ${dim('(cloud — requires API key)')}`, value: 'anthropic' },
       { name: `${accent('OpenAI')} ${dim('(cloud — requires API key)')}`, value: 'openai' },
+      { name: `${accent('Google Gemini')} ${dim('(cloud — requires API key)')}`, value: 'gemini' },
       { name: `${subtle('Skip')} ${dim('(configure later with --provider flag or env var)')}`, value: 'skip' as LlmProvider | 'skip' },
     );
 
@@ -904,6 +905,16 @@ export async function runSetup(options: { add?: boolean } = {}): Promise<void> {
           });
         }
         console.log(`  ${success('✓')} OpenAI configured with ${accent(aiModel)}`);
+      } else if (selectedProvider === 'gemini') {
+        aiApiKey = await password({
+          message: brand('?') + ' Google Gemini API key ' + dim('(AIza...)') + brand(':'),
+          mask: '•',
+        });
+        aiModel = await input({
+          message: brand('?') + ' Model ' + dim('(e.g. gemini-3.5-flash, gemini-3.1-pro-preview)') + brand(':'),
+          default: 'gemini-3.5-flash',
+        });
+        console.log(`  ${success('✓')} Google Gemini configured with ${accent(aiModel)}`);
       }
 
       // Custom base URL option for advanced users
