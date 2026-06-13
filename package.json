@@ -31,6 +31,7 @@
     "dist/",
     "desktop/serve.cjs",
     "desktop/renderer/dist/",
+    "skills/",
     "instances.example.json",
     ".env.example"
   ],
