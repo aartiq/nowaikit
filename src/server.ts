@@ -31,6 +31,15 @@ if (!hasLegacy && !hasMulti && !hasConfig) {
 
 // ─── Create MCP Server ───────────────────────────────────────────────────────
 
+/** Tools whose real (non-dry-run) execution destroys or hard-publishes data. */
+const DESTRUCTIVE_TOOLS = new Set([
+  'delete_record', 'delete_attachment', 'delete_system_property', 'delete_uib_page',
+  'retire_asset', 'retire_knowledge_article', 'rollback_deployment', 'execute_background_script',
+]);
+function isDestructiveTool(name: string): boolean {
+  return DESTRUCTIVE_TOOLS.has(name) || /^delete_|^retire_/.test(name);
+}
+
 export function createServer(): Server {
   const server = new Server(
     {
@@ -67,10 +76,38 @@ export function createServer(): Server {
 
       const instanceName = (args as Record<string, unknown>)?.['instance'] as string | undefined;
       const client = instanceManager.getClient(instanceName);
+      const toolArgs = (args || {}) as Record<string, unknown>;
+
+      // ─── Elicitation: confirm destructive ops when the client supports it ──────
+      // Only triggers for real (non-dry-run) destructive operations and only when
+      // the connected client advertised the elicitation capability. Falls back to
+      // the existing WRITE_ENABLED/guardrail gates when unsupported.
+      if (isDestructiveTool(name) && !toolArgs['dry_run'] && server.getClientCapabilities()?.elicitation) {
+        try {
+          const confirm = await server.elicitInput({
+            message: `Confirm ${name} on table "${String(toolArgs['table'] ?? '?')}"${toolArgs['sys_id'] ? ` (sys_id ${String(toolArgs['sys_id'])})` : ''} on instance "${instanceManager.getCurrentName()}". This is a destructive write.`,
+            requestedSchema: {
+              type: 'object',
+              properties: { confirm: { type: 'boolean', description: 'Proceed with this destructive operation?' } },
+              required: ['confirm'],
+            },
+          });
+          if (confirm.action !== 'accept' || !(confirm.content as Record<string, unknown> | undefined)?.['confirm']) {
+            return { content: [{ type: 'text' as const, text: `Cancelled: ${name} was not confirmed.` }] };
+          }
+        } catch {
+          // Elicitation failed/declined by transport — fall through to normal gates.
+        }
+      }
 
       const { executeTool } = await import('./tools/index.js');
-      const result = await executeTool(client, name, args || {});
+      const result = await executeTool(client, name, toolArgs);
 
+      // Structured output: include the raw object so capable clients get typed
+      // content, while keeping the text block for backward compatibility.
+      const structured = typeof result === 'object' && result !== null && !Array.isArray(result)
+        ? { structuredContent: result as Record<string, unknown> }
+        : {};
       return {
         content: [
           {
@@ -78,6 +115,7 @@ export function createServer(): Server {
             text: typeof result === 'string' ? result : JSON.stringify(result, null, 2),
           },
         ],
+        ...structured,
       };
     } catch (error) {
       logger.error(`Tool execution error: ${name}`, error);

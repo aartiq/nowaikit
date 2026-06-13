@@ -12,6 +12,7 @@ import { ServiceNowError } from '../utils/errors.js';
 
 // Core (existing 15 tools)
 import { getCoreToolDefinitions, executeCoreToolCall } from './core.js';
+import { getGovernanceToolDefinitions, executeGovernanceToolCall } from './governance.js';
 // ITSM
 import { getIncidentToolDefinitions, executeIncidentToolCall } from './incident.js';
 import { getProblemToolDefinitions, executeProblemToolCall } from './problem.js';
@@ -231,6 +232,7 @@ const PACKAGE_TOOL_NAMES: Record<string, string[]> = {
 
 const ALL_TOOLS = [
   ...getCoreToolDefinitions(),
+  ...getGovernanceToolDefinitions(),
   ...getIncidentToolDefinitions(),
   ...getProblemToolDefinitions(),
   ...getChangeToolDefinitions(),
@@ -355,6 +357,7 @@ export async function executeTool(
   // Try each domain handler in order; first non-null result wins
   const handlers = [
     () => executeCoreToolCall(client, name, args),
+    () => executeGovernanceToolCall(client, name, args),
     () => executeIncidentToolCall(client, name, args),
     () => executeProblemToolCall(client, name, args),
     () => executeChangeToolCall(client, name, args),
