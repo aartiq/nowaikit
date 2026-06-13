@@ -24,9 +24,10 @@ const mockClient = {
 } as unknown as ServiceNowClient;
 
 describe('getCoreToolDefinitions', () => {
-  it('returns 24 core tool definitions', () => {
+  it('returns the core tool definitions including validate_query', () => {
     const tools = getCoreToolDefinitions();
-    expect(tools.length).toBe(24);
+    expect(tools.length).toBe(25);
+    expect(tools.map(t => t.name)).toContain('validate_query');
   });
 
   it('all tools have name, description and inputSchema', () => {

@@ -32,7 +32,7 @@ function validateSysId(sysId: string): string {
 const SAFE_GS_PATTERN = /^javascript:gs\.(getUserID|beginningOfToday|endOfToday|beginningOfYesterday|endOfYesterday|beginningOfLastMonth|endOfLastMonth|beginningOfThisMonth|endOfThisMonth|beginningOfThisQuarter|endOfThisQuarter|beginningOfThisYear|endOfThisYear|beginningOfNextMonth|endOfNextMonth|beginningOfLast7Days|endOfLast7Days|beginningOfLastYear|endOfLastYear|daysAgo|hoursAgo|minutesAgo|monthsAgo|quartersAgo|yearsAgo|now|dateGenerate)\([\d,\s'":-]*\)$/i;
 
 /** Validate and sanitize ServiceNow encoded query strings */
-function validateQuery(query: string): string {
+export function validateQuery(query: string): string {
   if (!query) return query;
   // Validate javascript: expressions against safe GlideSystem function allowlist
   const jsMatches = query.match(/javascript:[^@^]*/gi);

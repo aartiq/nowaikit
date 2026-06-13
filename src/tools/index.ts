@@ -269,24 +269,71 @@ const ALL_TOOLS = [
   ...getDiscoveryToolDefinitions(),
 ];
 
+// ─── Dynamic tool discovery (search_tools) ──────────────────────────────────────
+
+const SEARCH_TOOLS_DEF = {
+  name: 'search_tools',
+  description: 'Search the full NowAIKit tool catalog (400+ tools) by keyword to discover the right tool without loading every definition. Returns matching tool names + descriptions ranked by relevance. Use this FIRST when you are unsure which tool to call. Especially useful with MCP_TOOL_DISCOVERY=lean, which exposes only a small core set plus this search.',
+  inputSchema: {
+    type: 'object',
+    properties: {
+      query: { type: 'string', description: 'Keywords to match against tool names and descriptions, e.g. "create incident", "cmdb health", "run atf"' },
+      limit: { type: 'number', description: 'Max results to return (default 25)' },
+    },
+    required: ['query'],
+  },
+};
+
+/** A minimal always-available core set used when MCP_TOOL_DISCOVERY=lean. */
+const LEAN_CORE_TOOL_NAMES = new Set([
+  'search_tools', 'query_records', 'get_record', 'get_table_schema', 'validate_query',
+  'create_record', 'update_record', 'delete_record', 'get_current_instance',
+  'list_instances', 'switch_instance', 'natural_language_search',
+]);
+
+/** Search the full catalog by keyword, returning ranked matches. */
+export function searchTools(query: string, limit = 25): Array<{ name: string; description: string; score: number }> {
+  const terms = query.toLowerCase().split(/\s+/).filter(Boolean);
+  const scored = ALL_TOOLS.map((t) => {
+    const name = t.name.toLowerCase();
+    const desc = (t.description || '').toLowerCase();
+    let score = 0;
+    for (const term of terms) {
+      if (name === term) score += 10;
+      if (name.includes(term)) score += 5;
+      if (desc.includes(term)) score += 2;
+    }
+    return { name: t.name, description: t.description || '', score };
+  }).filter((t) => t.score > 0);
+  scored.sort((a, b) => b.score - a.score);
+  return scored.slice(0, limit);
+}
+
 // ─── Public API ───────────────────────────────────────────────────────────────
 
 export function getTools() {
   const packageName = (process.env.MCP_TOOL_PACKAGE || 'full').toLowerCase();
+  const discovery = (process.env.MCP_TOOL_DISCOVERY || '').toLowerCase();
   const dynamicTools = schemaCache.getGeneratedTools();
 
+  // Lean discovery mode: expose only a small core set + search_tools to keep
+  // the tool list small; the model uses search_tools to find the rest.
+  if (discovery === 'lean') {
+    return [SEARCH_TOOLS_DEF, ...ALL_TOOLS.filter((t) => LEAN_CORE_TOOL_NAMES.has(t.name)), ...dynamicTools];
+  }
+
   if (packageName === 'full') {
-    return [...ALL_TOOLS, ...dynamicTools];
+    return [SEARCH_TOOLS_DEF, ...ALL_TOOLS, ...dynamicTools];
   }
 
   const allowed = PACKAGE_TOOL_NAMES[packageName];
   if (!allowed) {
     console.error(`[WARN] Unknown MCP_TOOL_PACKAGE "${packageName}". Using "full".`);
-    return [...ALL_TOOLS, ...dynamicTools];
+    return [SEARCH_TOOLS_DEF, ...ALL_TOOLS, ...dynamicTools];
   }
 
   const allowedSet = new Set(allowed);
-  return [...ALL_TOOLS.filter(t => allowedSet.has(t.name)), ...dynamicTools];
+  return [SEARCH_TOOLS_DEF, ...ALL_TOOLS.filter(t => allowedSet.has(t.name)), ...dynamicTools];
 }
 
 export async function executeTool(
@@ -294,6 +341,17 @@ export async function executeTool(
   name: string,
   args: Record<string, any>
 ): Promise<any> {
+  // Meta-tool: catalog search (operates on the registry, not the instance).
+  if (name === 'search_tools') {
+    const matches = searchTools(String(args.query || ''), typeof args.limit === 'number' ? args.limit : 25);
+    return {
+      query: args.query,
+      count: matches.length,
+      tools: matches.map(({ name, description }) => ({ name, description })),
+      hint: matches.length === 0 ? 'No tools matched. Try broader keywords.' : 'Call the most relevant tool by name.',
+    };
+  }
+
   // Try each domain handler in order; first non-null result wins
   const handlers = [
     () => executeCoreToolCall(client, name, args),
