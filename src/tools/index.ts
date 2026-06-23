@@ -194,6 +194,8 @@ const PACKAGE_TOOL_NAMES: Record<string, string[]> = {
     'fluent_query', 'batch_request', 'execute_script', 'generate_report',
     // v4.0 Fluent SDK + discovery
     'fluent_explain', 'fluent_init', 'fluent_build', 'fluent_validate',
+    // @servicenow/sdk 4.8 parity
+    'fluent_sdk_query', 'fluent_version',
     'discover_table',
   ],
   itom_engineer: [
@@ -219,6 +221,7 @@ const PACKAGE_TOOL_NAMES: Record<string, string[]> = {
     'get_virtual_agent_topics', 'trigger_agentic_playbook', 'get_ms_copilot_topics', 'generate_work_notes', 'get_pi_models',
     'search_knowledge', 'get_knowledge_article',
     'fluent_query', 'batch_request', 'execute_script', 'generate_report',
+    'fluent_sdk_query', 'fluent_version',
     // v4.0 additions
     'create_now_assist_skill', 'list_now_assist_skills', 'get_now_assist_skill', 'test_now_assist_skill',
     'create_ai_agent', 'list_ai_agents', 'get_ai_agent', 'create_agentic_workflow',

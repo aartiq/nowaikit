@@ -6,6 +6,18 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ---
 
+## [4.1.1] — 2026-06-23
+
+### Added — `@servicenow/sdk` 4.8 parity for the Fluent tooling
+- **`fluent_sdk_query`** — wraps the new `now-sdk query <table>` CLI command (ServiceNow SDK 4.8): a read-only Table API query run directly against your authenticated instance, ideal for resolving sys_ids, inspecting schemas, and checking records while authoring Fluent code.
+- **`fluent_version`** — reports the installed `@servicenow/sdk` version, compares it to the version NowAIKit tracks features against (4.8.0), and returns an upgrade hint when out of date. `fluent_build` now surfaces the same version warning in its output.
+- **`fluent_explain`** — curated known-topic list covering the APIs introduced in SDK 4.8 (Playbook, RestMessage, Alias, AliasTemplate, RetryPolicy, DataLookup) plus AIAF `roleMap`, NASK, and Flow `TryCatch`/`DoInParallel`.
+
+### Changed
+- ServiceNow release support refreshed to the **Australia** GA (May 2026) as current, with Zurich (n-1) and Yokohama (n-2).
+
+---
+
 ## [4.0.0] — 2026-04-25
 
 ### Added

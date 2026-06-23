@@ -17,6 +17,30 @@ import { requireWrite, requireFluent } from '../utils/permissions.js';
 
 const execFileAsync = promisify(execFileCb);
 
+/**
+ * Minimum `@servicenow/sdk` version we track features against. Bump this when we
+ * adopt a newer SDK release so the tooling stays on the latest-and-greatest.
+ * 4.8.0 (Jun 2026) added the `now-sdk query` CLI command + Playbook/RestMessage/
+ * RetryPolicy/Alias/DataLookup Fluent APIs.
+ */
+const MIN_RECOMMENDED_SDK = '4.8.0';
+
+/** now-sdk `explain` topics worth surfacing, including the APIs new in 4.8. */
+const KNOWN_EXPLAIN_TOPICS = [
+  // Core / project
+  'GlideQuery', 'table API', 'scoped app', 'now.config.json', 'keys.ts', 'metadata',
+  // Records & data (4.8)
+  'Record', 'Now.del', 'Now.attach', 'DataLookup',
+  // Integration (4.8)
+  'RestMessage', 'Alias', 'AliasTemplate', 'RetryPolicy',
+  // Automation
+  'Playbook', 'Flow', 'Subflow', 'CustomAction', 'TryCatch', 'DoInParallel', 'FlowStages',
+  // AI (AIAF / NASK)
+  'AiAgent', 'AiAgentWorkflow', 'roleMap', 'NowAssistSkillConfig',
+  // Platform
+  'UiPolicy', 'DataPolicy', 'Form', 'InstanceScan', 'ServicePortal', 'ImportSet', 'override',
+];
+
 async function runNowSdk(args: string[], timeoutMs = 30000): Promise<{ stdout: string; stderr: string }> {
   try {
     const result = await execFileAsync('npx', ['@servicenow/sdk', ...args], { timeout: timeoutMs, maxBuffer: 10 * 1024 * 1024 });
@@ -27,6 +51,44 @@ async function runNowSdk(args: string[], timeoutMs = 30000): Promise<{ stdout: s
     }
     throw new ServiceNowError(`now-sdk error: ${error.stderr || error.message}`, 'FLUENT_ERROR');
   }
+}
+
+/** Compare two semver-ish strings. Returns -1 / 0 / 1 (a<b / a==b / a>b). */
+function compareSemver(a: string, b: string): number {
+  const pa = a.split('.').map((n) => parseInt(n, 10) || 0);
+  const pb = b.split('.').map((n) => parseInt(n, 10) || 0);
+  for (let i = 0; i < 3; i++) {
+    const d = (pa[i] || 0) - (pb[i] || 0);
+    if (d !== 0) return d < 0 ? -1 : 1;
+  }
+  return 0;
+}
+
+/** Detect the installed `@servicenow/sdk` version and how it compares to MIN_RECOMMENDED_SDK. */
+async function getSdkVersionInfo(): Promise<{
+  installed: string | null;
+  recommended: string;
+  upToDate: boolean;
+  warning?: string;
+}> {
+  let installed: string | null = null;
+  try {
+    const { stdout } = await runNowSdk(['--version'], 15000);
+    const match = stdout.match(/\d+\.\d+\.\d+/);
+    installed = match ? match[0] : stdout.trim() || null;
+  } catch {
+    installed = null;
+  }
+  const upToDate = installed !== null && compareSemver(installed, MIN_RECOMMENDED_SDK) >= 0;
+  let warning: string | undefined;
+  if (installed === null) {
+    warning = `@servicenow/sdk not detected. Install the latest with: npm i -g @servicenow/sdk (>= ${MIN_RECOMMENDED_SDK}).`;
+  } else if (!upToDate) {
+    warning = `@servicenow/sdk ${installed} is older than the recommended ${MIN_RECOMMENDED_SDK}. ` +
+      `Some Fluent features (now-sdk query, Playbook/RestMessage/RetryPolicy/Alias/DataLookup APIs) require >= ${MIN_RECOMMENDED_SDK}. ` +
+      `Upgrade with: npm i -g @servicenow/sdk@latest`;
+  }
+  return { installed, recommended: MIN_RECOMMENDED_SDK, upToDate, warning };
 }
 
 export function getFluentToolDefinitions() {
@@ -147,16 +209,42 @@ export function getFluentToolDefinitions() {
       },
     },
     {
+      name: 'fluent_sdk_query',
+      description:
+        'Run `now-sdk query <table>` — a read-only Table REST API query executed via the ServiceNow SDK CLI ' +
+        'against your authenticated instance (no browser). New in @servicenow/sdk 4.8. Ideal while authoring Fluent ' +
+        'code: resolve sys_ids, inspect table schemas, check existing records, read choice values. ' +
+        'Example: { table: "sys_user_role", query: "name=admin", fields: ["sys_id","name"], limit: 1 }',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          table: { type: 'string', description: 'Table to query (e.g., "incident", "sys_dictionary")' },
+          query: { type: 'string', description: 'Encoded query string (e.g., "name=admin^active=true")' },
+          fields: { type: 'array', items: { type: 'string' }, description: 'Fields to return (e.g., ["sys_id","name"])' },
+          limit: { type: 'number', description: 'Max rows to return' },
+        },
+        required: ['table'],
+      },
+    },
+    {
+      name: 'fluent_version',
+      description:
+        'Report the installed `@servicenow/sdk` (now-sdk) version and whether it meets the version NowAIKit ' +
+        `tracks features against (currently ${MIN_RECOMMENDED_SDK}). Returns an upgrade hint when out of date.`,
+      inputSchema: { type: 'object', properties: {}, required: [] },
+    },
+    {
       name: 'fluent_explain',
       description:
-        'Run `npx @servicenow/sdk explain <topic>` to get SDK documentation on a topic. ' +
-        'Returns explanations of fluent APIs, types, patterns, and best practices.',
+        'Run `npx @servicenow/sdk explain <topic>` to get live SDK documentation on a topic — always current API ' +
+        'signatures, not training-data guesses. Returns explanations of Fluent APIs, types, patterns, and best practices. ' +
+        'Known topics include: ' + KNOWN_EXPLAIN_TOPICS.join(', ') + '.',
       inputSchema: {
         type: 'object',
         properties: {
           topic: {
             type: 'string',
-            description: 'Topic to explain (e.g., "GlideQuery", "table API", "scoped app")',
+            description: 'Topic to explain. Examples: ' + KNOWN_EXPLAIN_TOPICS.slice(0, 8).join(', ') + ', etc.',
           },
         },
         required: ['topic'],
@@ -390,6 +478,24 @@ export async function executeFluentToolCall(
       return result;
     }
 
+    case 'fluent_version': {
+      return await getSdkVersionInfo();
+    }
+
+    case 'fluent_sdk_query': {
+      const table = args.table;
+      if (!table) throw new ServiceNowError('table is required', 'INVALID_REQUEST');
+      const queryArgs = ['query', String(table)];
+      if (args.query) queryArgs.push('--query', String(args.query));
+      if (Array.isArray(args.fields) && args.fields.length > 0) queryArgs.push('--fields', args.fields.join(','));
+      if (args.limit !== undefined) queryArgs.push('--limit', String(args.limit));
+      queryArgs.push('-o', 'json');
+      const result = await runNowSdk(queryArgs, 30000);
+      let records: unknown = undefined;
+      try { records = JSON.parse(result.stdout); } catch { /* leave raw */ }
+      return { table, records: records ?? undefined, output: records ? undefined : result.stdout, stderr: result.stderr || undefined };
+    }
+
     case 'fluent_explain': {
       const topic = args.topic;
       if (!topic) throw new ServiceNowError('topic is required', 'INVALID_REQUEST');
@@ -415,7 +521,8 @@ export async function executeFluentToolCall(
       const buildArgs = ['build'];
       if (args.directory) buildArgs.push('--directory', args.directory);
       const result = await runNowSdk(buildArgs, 120000);
-      return { action: 'build_completed', output: result.stdout, stderr: result.stderr || undefined };
+      const sdk = await getSdkVersionInfo();
+      return { action: 'build_completed', output: result.stdout, stderr: result.stderr || undefined, sdkVersion: sdk.installed, sdkVersionWarning: sdk.warning };
     }
 
     case 'fluent_validate': {
