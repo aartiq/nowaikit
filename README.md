@@ -7,7 +7,7 @@
 [![MCP](https://img.shields.io/badge/MCP-Model%20Context%20Protocol-0F4C81?style=flat-square)](https://modelcontextprotocol.io)
 [![License: Source Available](https://img.shields.io/badge/license-Source%20Available-f59e0b?style=flat-square)](LICENSE)
 
-# ServiceNow MCP Server (NowAIKit)
+# NowAIKit: ServiceNow MCP Server
 
 **Connect Claude, ChatGPT, Gemini, Cursor, Copilot, or any AI, to ServiceNow.**
 
