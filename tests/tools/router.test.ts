@@ -55,6 +55,18 @@ describe('getTools – package system', () => {
     expect(unique.size).toBe(names.length);
   });
 
+  it('registers the blast-radius and local-sync tools', () => {
+    delete process.env.MCP_TOOL_PACKAGE;
+    const names = getTools().map(t => t.name);
+    for (const n of [
+      'blast_radius_table_configs', 'blast_radius_field_references',
+      'blast_radius_script_dependents', 'blast_radius_update_sets', 'blast_radius_property_usage',
+      'list_supported_artifacts', 'pull_artifact', 'push_artifact', 'sync_status',
+    ]) {
+      expect(names).toContain(n);
+    }
+  });
+
   it('every tool has required MCP fields', () => {
     getTools().forEach(tool => {
       expect(tool.name).toBeTruthy();

@@ -82,6 +82,8 @@ import { getCmdbReconciliationToolDefinitions, executeCmdbReconciliationToolCall
 import { getOrchestrationToolDefinitions, executeOrchestrationToolCall } from './orchestration.js';
 // Dynamic Schema Discovery
 import { getDiscoveryToolDefinitions, executeDiscoveryToolCall, executeDynamicToolCall } from './discovery.js';
+import { getBlastRadiusToolDefinitions, executeBlastRadiusToolCall } from './blast-radius.js';
+import { getLocalSyncToolDefinitions, executeLocalSyncToolCall } from './local-sync.js';
 import { schemaCache } from './schema-cache.js';
 
 // ─── Package Definitions ──────────────────────────────────────────────────────
@@ -279,6 +281,8 @@ const ALL_TOOLS = [
   ...getCmdbReconciliationToolDefinitions(),
   ...getOrchestrationToolDefinitions(),
   ...getDiscoveryToolDefinitions(),
+  ...getBlastRadiusToolDefinitions(),
+  ...getLocalSyncToolDefinitions(),
 ];
 
 // ─── Dynamic tool discovery (search_tools) ──────────────────────────────────────
@@ -439,6 +443,8 @@ export async function executeTool(
     () => executeAiAgentsToolCall(client, name, args),
     () => executeCmdbReconciliationToolCall(client, name, args),
     () => executeOrchestrationToolCall(client, name, args),
+    () => executeBlastRadiusToolCall(client, name, args),
+    () => executeLocalSyncToolCall(client, name, args),
     () => executeDiscoveryToolCall(client, name, args),
     () => executeDynamicToolCall(client, name, args),
   ];
