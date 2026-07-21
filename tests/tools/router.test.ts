@@ -37,8 +37,8 @@ describe('getTools – package system', () => {
     const tools = getTools();
     const names = tools.map(t => t.name);
     expect(names).toContain('nlq_query');
-    expect(names).toContain('generate_summary');
-    expect(names).toContain('trigger_agentic_playbook');
+    expect(names).toContain('categorize_incident');
+    expect(names).toContain('get_virtual_agent_topics');
     expect(names).toContain('get_ms_copilot_topics');
   });
 
