@@ -11,40 +11,41 @@ import { getDelegatedAuth } from './request-context.js';
  * Tier AI – NOW_ASSIST_ENABLED=true (generative AI tools)
  * Tier ATF – ATF_ENABLED=true (test execution)
  *
- * Source of truth: process.env by default. When a request runs under a
- * delegated-auth context (DELEGATED_AUTH mode, e.g. behind NowAIKit Gateway),
- * the per-user policy on that context takes precedence — so capability is
- * governed per user/request, not per server.
+ * Source of truth: process.env sets the server's capability CEILING. When a request
+ * runs under a delegated-auth context (DELEGATED_AUTH mode, e.g. behind a trusted
+ * gateway), the per-user policy can only NARROW that ceiling, never widen it — a
+ * forged/over-permissive delegated flag can never enable a tier the operator left
+ * disabled. So the effective capability is (env AND delegated).
  */
 
 export function isWriteEnabled(): boolean {
+  const env = process.env.WRITE_ENABLED === 'true';
   const d = getDelegatedAuth();
-  if (d) return d.flags?.write === true;
-  return process.env.WRITE_ENABLED === 'true';
+  return d ? env && d.flags?.write === true : env;
 }
 
 export function isCmdbWriteEnabled(): boolean {
+  const env = process.env.WRITE_ENABLED === 'true' && process.env.CMDB_WRITE_ENABLED === 'true';
   const d = getDelegatedAuth();
-  if (d) return d.flags?.write === true && d.flags?.cmdbWrite === true;
-  return process.env.WRITE_ENABLED === 'true' && process.env.CMDB_WRITE_ENABLED === 'true';
+  return d ? env && d.flags?.write === true && d.flags?.cmdbWrite === true : env;
 }
 
 export function isScriptingEnabled(): boolean {
+  const env = process.env.WRITE_ENABLED === 'true' && process.env.SCRIPTING_ENABLED === 'true';
   const d = getDelegatedAuth();
-  if (d) return d.flags?.write === true && d.flags?.scripting === true;
-  return process.env.WRITE_ENABLED === 'true' && process.env.SCRIPTING_ENABLED === 'true';
+  return d ? env && d.flags?.write === true && d.flags?.scripting === true : env;
 }
 
 export function isNowAssistEnabled(): boolean {
+  const env = process.env.NOW_ASSIST_ENABLED === 'true';
   const d = getDelegatedAuth();
-  if (d) return d.flags?.nowAssist === true;
-  return process.env.NOW_ASSIST_ENABLED === 'true';
+  return d ? env && d.flags?.nowAssist === true : env;
 }
 
 export function isAtfEnabled(): boolean {
+  const env = process.env.ATF_ENABLED === 'true';
   const d = getDelegatedAuth();
-  if (d) return d.flags?.atf === true;
-  return process.env.ATF_ENABLED === 'true';
+  return d ? env && d.flags?.atf === true : env;
 }
 
 export function requireWrite(): void {

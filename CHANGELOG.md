@@ -6,6 +6,17 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ---
 
+## [4.4.1] — 2026-07-21
+
+### Security
+- **Delegated permission tiers now narrow, never widen.** A delegated-auth context can only reduce the server's env-configured capability ceiling; a forged `x-nowaikit-*-enabled` header can never enable a tier (`write`/`scripting`/`cmdbWrite`/`nowAssist`/`atf`) the operator left disabled. Effective capability is `env AND delegated`.
+- **Optional gateway secret for delegated auth.** When `NOWAIKIT_DELEGATED_SECRET` is set, delegated-auth headers are only trusted if the request carries a matching `x-nowaikit-gateway-secret` (constant-time compared); otherwise the token and all flags are dropped (fail closed).
+- **Encoded-query injection hardening.** `blast_radius_*` tools validate table/field identifiers and reject the `^ = ,` operator characters in name inputs, so a crafted value can't inject `^OR`/`^NQ` clauses. `get_user` / `get_group` now build lookups with `URLSearchParams` and reject `^ = & # ?` in the identifier.
+
+### Changed — usability
+- `blast_radius_*` descriptions state the LIKE-match limitation (candidates to review, not definitive) and clarify this is config/metadata impact (distinct from `cmdb_impact_analysis`). `field_references` and `property_usage` return a top-level total.
+- `pull_artifact` / `push_artifact` / `sync_status` accept a name or a sys_id. `push_artifact` warns it overwrites without merging and takes an optional `expected_updated_on` to abort on a conflict; it also reports `ignored_fields`. `sync_status` returns `sys_updated_on` for that conflict check.
+
 ## [4.4.0] — 2026-07-21
 
 ### Added — Blast Radius (static impact analysis)

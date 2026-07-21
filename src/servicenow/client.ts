@@ -499,8 +499,13 @@ export class ServiceNowClient {
     if (/^[0-9a-f]{32}$/i.test(userIdentifier)) {
       return await this.getRecord('sys_user', userIdentifier);
     }
+    // Reject encoded-query operators / URL-param injection chars before building the query.
+    if (/[\^=&#?]/.test(userIdentifier)) {
+      throw new ServiceNowError(`Invalid user identifier: ${userIdentifier}`, 'VALIDATION_ERROR');
+    }
     const query = `user_name=${userIdentifier}^ORemail=${userIdentifier}`;
-    const url = `${this.baseUrl}/api/now/table/sys_user?sysparm_query=${query}&sysparm_limit=1`;
+    const params = new URLSearchParams({ sysparm_query: query, sysparm_limit: '1' });
+    const url = `${this.baseUrl}/api/now/table/sys_user?${params.toString()}`;
 
     logger.info(`Looking up user: ${userIdentifier}`);
 
@@ -531,8 +536,14 @@ export class ServiceNowClient {
 
     // Check if it's a sys_id (32 hex chars) or name
     const isSysId = /^[0-9a-f]{32}$/i.test(groupIdentifier);
+    // Reject encoded-query operators / URL-param injection chars (group names may contain
+    // spaces, which are safe; ^ = & # are not).
+    if (/[\^=&#?]/.test(groupIdentifier)) {
+      throw new ServiceNowError(`Invalid group identifier: ${groupIdentifier}`, 'VALIDATION_ERROR');
+    }
     const query = isSysId ? `sys_id=${groupIdentifier}` : `name=${groupIdentifier}`;
-    const url = `${this.baseUrl}/api/now/table/sys_user_group?sysparm_query=${query}&sysparm_limit=1`;
+    const params = new URLSearchParams({ sysparm_query: query, sysparm_limit: '1' });
+    const url = `${this.baseUrl}/api/now/table/sys_user_group?${params.toString()}`;
 
     logger.info(`Looking up group: ${groupIdentifier}`);
 

@@ -12,6 +12,7 @@
  * identical to before (env-var driven).
  */
 import { AsyncLocalStorage } from 'node:async_hooks';
+import { timingSafeEqual } from 'node:crypto';
 
 export interface DelegatedFlags {
   write?: boolean;
@@ -51,6 +52,22 @@ export function getDelegatedAuth(): DelegatedAuth | undefined {
   return store.getStore();
 }
 
+/**
+ * When NOWAIKIT_DELEGATED_SECRET is set, delegated-auth headers are only trusted if the
+ * request carries a matching x-nowaikit-gateway-secret (constant-time compared). This
+ * proves the request came from the trusted gateway and not from a client forging its own
+ * permission flags. If the secret is unset, behaviour is unchanged (back-compat), and the
+ * permission tiers still cap every delegated flag to the server's env ceiling.
+ */
+function gatewaySecretOk(get: (k: string) => string | undefined): boolean {
+  const expected = process.env.NOWAIKIT_DELEGATED_SECRET;
+  if (!expected) return true;
+  const got = get('x-nowaikit-gateway-secret') || '';
+  const a = Buffer.from(got);
+  const b = Buffer.from(expected);
+  return a.length === b.length && timingSafeEqual(a, b);
+}
+
 /** Build a delegated-auth context from inbound (lowercased) HTTP headers. */
 export function parseDelegatedAuthHeaders(
   headers: Record<string, string | string[] | undefined>
@@ -59,6 +76,11 @@ export function parseDelegatedAuthHeaders(
     const v = headers[k];
     return Array.isArray(v) ? v[0] : v;
   };
+  // Fail closed: a request without the gateway secret gets no token and no flags, so it
+  // can neither reach ServiceNow as a delegated user nor self-assert a capability tier.
+  if (!gatewaySecretOk(h)) {
+    return { flags: {} };
+  }
   const bool = (k: string): boolean => h(k) === 'true';
   return {
     bearerToken: h('x-servicenow-token'),

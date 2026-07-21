@@ -99,3 +99,43 @@ describe('permissions honour the delegated context over env', () => {
     });
   });
 });
+
+describe('delegated flags can narrow but never widen the env ceiling (C1)', () => {
+  const savedEnv = { ...process.env };
+  afterEach(() => { process.env = { ...savedEnv }; });
+
+  it('a delegated write=true cannot enable writes when the server disabled them', async () => {
+    delete process.env.WRITE_ENABLED;
+    delete process.env.SCRIPTING_ENABLED;
+    await runWithDelegatedAuth({ flags: { write: true, scripting: true } }, async () => {
+      expect(isWriteEnabled()).toBe(false);
+      expect(isScriptingEnabled()).toBe(false);
+    });
+  });
+});
+
+describe('gateway secret gates delegated headers', () => {
+  const savedEnv = { ...process.env };
+  afterEach(() => { process.env = { ...savedEnv }; });
+
+  it('honours headers when no secret is configured (back-compat)', () => {
+    delete process.env.NOWAIKIT_DELEGATED_SECRET;
+    const ctx = parseDelegatedAuthHeaders({ 'x-servicenow-token': 't', 'x-nowaikit-write-enabled': 'true' });
+    expect(ctx.bearerToken).toBe('t');
+    expect(ctx.flags?.write).toBe(true);
+  });
+
+  it('drops token and flags when the secret is required but wrong/missing', () => {
+    process.env.NOWAIKIT_DELEGATED_SECRET = 'sekret';
+    const ctx = parseDelegatedAuthHeaders({ 'x-servicenow-token': 't', 'x-nowaikit-write-enabled': 'true' });
+    expect(ctx.bearerToken).toBeUndefined();
+    expect(ctx.flags?.write).toBeUndefined();
+  });
+
+  it('honours headers when the secret matches', () => {
+    process.env.NOWAIKIT_DELEGATED_SECRET = 'sekret';
+    const ctx = parseDelegatedAuthHeaders({ 'x-nowaikit-gateway-secret': 'sekret', 'x-servicenow-token': 't', 'x-nowaikit-write-enabled': 'true' });
+    expect(ctx.bearerToken).toBe('t');
+    expect(ctx.flags?.write).toBe(true);
+  });
+});
