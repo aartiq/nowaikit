@@ -13,7 +13,7 @@
 
 450+ tools across ITSM, ITOM, CMDB, HRSD, CSM, Flow Designer, scripting & portal. Read, build, query and automate any instance in plain English.
 
-New in 4.4: **Blast Radius** static impact analysis (see what a change will affect before you delete or rename), and **Local Sync** to pull widgets and scripts to local files, edit, and push them back.
+New in 4.4 to 4.6: **Blast Radius** static impact analysis (see what a change will affect before you delete or rename), **Local Sync** to pull widgets and scripts to local files, edit, and push them back, and **`aggregate_report`** for server-side reports (count plus averages, no 1,000-row truncation) with chart-ready output for Copilot and Teams.
 
 </div>
 
