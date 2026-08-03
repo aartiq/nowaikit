@@ -6,6 +6,19 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ---
 
+## [4.7.2] - 2026-08-03
+
+### Fixed: per-instance isolation of the schema-discovery cache
+- The dynamic schema cache used by `discover_table` was keyed by table name only. In a multi-tenant
+  host (one process serving several ServiceNow instances), a cached schema for a table like `incident`
+  could be returned to a request against a different instance within the cache TTL. This exposed table
+  structure (custom field names and types), not record data. The cache is now scoped per ServiceNow
+  instance, so one tenant never sees another tenant's discovered schema. `getGeneratedTools` and
+  `getCachedTables` accept an optional instance filter; single-tenant behaviour is unchanged.
+- Added `ServiceNowClient.instanceHost` and a dedicated multi-tenant isolation test suite.
+
+---
+
 ## [4.7.1] — 2026-07-28
 
 ### Fixed — `npx nowaikit` works directly as an MCP server

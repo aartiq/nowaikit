@@ -85,6 +85,14 @@ export class ServiceNowClient {
   }
 
   /**
+   * The ServiceNow instance host this client targets (e.g. "acme.service-now.com").
+   * Used to scope per-instance caches so tenants never share discovered schema.
+   */
+  get instanceHost(): string {
+    try { return new URL(this.baseUrl).host.toLowerCase(); } catch { return this.baseUrl.toLowerCase(); }
+  }
+
+  /**
    * Return a copy of this client configured to run as a specific user.
    * Used for per-request user context switching without mutating the shared client.
    */
