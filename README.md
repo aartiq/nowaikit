@@ -98,4 +98,12 @@ Full guides & product home → **[nowaikit.com](https://nowaikit.com)**
 
 ---
 
-© 2026 AartiQ (Hardik Benani) · [NowAIKit Source Available License](LICENSE)
+## Licensing
+
+NowAIKit is free to use and source available under the [Elastic License 2.0](LICENSE). Read it, run it, fork it, and use it inside your organisation, including to deliver ServiceNow work for clients, at no charge.
+
+Providing NowAIKit as a hosted or managed service, reselling it, or embedding it in a paid product needs a commercial agreement. For that, or for enterprise hosting, support and consulting, contact **enterprise@nowaikit.com**. See [NOTICE](NOTICE).
+
+---
+
+© 2026 NowAIKit · Source available under the [Elastic License 2.0](LICENSE)
