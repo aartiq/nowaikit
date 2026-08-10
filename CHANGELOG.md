@@ -6,6 +6,26 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ---
 
+## [Unreleased]
+
+### Fixed: update set tools now write the caller's current update set, not the scope's default
+- `switch_update_set`, `create_update_set`'s `switch_to` option, and `ensure_active_update_set`'s
+  auto-create path all previously called `updateRecord('sys_update_set', sys_id, { is_default: true })`.
+  `is_default` marks an update set as the scope-wide fallback "Default" bucket — a different, shared
+  concept from an individual caller's *current* update set, which is a per-user setting. In practice this
+  meant these tools did not switch the caller's update set at all, and could unintentionally reassign the
+  shared scope default as a side effect.
+- All four tools (including `get_current_update_set`) now resolve the caller's actual current update set
+  from their `sys_user_preference` record (`name=sys_update_set`), matching what the ServiceNow UI's "Make
+  this my current update set" link does, and what the write-tracking path actually reads. Caller resolution
+  uses the allowlisted `javascript:gs.getUserID()` encoded query, so it works the same way across every
+  supported auth mode (basic auth, OAuth password grant, per-user delegated tokens, and impersonation).
+- `get_current_update_set` previously returned an arbitrary in-progress update set (`state=in progress`,
+  first 5 results) rather than the caller's own. It now returns only the caller's actual current update set.
+- Fixes [#11](https://github.com/aartiq/nowaikit/issues/11).
+
+---
+
 ## [4.8.0] - 2026-08-05
 
 ### Added: create_script_include controls
