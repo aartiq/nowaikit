@@ -10,7 +10,19 @@
  * Tier 3 (Script): create_update_set, switch_update_set, complete_update_set,
  *                   export_update_set, retrieve_remote_update_set
  *
- * ServiceNow tables: sys_update_set, sys_update_xml, sys_remote_update_set
+ * ServiceNow tables: sys_update_set, sys_update_xml, sys_remote_update_set, sys_user_preference
+ *
+ * A note on "current" vs "default" (see https://github.com/aartiq/nowaikit/issues/11):
+ * `sys_update_set.is_default` marks the scope-wide fallback "Default" update set — a shared,
+ * per-scope concept unrelated to any individual caller. The caller's own current update set,
+ * the one ServiceNow's write-tracking path actually reads, lives in `sys_user_preference`
+ * (name=sys_update_set, user=<caller>, value=<update set sys_id>). switch_update_set,
+ * create_update_set's switch_to option, and ensure_active_update_set all previously wrote
+ * is_default instead — which did not switch the caller's set, and could silently reassign the
+ * scope's shared default as a side effect. All four tools below resolve and write the caller's
+ * sys_user_preference instead, resolving the caller mode-agnostically via the encoded query
+ * `javascript:gs.getUserID()` (already allowlisted by validateQuery for basic auth, OAuth
+ * password grant, per-user delegated tokens, and impersonation alike).
  */
 import type { ServiceNowClient } from '../servicenow/client.js';
 import { ServiceNowError } from '../utils/errors.js';
@@ -20,7 +32,7 @@ export function getUpdateSetToolDefinitions() {
   return [
     {
       name: 'get_current_update_set',
-      description: 'Get the currently active Update Set for the session',
+      description: 'Get the caller\'s actual current Update Set, resolved from their sys_user_preference (name=sys_update_set) — not an arbitrary in-progress set.',
       inputSchema: { type: 'object', properties: {}, required: [] },
     },
     {
@@ -38,21 +50,21 @@ export function getUpdateSetToolDefinitions() {
     },
     {
       name: 'create_update_set',
-      description: 'Create a new Update Set and optionally switch to it. **[Scripting]**',
+      description: 'Create a new Update Set and optionally make it the caller\'s current Update Set. **[Scripting]**',
       inputSchema: {
         type: 'object',
         properties: {
           name: { type: 'string', description: 'Update Set name' },
           description: { type: 'string', description: 'Purpose or description' },
           release: { type: 'string', description: 'Target release label' },
-          switch_to: { type: 'boolean', description: 'Switch to this Update Set after creation (default true)' },
+          switch_to: { type: 'boolean', description: 'Make this the caller\'s current Update Set after creation (default true)' },
         },
         required: ['name'],
       },
     },
     {
       name: 'switch_update_set',
-      description: 'Switch the active Update Set context to a specified Update Set. **[Scripting]**',
+      description: 'Make the specified Update Set the caller\'s current Update Set (writes their sys_user_preference, not is_default). **[Scripting]**',
       inputSchema: {
         type: 'object',
         properties: {
@@ -97,7 +109,7 @@ export function getUpdateSetToolDefinitions() {
     },
     {
       name: 'ensure_active_update_set',
-      description: 'Ensure an active Update Set exists; create one automatically if none is in progress. **[Scripting]**',
+      description: 'Ensure the caller has an active Update Set selected; create one automatically if their current Update Set preference is missing or not in progress. **[Scripting]**',
       inputSchema: {
         type: 'object',
         properties: {
@@ -109,6 +121,77 @@ export function getUpdateSetToolDefinitions() {
   ];
 }
 
+// ─── Caller resolution and update-set preference helpers ──────────────────────
+//
+// See the module doc-comment above and https://github.com/aartiq/nowaikit/issues/11
+// for why these exist instead of writing sys_update_set.is_default.
+
+/**
+ * Resolve the sys_id of the currently authenticated caller. Works across every
+ * auth mode this connector supports (basic auth, OAuth password grant, per-user
+ * delegated bearer tokens, impersonation) because gs.getUserID() is resolved by
+ * the ServiceNow instance itself against whichever identity actually authenticated
+ * the request — the client never needs to know a username ahead of time.
+ */
+async function getCallerSysId(client: ServiceNowClient): Promise<string> {
+  const resp = await client.queryRecords({
+    table: 'sys_user',
+    query: 'sys_id=javascript:gs.getUserID()',
+    limit: 1,
+    fields: 'sys_id',
+  });
+  const sysId = resp.records?.[0]?.sys_id;
+  if (!sysId) {
+    throw new ServiceNowError(
+      'Unable to resolve the current authenticated user (gs.getUserID() returned no match).',
+      'QUERY_FAILED'
+    );
+  }
+  return String(sysId);
+}
+
+/**
+ * Look up the caller's sys_user_preference row for name=sys_update_set. Returns
+ * the preference record's own sys_id (for PATCHing) and the Update Set sys_id it
+ * currently points at (undefined if the caller has none selected).
+ */
+async function getCallerUpdateSetPreference(
+  client: ServiceNowClient,
+  callerSysId: string
+): Promise<{ prefSysId?: string; updateSetSysId?: string }> {
+  const resp = await client.queryRecords({
+    table: 'sys_user_preference',
+    query: `name=sys_update_set^user=${callerSysId}`,
+    limit: 1,
+    fields: 'sys_id,value',
+  });
+  const row = resp.records?.[0];
+  const updateSetSysId = row?.value ? String(row.value) : undefined;
+  return { prefSysId: row?.sys_id ? String(row.sys_id) : undefined, updateSetSysId };
+}
+
+/**
+ * Make `updateSetSysId` the caller's current Update Set by writing their
+ * sys_user_preference row directly — PATCH if one already exists, POST a new
+ * one if not. This is the field ServiceNow's write-tracking path actually
+ * reads; it deliberately never touches sys_update_set.is_default.
+ */
+async function setCallerUpdateSetPreference(
+  client: ServiceNowClient,
+  updateSetSysId: string
+): Promise<Record<string, any>> {
+  const callerSysId = await getCallerSysId(client);
+  const { prefSysId } = await getCallerUpdateSetPreference(client, callerSysId);
+  if (prefSysId) {
+    return client.updateRecord('sys_user_preference', prefSysId, { value: updateSetSysId });
+  }
+  return client.createRecord('sys_user_preference', {
+    name: 'sys_update_set',
+    user: callerSysId,
+    value: updateSetSysId,
+  });
+}
+
 export async function executeUpdateSetToolCall(
   client: ServiceNowClient,
   name: string,
@@ -116,13 +199,17 @@ export async function executeUpdateSetToolCall(
 ): Promise<any> {
   switch (name) {
     case 'get_current_update_set': {
-      const resp = await client.queryRecords({
-        table: 'sys_update_set',
-        query: 'state=in progress',
-        limit: 5,
-        fields: 'sys_id,name,description,state,is_default,release,sys_updated_on,sys_updated_by',
-      });
-      return { count: resp.count, active_update_sets: resp.records };
+      const callerSysId = await getCallerSysId(client);
+      const { updateSetSysId } = await getCallerUpdateSetPreference(client, callerSysId);
+      if (!updateSetSysId) {
+        return {
+          count: 0,
+          active_update_sets: [],
+          note: 'Caller has no sys_user_preference (name=sys_update_set) set — no current Update Set selected.',
+        };
+      }
+      const updateSet = await client.getRecord('sys_update_set', updateSetSysId);
+      return { count: 1, active_update_sets: [updateSet] };
     }
 
     case 'list_update_sets': {
@@ -147,7 +234,7 @@ export async function executeUpdateSetToolCall(
       const result = await client.createRecord('sys_update_set', payload);
       const newId = String((result as any).sys_id || (result as any).result?.sys_id || '');
       if (newId && args.switch_to !== false) {
-        await client.updateRecord('sys_update_set', newId, { is_default: true });
+        await setCallerUpdateSetPreference(client, newId);
         return { action: 'created_and_switched', name: args.name, sys_id: newId, ...result };
       }
       return { action: 'created', name: args.name, sys_id: newId, ...result };
@@ -156,8 +243,8 @@ export async function executeUpdateSetToolCall(
     case 'switch_update_set': {
       if (!args.sys_id) throw new ServiceNowError('sys_id is required', 'INVALID_REQUEST');
       requireScripting();
-      const result = await client.updateRecord('sys_update_set', args.sys_id, { is_default: true });
-      return { action: 'switched', sys_id: args.sys_id, ...result };
+      await setCallerUpdateSetPreference(client, args.sys_id);
+      return { action: 'switched', sys_id: args.sys_id };
     }
 
     case 'complete_update_set': {
@@ -211,17 +298,20 @@ export async function executeUpdateSetToolCall(
 
     case 'ensure_active_update_set': {
       requireScripting();
-      const resp = await client.queryRecords({
-        table: 'sys_update_set',
-        query: 'state=in progress',
-        limit: 1,
-        fields: 'sys_id,name',
-      });
-      if (resp.count > 0) {
-        return { action: 'existing_found', update_set: resp.records[0] };
+      const callerSysId = await getCallerSysId(client);
+      const { updateSetSysId } = await getCallerUpdateSetPreference(client, callerSysId);
+      if (updateSetSysId) {
+        const updateSet = await client.getRecord('sys_update_set', updateSetSysId);
+        if ((updateSet as any)?.state === 'in progress') {
+          return { action: 'existing_found', update_set: updateSet };
+        }
       }
       const defaultName = args.default_name || `AI Session Update Set ${new Date().toISOString().slice(0, 10)}`;
-      const created = await client.createRecord('sys_update_set', { name: defaultName, state: 'in progress', is_default: true });
+      const created = await client.createRecord('sys_update_set', { name: defaultName, state: 'in progress' });
+      const createdId = String((created as any).sys_id || (created as any).result?.sys_id || '');
+      if (createdId) {
+        await setCallerUpdateSetPreference(client, createdId);
+      }
       return { action: 'auto_created', name: defaultName, update_set: created };
     }
 
