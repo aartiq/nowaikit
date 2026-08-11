@@ -61,6 +61,8 @@ Add this to your client's MCP config (Claude Desktop `claude_desktop_config.json
 
 OAuth, multiple instances, and per-client steps → **[Client setup](docs/CLIENT_SETUP.md)** · **[OAuth setup](docs/SERVICENOW_OAUTH_SETUP.md)**.
 
+> **CLI binary overrides:** when using `--provider claude-cli` or `--provider codex-cli`, set `NOWAIKIT_CLAUDE_BIN` or `NOWAIKIT_CODEX_BIN` to point at a non-default executable path.
+
 No instance? Grab a free Personal Developer Instance at **[developer.servicenow.com](https://developer.servicenow.com)**.
 
 ---
