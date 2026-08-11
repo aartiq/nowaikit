@@ -128,6 +128,78 @@ export function getAgileToolDefinitions() {
         required: [],
       },
     },
+    {
+      name: 'create_story_dependency',
+      description: 'Link one agile story as dependent on another (m2m_story_dependencies). Requires WRITE_ENABLED=true.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          story: { type: 'string', description: 'The dependent story sys_id (the one that is blocked)' },
+          dependent_story: { type: 'string', description: 'The story it depends on (the blocker) sys_id' },
+        },
+        required: ['story', 'dependent_story'],
+      },
+    },
+    {
+      name: 'list_story_dependencies',
+      description: 'List dependency links for a story (m2m_story_dependencies).',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          story: { type: 'string', description: 'Story sys_id to list dependencies for' },
+          limit: { type: 'number', description: 'Max results (default: 50)' },
+        },
+        required: ['story'],
+      },
+    },
+    {
+      name: 'delete_story_dependency',
+      description: 'Remove a story dependency link by its m2m_story_dependencies sys_id. Requires WRITE_ENABLED=true.',
+      inputSchema: {
+        type: 'object',
+        properties: { sys_id: { type: 'string', description: 'The m2m_story_dependencies record sys_id' } },
+        required: ['sys_id'],
+      },
+    },
+    {
+      name: 'create_project',
+      description: 'Create a PPM project (pm_project). Requires WRITE_ENABLED=true.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          short_description: { type: 'string', description: 'Project name / short description' },
+          description: { type: 'string', description: 'Project description' },
+          state: { type: 'string', description: 'Project state (e.g. pending, open, work in progress)' },
+          priority: { type: 'string', description: 'Priority (1-5)' },
+          fields: { type: 'object', description: 'Additional pm_project fields (start_date, end_date, project_manager, etc.)' },
+        },
+        required: ['short_description'],
+      },
+    },
+    {
+      name: 'update_project',
+      description: 'Update a PPM project (pm_project). Requires WRITE_ENABLED=true.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          sys_id: { type: 'string', description: 'Project sys_id' },
+          fields: { type: 'object', description: 'Key-value pairs to update' },
+        },
+        required: ['sys_id', 'fields'],
+      },
+    },
+    {
+      name: 'list_projects',
+      description: 'List PPM projects (pm_project).',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          query: { type: 'string', description: 'Encoded query filter (e.g. state=open)' },
+          limit: { type: 'number', description: 'Max results (default: 20)' },
+        },
+        required: [],
+      },
+    },
   ];
 }
 
@@ -197,6 +269,38 @@ export async function executeAgileToolCall(
       if (args.assigned_to) query = query ? `${query}^assigned_to.user_name=${args.assigned_to}` : `assigned_to.user_name=${args.assigned_to}`;
       const resp = await client.queryRecords({ table: scrumTaskTable, query: query || undefined, limit: args.limit || 20 });
       return { count: resp.count, scrum_tasks: resp.records };
+    }
+    case 'create_story_dependency': {
+      requireWrite();
+      const result = await client.createRecord('m2m_story_dependencies', { story: args.story, dependent_story: args.dependent_story });
+      return { action: 'created', ...result };
+    }
+    case 'list_story_dependencies': {
+      const resp = await client.queryRecords({ table: 'm2m_story_dependencies', query: `story=${args.story}^ORdependent_story=${args.story}`, limit: args.limit || 50, fields: 'sys_id,story,dependent_story' });
+      return { count: resp.count, dependencies: resp.records };
+    }
+    case 'delete_story_dependency': {
+      requireWrite();
+      await client.deleteRecord('m2m_story_dependencies', args.sys_id);
+      return { action: 'deleted', sys_id: args.sys_id };
+    }
+    case 'create_project': {
+      requireWrite();
+      const data: Record<string, unknown> = { short_description: args.short_description, ...(args.fields || {}) };
+      if (args.description) data.description = args.description;
+      if (args.state) data.state = args.state;
+      if (args.priority) data.priority = args.priority;
+      const result = await client.createRecord('pm_project', data);
+      return { action: 'created', ...result };
+    }
+    case 'update_project': {
+      requireWrite();
+      const result = await client.updateRecord('pm_project', args.sys_id, args.fields);
+      return { action: 'updated', ...result };
+    }
+    case 'list_projects': {
+      const resp = await client.queryRecords({ table: 'pm_project', query: args.query || undefined, limit: args.limit || 20, fields: 'sys_id,number,short_description,state,priority,percent_complete,project_manager,start_date,end_date' });
+      return { count: resp.count, projects: resp.records };
     }
     default:
       return null;
