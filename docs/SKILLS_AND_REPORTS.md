@@ -75,7 +75,7 @@ Handy when the same branding applies to every run (CI, a client engagement):
 export NOWAIKIT_REPORT_COMPANY="Acme"
 export NOWAIKIT_REPORT_ACCENT="#2563EB"
 export NOWAIKIT_REPORT_LOGO="/path/to/logo.png"
-export NOWAIKIT_REPORT_FOOTER="Confidential — Acme"
+export NOWAIKIT_REPORT_FOOTER="Acme Confidential"
 
 nowaikit run scan-health -i demo2 -p claude-cli --format pdf -o report.pdf
 ```
