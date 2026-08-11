@@ -77,6 +77,18 @@ nowaikit auth login          # Per-user OAuth login
 nowaikit auth whoami         # Show active ServiceNow user
 ```
 
+### Updating NowAIKit
+
+NowAIKit checks npm on startup. When a newer version is out it asks a single **"Update now?"** (default yes) — say yes and it installs the update and re-runs your command on the new version. Nothing to copy.
+
+```bash
+nowaikit update                    # update on demand
+npm install -g nowaikit@latest     # or update manually
+nowaikit --version                 # what you have now
+```
+
+On `npx nowaikit@latest ...` there's nothing to update — the `@latest` tag always pulls the current version. In CI or piped shells the CLI only prints a one-line notice and never blocks; set `NOWAIKIT_NO_UPDATE_CHECK=1` to silence it entirely.
+
 ---
 
 ## Option B: Desktop App

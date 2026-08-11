@@ -33,6 +33,8 @@ npx nowaikit setup
 
 Restart your AI client (Claude Desktop, Cursor, …) and start asking. Done.
 
+**Keeping it up to date:** NowAIKit checks on startup and, when a newer version is out, asks a single **"Update now?"** — say yes and it updates itself. You can also run `nowaikit update` any time, or `npm install -g nowaikit@latest`.
+
 > Prefer a UI? `npx nowaikit web` for a local dashboard — or use **[NowAIKit Cloud](https://cloud.nowaikit.com)** (nothing to install).
 
 ---
@@ -82,6 +84,7 @@ No instance? Grab a free Personal Developer Instance at **[developer.servicenow.
 |---|---|
 | [Installation](docs/INSTALLATION.md) · [Client setup](docs/CLIENT_SETUP.md) | [All 450+ tools](docs/TOOLS.md) · [Tool packages](docs/TOOL_PACKAGES.md) |
 | [Multi-instance](docs/MULTI_INSTANCE.md) · [OAuth](docs/SERVICENOW_OAUTH_SETUP.md) | [Scripting](docs/SCRIPTING.md) · [ATF](docs/ATF.md) · [Reporting](docs/REPORTING.md) |
+| [Skills & branded reports](docs/SKILLS_AND_REPORTS.md) | [Use your own Claude/Codex subscription](docs/SKILLS_AND_REPORTS.md#using-your-own-claude-code-or-codex-subscription) |
 
 Full guides & product home → **[nowaikit.com](https://nowaikit.com)**
 
