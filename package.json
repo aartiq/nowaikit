@@ -144,5 +144,9 @@
     "tsx": "^4.7.0",
     "typescript": "^5.3.3",
     "vitest": "^4.0.18"
+  },
+  "funding": {
+    "type": "individual",
+    "url": "https://nowaikit.com"
   }
 }
