@@ -899,7 +899,26 @@ export class ServiceNowClient {
         method: 'PATCH',
         body: JSON.stringify(data),
       });
-      return response.result;
+      const result = response.result as Record<string, any>;
+      // Detect silently-discarded writes: ACLs or data policies can drop field updates
+      // while the Table API still returns HTTP 200 with the record body, so a blind
+      // pass-through reads as success. Compare the requested values against what came back.
+      const unapplied: string[] = [];
+      for (const [field, requested] of Object.entries(data)) {
+        const returned = result?.[field];
+        if (returned === undefined) continue; // field not in response, can't verify
+        const returnedVal = returned && typeof returned === 'object'
+          ? (returned.value ?? returned.display_value ?? '')
+          : returned;
+        if (String(returnedVal ?? '').trim() !== String(requested ?? '').trim()) unapplied.push(field);
+      }
+      if (unapplied.length > 0) {
+        result._write_warning =
+          `Requested value(s) not reflected after the write for: ${unapplied.join(', ')}. ` +
+          `ACLs or a data policy may have silently discarded them (the Table API still returns 200), ` +
+          `or a business rule transformed them. Verify the change took effect.`;
+      }
+      return result as ServiceNowRecord;
     } catch (error) {
       if (error instanceof ServiceNowError) throw error;
       throw new ServiceNowError(
@@ -921,7 +940,23 @@ export class ServiceNowClient {
     try {
       await this.request<void>(url, { method: 'DELETE' });
     } catch (error) {
-      if (error instanceof ServiceNowError) throw error;
+      if (error instanceof ServiceNowError) {
+        // ServiceNow returns 404 for BOTH a missing record AND an ACL-denied delete
+        // (it hides the record's existence). Disambiguate: if the record is still
+        // readable, the delete was rejected by ACLs — an authorization failure, not
+        // a missing record.
+        if (error.code === 'NOT_FOUND') {
+          let stillExists = false;
+          try { await this.getRecord(table, sysId, 'sys_id'); stillExists = true; } catch { /* not readable: genuine not-found */ }
+          if (stillExists) {
+            throw new ServiceNowError(
+              `Delete of ${sysId} in ${table} was rejected: the record still exists but you lack delete access. This is an authorization failure (ACL), not a missing record.`,
+              'INSUFFICIENT_PRIVILEGES'
+            );
+          }
+        }
+        throw error;
+      }
       throw new ServiceNowError(
         `Failed to delete record ${sysId} from ${table}: ${error instanceof Error ? error.message : 'Unknown error'}`,
         'DELETE_FAILED'
