@@ -100,7 +100,9 @@ async function init(){
 }
 function renderTools(tools){
   const el=document.getElementById('tools');
-  el.innerHTML=tools.map(t=>'<div class="tool-item" onclick="showTool(\\''+t.name+'\\')"><div class="tool-name">'+t.name+'</div><div class="tool-desc">'+t.description.slice(0,120)+'</div></div>').join('');
+  const esc=function(s){return String(s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});};
+  el.innerHTML=tools.map(function(t){return '<div class="tool-item" data-name="'+esc(t.name)+'"><div class="tool-name">'+esc(t.name)+'</div><div class="tool-desc">'+esc(String(t.description).slice(0,120))+'</div></div>';}).join('');
+  el.querySelectorAll('.tool-item').forEach(function(d){d.addEventListener('click',function(){showTool(d.getAttribute('data-name'));});});
 }
 function filterTools(){
   const q=document.getElementById('search').value.toLowerCase();

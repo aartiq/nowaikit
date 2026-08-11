@@ -100,7 +100,14 @@ function decodeEntities(s: string): string {
 }
 
 function stripTags(html: string): string {
-  return decodeEntities(String(html ?? '').replace(/<[^>]+>/g, ' ')).replace(/[^\S\n]+/g, ' ').trim();
+  // Decode entities FIRST (so encoded markup like &lt;script&gt; becomes real tags that
+  // then get stripped), and strip to a fixpoint (removing one tag can reveal another,
+  // e.g. <scr<script>ipt>). Also drop an unterminated trailing tag.
+  let s = decodeEntities(String(html ?? ''));
+  let prev: string;
+  do { prev = s; s = s.replace(/<[^>]*>/g, ' '); } while (s !== prev);
+  s = s.replace(/<[^>]*$/, ' ');
+  return s.replace(/[^\S\n]+/g, ' ').trim();
 }
 
 async function http(path: string, init?: RequestInit & { timeoutMs?: number }): Promise<Response> {
@@ -281,9 +288,14 @@ export async function executeDocsToolCall(name: string, args: Record<string, any
       const html = await res.text();
       const bodyMatch = html.match(/<(?:article|main)\b[^>]*>([\s\S]*?)<\/(?:article|main)>/i);
       const titleMatch = html.match(/<h1\b[^>]*>([\s\S]*?)<\/h1>/i);
-      const raw = (bodyMatch ? bodyMatch[1] : html)
-        .replace(/<script\b[\s\S]*?<\/script>/gi, ' ')
-        .replace(/<style\b[\s\S]*?<\/style>/gi, ' ');
+      let raw = (bodyMatch ? bodyMatch[1] : html);
+      // Strip script/style (and their contents) to a fixpoint so nested/split constructs
+      // like <scr<script>ipt> cannot survive a single pass. stripTags then removes the rest.
+      let prevRaw: string;
+      do {
+        prevRaw = raw;
+        raw = raw.replace(/<script\b[\s\S]*?<\/script>/gi, ' ').replace(/<style\b[\s\S]*?<\/style>/gi, ' ');
+      } while (raw !== prevRaw);
       let text = stripTags(raw).replace(/[^\S\n]*\n[^\S\n]*\n+/g, '\n\n');
       const truncated = text.length > maxChars;
       if (truncated) text = text.slice(0, maxChars);

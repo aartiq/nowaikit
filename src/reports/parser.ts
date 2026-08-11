@@ -6,7 +6,9 @@ import type { ReportData, ReportSection, ReportFinding, ReportTable, ReportMetri
 
 const SEVERITY_PATTERN = /\[(CRITICAL|HIGH|MEDIUM|LOW|INFO)\]/i;
 const SECTION_PATTERN = /^#{1,3}\s+(?:\d+\.\s*)?(.+)$/;
-const TABLE_SEPARATOR = /^\s*\|[\s:|-]+\|\s*$/;
+// Anchored, no ambiguous overlap: the pipe is only a group separator, never inside the
+// repeated class, so there is no polynomial backtracking on adversarial input.
+const TABLE_SEPARATOR = /^[ \t]*\|[ \t:-]+(?:\|[ \t:-]+)*\|?[ \t]*$/;
 
 /** Parse a line of markdown for a severity-tagged finding. */
 function parseFinding(line: string, category: string): ReportFinding | null {

@@ -234,16 +234,23 @@ function proxySnowRequest(req, res) {
     }
   }
 
-  // Validate the instance URL
+  // Validate the instance URL. SSRF guard: only https, and only ServiceNow hosts.
+  // Without this, a caller could make the local server proxy to arbitrary internal
+  // hosts (e.g. cloud metadata at 169.254.169.254) or intranet services.
   let parsedInstance;
   try {
     parsedInstance = new URL(instanceUrl);
-    if (parsedInstance.protocol !== 'https:' && parsedInstance.protocol !== 'http:') {
+    if (parsedInstance.protocol !== 'https:') {
       throw new Error('bad protocol');
+    }
+    const host = parsedInstance.hostname.toLowerCase();
+    const allowed = host.endsWith('.service-now.com') || host.endsWith('.servicenowservices.com');
+    if (!allowed) {
+      throw new Error('host not allowed');
     }
   } catch {
     res.writeHead(400, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ error: 'Invalid instance URL' }));
+    res.end(JSON.stringify({ error: 'Invalid instance URL: must be an https ServiceNow host (*.service-now.com)' }));
     return;
   }
 
