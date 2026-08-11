@@ -314,10 +314,22 @@ program
   .command('capabilities')
   .alias('caps')
   .description('List all 26 capabilities (scan / review / build / ops / docs)')
-  .action(async () => {
-    cliBanner();
+  .option('--json', 'Output the capability list as JSON (name, description, category, arguments)')
+  .action(async (options: { json?: boolean }) => {
     const { getCapabilityMeta } = await import('../prompts/index.js');
     const caps = getCapabilityMeta();
+
+    if (options.json) {
+      const publicCaps = caps.map(c => ({
+        name: c.name,
+        description: c.description,
+        category: c.category,
+        arguments: (c as { arguments?: unknown[] }).arguments || [],
+      }));
+      console.log(JSON.stringify(publicCaps, null, 2));
+      return;
+    }
+    cliBanner();
     const categories = ['scan', 'review', 'build', 'ops', 'docs'] as const;
     const labels: Record<string, string> = {
       scan: 'Scan & Monitor',
