@@ -452,10 +452,28 @@ program
             let logoBase64: string | undefined;
             if (options.brandLogo) {
               try {
-                const { readFileSync } = await import('fs');
-                logoBase64 = readFileSync(options.brandLogo).toString('base64');
-              } catch {
-                console.error(err(`\n  Could not read logo file: ${options.brandLogo}`));
+                if (options.brandLogo.startsWith('http://') || options.brandLogo.startsWith('https://')) {
+                  const res = await fetch(options.brandLogo);
+                  if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}`);
+                  const contentType = res.headers.get('content-type') || '';
+                  if (!contentType.includes('image/')) {
+                    throw new Error(`Invalid content-type: ${contentType} (expected an image)`);
+                  }
+                  const contentLength = parseInt(res.headers.get('content-length') || '0', 10);
+                  if (contentLength > 5 * 1024 * 1024) {
+                    throw new Error(`Logo exceeds maximum size of 5MB (${Math.round(contentLength / 1024 / 1024)}MB)`);
+                  }
+                  const arrayBuffer = await res.arrayBuffer();
+                  if (arrayBuffer.byteLength > 5 * 1024 * 1024) {
+                    throw new Error('Logo exceeds maximum size of 5MB');
+                  }
+                  logoBase64 = Buffer.from(arrayBuffer).toString('base64');
+                } else {
+                  const { readFileSync } = await import('fs');
+                  logoBase64 = readFileSync(options.brandLogo).toString('base64');
+                }
+              } catch (e) {
+                console.error(err(`\n  Could not read logo: ${options.brandLogo} (${e instanceof Error ? e.message : 'unknown error'})`));
               }
             }
             brand = { company: options.brandCompany, accentColor: options.brandColor, logoBase64 };
