@@ -1,19 +1,20 @@
 #!/usr/bin/env bash
 #
-# Sync the CANONICAL public repo to match this repo, keeping its own README.
+# Sync the CANONICAL public repo, preserving real commit authorship so
+# contributors show up on BOTH repos.
 #
 #   Canonical / discovery repo : aartiq/servicenow-mcp   (remote: snmcp)
-#     - npm `nowaikit` points here, has the stars, releases, issues, and the
-#       keyword README "# ServiceNow MCP Server (NowAIKit)".
+#     npm `nowaikit` points here; has the stars, releases, issues, and the
+#     keyword README "# ServiceNow MCP Server (NowAIKit)".
 #   Code / brand repo          : aartiq/nowaikit         (remote: origin)
 #
-# The ONLY intended file-level difference between the two repos is README.md
-# (the canonical repo keeps its discovery variant for search). This makes the
-# canonical repo's tree identical to origin/main EXCEPT README.md, handling
-# additions, edits AND deletions (a plain per-file checkout would miss deletes,
-# which is how a stale file drifted onto the mirror before). The commit is a
-# fast-forward on top of the canonical repo, so its stars, tags and releases
-# are preserved.
+# Model: the canonical repo's history = origin/main's exact history (every
+# author preserved) + ONE commit on top that swaps in the discovery README.
+# This is why contributors (not just the maintainer) appear on the canonical
+# repo too. The only file-level difference between the repos is README.md.
+#
+# An earlier version squashed the sync into a single maintainer-authored commit,
+# which hid external contributors on the canonical repo. Do not go back to that.
 #
 # Usage:  bash scripts/sync-mirror.sh
 #
@@ -23,32 +24,30 @@ cd "$(git rev-parse --show-toplevel)"
 git fetch -q origin main
 git fetch -q snmcp main
 
-tmp="mirror-sync-$$"
-git checkout -q -B "$tmp" snmcp/main
-
-# Make the working tree exactly match origin/main (adds, edits, and deletions),
-# then restore the canonical repo's own discovery README.
-git read-tree -u --reset origin/main
-git checkout snmcp/main -- README.md
-git add -A
-
-if git diff --cached --quiet; then
+# Already synced? (mirror tip's parent is exactly origin/main)
+if [ "$(git rev-parse snmcp/main~1 2>/dev/null || echo x)" = "$(git rev-parse origin/main)" ]; then
   echo "servicenow-mcp already in sync with origin/main@$(git rev-parse --short origin/main)."
-else
-  # Uses the repo's default git identity on purpose; do not set the company email.
-  git commit -q -m "sync from aartiq/nowaikit@$(git rev-parse --short origin/main) (discovery README preserved)"
-  git push snmcp "HEAD:main"
-  echo "Synced servicenow-mcp -> $(git rev-parse --short HEAD)"
+  exit 0
 fi
 
+# Preserve the canonical repo's discovery README (title + npm-safe PNG banner).
+discovery="$(git show snmcp/main:README.md)"
+
+tmp="mirror-sync-$$"
+git checkout -q -B "$tmp" origin/main
+printf '%s\n' "$discovery" > README.md
+git add README.md
+git commit -q -m "docs: discovery README for the servicenow-mcp npm package"
+git push snmcp "HEAD:main" --force
+git push snmcp --force --tags
 git checkout -q main
 git branch -qD "$tmp" 2>/dev/null || true
 
-# Parity check: the only remaining difference must be README.md.
+# Parity check: only README.md may differ.
 git fetch -q snmcp main
 diff_files="$(git diff --name-only origin/main snmcp/main | grep -v '^README.md$' || true)"
 if [ -z "$diff_files" ]; then
-  echo "Parity OK: only README.md differs (by design)."
+  echo "Synced. Parity OK (only README differs). Mirror title: $(git show snmcp/main:README.md | sed -n '10p')"
 else
   echo "WARNING: unexpected non-README differences remain:"; echo "$diff_files"
 fi
