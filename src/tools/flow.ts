@@ -95,10 +95,11 @@ export function getFlowToolDefinitions() {
     },
     {
       name: 'list_action_instances',
-      description: 'List reusable Flow Designer action instances available in the environment',
+      description: 'List Flow Designer action instances. Pass flow_id to scope to a single flow\'s steps (recommended); otherwise lists across the environment.',
       inputSchema: {
         type: 'object',
         properties: {
+          flow_id: { type: 'string', description: 'Parent flow sys_id (sys_hub_flow). Returns only that flow\'s action instances.' },
           query: { type: 'string', description: 'Search actions by name or category' },
           category: { type: 'string', description: 'Filter by action category (e.g., "ServiceNow Core", "Integrations")' },
           limit: { type: 'number', description: 'Max records to return (default 50)' },
@@ -271,9 +272,10 @@ export async function executeFlowToolCall(
     }
     case 'list_action_instances': {
       const parts: string[] = [];
+      if (args.flow_id) parts.push(`flow=${args.flow_id}`);
       if (args.category) parts.push(`category=${args.category}`);
       if (args.query) parts.push(`nameCONTAINS${args.query}`);
-      return await client.queryRecords({ table: 'sys_hub_action_instance', query: parts.join('^') || '', limit: args.limit ?? 50 });
+      return await client.queryRecords({ table: 'sys_hub_action_instance', query: parts.join('^') || '', limit: args.limit ?? 50, orderBy: 'order' });
     }
     case 'get_process_automation': {
       if (!args.name_or_sysid) throw new ServiceNowError('name_or_sysid is required', 'INVALID_REQUEST');

@@ -407,10 +407,25 @@ export async function executeReportingToolCall(
     case 'trigger_scheduled_job': {
       requireWrite();
       if (!args.sys_id) throw new ServiceNowError('sys_id is required', 'INVALID_REQUEST');
-      // Trigger by setting next_action to now and ensuring it's active
+      // Trigger by setting next_action to now and ensuring it's active.
       const now = new Date().toISOString().replace('T', ' ').slice(0, 19);
-      const result = await client.updateRecord('sysauto', args.sys_id, { next_action: now, active: true });
-      return { ...result, summary: `Triggered scheduled job ${args.sys_id} — set next_action to now` };
+      await client.updateRecord('sysauto', args.sys_id, { next_action: now, active: true });
+      // Verify the write actually took effect. ACLs / protected tables can silently discard
+      // field writes while the Table API still returns HTTP 200, so re-read before claiming success.
+      const check = await client.getRecord('sysauto', args.sys_id) as Record<string, any> | null;
+      const nextAction = check ? String(check.next_action ?? '') : '';
+      const isActive = check ? String(check.active) !== 'false' : false;
+      const triggered = isActive && nextAction.startsWith(now.slice(0, 10));
+      if (!triggered) {
+        return {
+          action: 'trigger_unverified',
+          sys_id: args.sys_id,
+          next_action: nextAction || null,
+          active: check?.active,
+          warning: `Could not confirm the job was triggered (next_action=${nextAction || 'unchanged'}, active=${check?.active}). ACLs or a protected table may have silently rejected the write. Verify in the instance before relying on this.`,
+        };
+      }
+      return { action: 'triggered', sys_id: args.sys_id, next_action: nextAction, active: check?.active, summary: `Triggered scheduled job ${args.sys_id}` };
     }
     case 'create_report': {
       requireWrite();

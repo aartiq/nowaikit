@@ -156,7 +156,25 @@ export async function executeUpdateSetToolCall(
     case 'switch_update_set': {
       if (!args.sys_id) throw new ServiceNowError('sys_id is required', 'INVALID_REQUEST');
       requireScripting();
-      const result = await client.updateRecord('sys_update_set', args.sys_id, { is_default: true });
+      // The caller's current update set is a per-USER preference (sys_user_preference
+      // name=sys_update_set), NOT the per-scope `is_default` flag. Writing is_default
+      // flips a shared, instance-wide default for an application scope and does not switch
+      // the caller's session, so set the user preference instead.
+      const existing = await client.queryRecords({
+        table: 'sys_user_preference',
+        query: 'name=sys_update_set^user=javascript:gs.getUserID()',
+        fields: 'sys_id',
+        limit: 1,
+      });
+      const prefId = existing.records?.[0]?.sys_id as string | undefined;
+      if (prefId) {
+        const result = await client.updateRecord('sys_user_preference', prefId, { value: args.sys_id });
+        return { action: 'switched', sys_id: args.sys_id, preference: prefId, ...result };
+      }
+      const me = await client.queryRecords({ table: 'sys_user', query: 'sys_id=javascript:gs.getUserID()', fields: 'sys_id', limit: 1 });
+      const userId = me.records?.[0]?.sys_id as string | undefined;
+      if (!userId) throw new ServiceNowError('Could not resolve the current user to switch the update set', 'NOT_FOUND');
+      const result = await client.createRecord('sys_user_preference', { name: 'sys_update_set', user: userId, value: args.sys_id, type: 'string' });
       return { action: 'switched', sys_id: args.sys_id, ...result };
     }
 
