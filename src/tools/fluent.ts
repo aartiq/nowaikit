@@ -23,7 +23,7 @@ const execFileAsync = promisify(execFileCb);
  * 4.8.0 (Jun 2026) added the `now-sdk query` CLI command + Playbook/RestMessage/
  * RetryPolicy/Alias/DataLookup Fluent APIs.
  */
-const MIN_RECOMMENDED_SDK = '4.8.0';
+const MIN_RECOMMENDED_SDK = '4.10.1';
 
 /** now-sdk `explain` topics worth surfacing, including the APIs new in 4.8. */
 const KNOWN_EXPLAIN_TOPICS = [
@@ -39,6 +39,8 @@ const KNOWN_EXPLAIN_TOPICS = [
   'AiAgent', 'AiAgentWorkflow', 'roleMap', 'NowAssistSkillConfig',
   // Platform
   'UiPolicy', 'DataPolicy', 'Form', 'InstanceScan', 'ServicePortal', 'ImportSet', 'override',
+  // New in 4.10
+  'StateModel', 'cicd',
 ];
 
 async function runNowSdk(args: string[], timeoutMs = 30000): Promise<{ stdout: string; stderr: string }> {
@@ -85,7 +87,7 @@ async function getSdkVersionInfo(): Promise<{
     warning = `@servicenow/sdk not detected. Install the latest with: npm i -g @servicenow/sdk (>= ${MIN_RECOMMENDED_SDK}).`;
   } else if (!upToDate) {
     warning = `@servicenow/sdk ${installed} is older than the recommended ${MIN_RECOMMENDED_SDK}. ` +
-      `Some Fluent features (now-sdk query, Playbook/RestMessage/RetryPolicy/Alias/DataLookup APIs) require >= ${MIN_RECOMMENDED_SDK}. ` +
+      `Newer features (now-sdk cicd + StateModel in 4.10, now-sdk query + Playbook/RestMessage/RetryPolicy/Alias/DataLookup in 4.8) require >= ${MIN_RECOMMENDED_SDK}. ` +
       `Upgrade with: npm i -g @servicenow/sdk@latest`;
   }
   return { installed, recommended: MIN_RECOMMENDED_SDK, upToDate, warning };
@@ -289,6 +291,28 @@ export function getFluentToolDefinitions() {
           directory: { type: 'string', description: 'Project directory (optional, defaults to cwd)' },
         },
         required: [],
+      },
+    },
+    {
+      name: 'fluent_cicd',
+      description:
+        'Run ServiceNow CI/CD operations via the SDK (`now-sdk cicd`, new in @servicenow/sdk 4.10). ' +
+        'Drive scoped-app install/publish and ATF test-suite runs from a promotion pipeline, ' +
+        'outside the local build/install flow. REQUIRES FLUENT_ENABLED=true and WRITE_ENABLED=true.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          action: {
+            type: 'string',
+            enum: ['install', 'publish', 'testsuite'],
+            description: 'install a published app version, publish an app scope to the app repo, or run an ATF test suite',
+          },
+          appSysId: { type: 'string', description: 'App sys_id (required for action=install)' },
+          scope: { type: 'string', description: 'App scope, e.g. x_acme_app (required for action=publish)' },
+          appVersion: { type: 'string', description: 'App version, e.g. 1.0.0 (install/publish)' },
+          testSuiteName: { type: 'string', description: 'ATF test suite name (required for action=testsuite)' },
+        },
+        required: ['action'],
       },
     },
   ];
@@ -531,6 +555,29 @@ export async function executeFluentToolCall(
       if (args.directory) validateArgs.push('--directory', args.directory);
       const result = await runNowSdk(validateArgs, 60000);
       return { action: 'validation_completed', output: result.stdout, stderr: result.stderr || undefined };
+    }
+
+    case 'fluent_cicd': {
+      requireFluent();
+      requireWrite();
+      const action = args.action;
+      const cicdArgs = ['cicd'];
+      if (action === 'install') {
+        if (!args.appSysId) throw new ServiceNowError('appSysId is required for action=install', 'INVALID_REQUEST');
+        cicdArgs.push('install', '--app-sys-id', String(args.appSysId));
+        if (args.appVersion) cicdArgs.push('--app-version', String(args.appVersion));
+      } else if (action === 'publish') {
+        if (!args.scope) throw new ServiceNowError('scope is required for action=publish', 'INVALID_REQUEST');
+        cicdArgs.push('publish', '--scope', String(args.scope));
+        if (args.appVersion) cicdArgs.push('--app-version', String(args.appVersion));
+      } else if (action === 'testsuite') {
+        if (!args.testSuiteName) throw new ServiceNowError('testSuiteName is required for action=testsuite', 'INVALID_REQUEST');
+        cicdArgs.push('testsuite', 'run', '--test-suite-name', String(args.testSuiteName));
+      } else {
+        throw new ServiceNowError('action must be one of: install, publish, testsuite', 'INVALID_REQUEST');
+      }
+      const result = await runNowSdk(cicdArgs, 180000);
+      return { action: `cicd_${action}`, output: result.stdout, stderr: result.stderr || undefined };
     }
 
     default:
