@@ -140,9 +140,21 @@ export async function executeAtfToolCall(
     case 'run_atf_suite': {
       requireAtf();
       if (!args.sys_id) throw new ServiceNowError('sys_id is required', 'INVALID_REQUEST');
-      // ServiceNow ATF runner API: POST /api/now/atf/runner/run_suite
-      const result = await client.callNowAssist('/api/now/atf/runner/run_suite', { sys_id: args.sys_id });
-      return { ...result, summary: `Started test suite ${args.sys_id}` };
+      // ATF runs are triggered through the CI/CD API (requires the CI/CD for
+      // Applications plugin, com.snc.cicd, active by default on modern instances).
+      // The old /api/now/atf/runner/* path does not exist and returns
+      // "Requested URI does not represent any resource".
+      try {
+        const result = await client.callNowAssist(`/api/sn_cicd/testsuite/run?test_suite_sys_id=${encodeURIComponent(args.sys_id)}`, {});
+        return { action: 'suite_run_started', sys_id: args.sys_id, ...result };
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        throw new ServiceNowError(
+          `Could not start ATF suite ${args.sys_id} via the CI/CD API (/api/sn_cicd/testsuite/run): ${msg}. ` +
+          `This needs the CI/CD for Applications plugin (com.snc.cicd) and the sn_cicd role. If unavailable, run the suite from the ATF UI.`,
+          'ATF_RUN_FAILED'
+        );
+      }
     }
     case 'list_atf_tests': {
       let query = args.active !== false ? 'active=true' : '';
@@ -157,8 +169,13 @@ export async function executeAtfToolCall(
     case 'run_atf_test': {
       requireAtf();
       if (!args.sys_id) throw new ServiceNowError('sys_id is required', 'INVALID_REQUEST');
-      const result = await client.callNowAssist('/api/now/atf/runner/run_test', { sys_id: args.sys_id });
-      return { ...result, summary: `Started test ${args.sys_id}` };
+      // ServiceNow's CI/CD API runs test SUITES, not individual tests; there is no
+      // supported REST endpoint for a single ATF test.
+      throw new ServiceNowError(
+        `Running a single ATF test over REST is not supported by ServiceNow (only test suites can be run, via the CI/CD API). ` +
+        `Add test ${args.sys_id} to a suite and use run_atf_suite, or run it from the ATF UI.`,
+        'NOT_SUPPORTED'
+      );
     }
     case 'get_atf_suite_result': {
       if (!args.result_sys_id) throw new ServiceNowError('result_sys_id is required', 'INVALID_REQUEST');

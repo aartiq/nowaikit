@@ -147,7 +147,13 @@ export async function executeDeploymentToolCall(
         const resp = await client.callNowAssist('/api/now/sp/background_script', { script: args.script, scope: args.scope || 'global' });
         return { action: 'executed', output: resp };
       } catch (err) {
-        return { action: 'failed', error: err instanceof Error ? err.message : String(err) };
+        const msg = err instanceof Error ? err.message : String(err);
+        return {
+          action: 'failed',
+          error:
+            `Server-side background scripts are not exposed through a standard ServiceNow REST endpoint, so arbitrary script cannot be run over REST (${msg}). ` +
+            `Options: (1) use the Fluent/now-sdk tools which execute against your authenticated instance, (2) install a companion Scripted REST API that evaluates the script, or (3) run it from the Background Scripts UI.`,
+        };
       }
     }
 
