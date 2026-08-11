@@ -33,9 +33,9 @@ npx nowaikit setup
 
 Restart your AI client (Claude Desktop, Cursor, …) and start asking. Done.
 
-**Keeping it up to date:** NowAIKit checks on startup and, when a newer version is out, asks a single **"Update now?"** — say yes and it updates itself. You can also run `nowaikit update` any time, or `npm install -g nowaikit@latest`.
+**Keeping it up to date:** NowAIKit checks on startup and, when a newer version is out, asks a single **"Update now?"**. Say yes and it updates itself. You can also run `nowaikit update` any time, or `npm install -g nowaikit@latest`.
 
-> Prefer a UI? `npx nowaikit web` for a local dashboard — or use **[NowAIKit Cloud](https://cloud.nowaikit.com)** (nothing to install).
+> Prefer a UI? Run `npx nowaikit web` for a local dashboard (chat, instance manager, tool browser, audit log), all on your machine.
 
 ---
 
@@ -93,7 +93,7 @@ Full guides & product home → **[nowaikit.com](https://nowaikit.com)**
 ## 🧩 Part of the NowAIKit suite
 
 - 🌐 **[nowaikit.com](https://nowaikit.com)** — docs, guides & product home
-- ☁️ **[NowAIKit Cloud](https://cloud.nowaikit.com)** — the toolkit in your browser, no install
+- 🖥️ **Web UI** — run `npx nowaikit web` for a local dashboard, no cloud account needed
 - 📦 **[`nowaikit-sdk`](https://www.npmjs.com/package/nowaikit-sdk)** — TypeScript ServiceNow client library
 - 🧰 **NowAIKit Builder** (VS Code) · **NowAIKit Utils** (browser extension)
 
