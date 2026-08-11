@@ -822,6 +822,8 @@ export async function runSetup(options: { add?: boolean } = {}): Promise<void> {
     }
 
     providerChoices.push(
+      { name: `${brand('Claude Code subscription')} ${dim('(your Claude Code CLI — no API key)')}`, value: 'claude-cli' },
+      { name: `${brand('Codex subscription')} ${dim('(your Codex CLI — no API key)')}`, value: 'codex-cli' },
       { name: `${accent('Anthropic')} ${dim('(cloud — requires API key)')}`, value: 'anthropic' },
       { name: `${accent('OpenAI')} ${dim('(cloud — requires API key)')}`, value: 'openai' },
       { name: `${accent('Google Gemini')} ${dim('(cloud — requires API key)')}`, value: 'gemini' },
@@ -868,6 +870,10 @@ export async function runSetup(options: { add?: boolean } = {}): Promise<void> {
         console.log(`  ${success('✓')} Ollama configured with ${accent(aiModel)} — no API key needed`);
       } else if (selectedProvider === 'lmstudio') {
         console.log(`  ${success('✓')} LM Studio configured — uses whatever model is loaded`);
+      } else if (selectedProvider === 'claude-cli') {
+        console.log(`  ${success('✓')} Using your Claude Code subscription — no API key needed. Ensure ${accent('claude')} is on your PATH (or set NOWAIKIT_CLAUDE_BIN).`);
+      } else if (selectedProvider === 'codex-cli') {
+        console.log(`  ${success('✓')} Using your Codex subscription — no API key needed. Ensure ${accent('codex')} is on your PATH (or set NOWAIKIT_CODEX_BIN).`);
       } else if (selectedProvider === 'anthropic') {
         aiApiKey = await password({
           message: brand('?') + ' Anthropic API key ' + dim('(sk-ant-...)') + brand(':'),

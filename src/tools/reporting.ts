@@ -93,11 +93,12 @@ export function getReportingToolDefinitions() {
     },
     {
       name: 'get_sys_log',
-      description: 'Retrieve system log entries for debugging or auditing',
+      description: 'Retrieve system log entries for debugging or auditing. Set app_scope=true to read the scoped-application log (syslog_app_scope), where scoped gs.info()/gs.log() output lands, instead of the global syslog.',
       inputSchema: {
         type: 'object',
         properties: {
           query: { type: 'string', description: 'Filter (e.g., "level=error^sys_created_onONToday@javascript:gs.beginningOfToday()@javascript:gs.endOfToday()")' },
+          app_scope: { type: 'boolean', description: 'Read syslog_app_scope (scoped-app log output) instead of the global syslog.' },
           limit: { type: 'number', description: 'Max entries (default: 20)' },
         },
         required: [],
@@ -365,8 +366,9 @@ export async function executeReportingToolCall(
       return { table: args.table, count: resp.count, records: resp.records, exported_at: new Date().toISOString() };
     }
     case 'get_sys_log': {
-      const resp = await client.queryRecords({ table: 'syslog', query: args.query || undefined, limit: args.limit || 20, orderBy: '-sys_created_on' });
-      return { count: resp.count, entries: resp.records };
+      const table = args.app_scope ? 'syslog_app_scope' : 'syslog';
+      const resp = await client.queryRecords({ table, query: args.query || undefined, limit: args.limit || 20, orderBy: '-sys_created_on' });
+      return { source: table, count: resp.count, entries: resp.records };
     }
     case 'list_scheduled_jobs': {
       let query = args.active !== false ? 'active=true' : '';
