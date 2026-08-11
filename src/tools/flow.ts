@@ -189,6 +189,26 @@ export function getFlowToolDefinitions() {
       },
     },
     {
+      name: 'update_flow',
+      description:
+        'Update a flow or subflow\'s METADATA only (activate/deactivate, name, description, run-as). **[Write]** ' +
+        'NOTE: this cannot safely insert or edit flow STEPS. Flow Designer executes a compiled snapshot, and ' +
+        'writing action-instance rows over REST does not recompile the flow, which would desync/corrupt it. ' +
+        'Edit steps in the Flow Designer UI.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          flow_sys_id: { type: 'string', description: 'Flow or subflow sys_id' },
+          type: { type: 'string', description: 'Type: flow or subflow (default flow)' },
+          active: { type: 'boolean', description: 'Activate (true) or deactivate (false)' },
+          name: { type: 'string', description: 'New name' },
+          description: { type: 'string', description: 'New description' },
+          run_as: { type: 'string', description: 'run_as value (e.g. user_who_triggers, system_user)' },
+        },
+        required: ['flow_sys_id'],
+      },
+    },
+    {
       name: 'test_flow',
       description: 'Execute a flow in test mode with sample inputs. **[Write]**',
       inputSchema: {
@@ -316,6 +336,21 @@ export async function executeFlowToolCall(
       const table = args.type === 'subflow' ? 'sys_hub_subflow' : 'sys_hub_flow';
       const result = await client.updateRecord(table, args.flow_sys_id, { active: 'true' });
       return { action: 'published', ...result };
+    }
+    case 'update_flow': {
+      requireWrite();
+      if (!args.flow_sys_id) throw new ServiceNowError('flow_sys_id is required', 'INVALID_REQUEST');
+      const table = args.type === 'subflow' ? 'sys_hub_subflow' : 'sys_hub_flow';
+      // Metadata-only, safe fields. Step editing is intentionally not supported (see the
+      // tool description): it would desync the compiled flow snapshot.
+      const fields: Record<string, unknown> = {};
+      if (args.active !== undefined) fields.active = args.active ? 'true' : 'false';
+      if (args.name !== undefined) fields.name = args.name;
+      if (args.description !== undefined) fields.description = args.description;
+      if (args.run_as !== undefined) fields.run_as = args.run_as;
+      if (Object.keys(fields).length === 0) throw new ServiceNowError('Nothing to update: provide active, name, description, or run_as.', 'INVALID_REQUEST');
+      const result = await client.updateRecord(table, args.flow_sys_id, fields);
+      return { action: 'updated', ...result };
     }
     case 'test_flow': {
       requireWrite();
