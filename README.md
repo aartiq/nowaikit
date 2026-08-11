@@ -101,6 +101,14 @@ Full guides & product home → **[nowaikit.com](https://nowaikit.com)**
 
 ---
 
+## Maintainer & continuity
+
+Built and maintained by **AARTIQ Ltd** (United Kingdom), and shipped often, usually several releases a month (see [CHANGELOG](CHANGELOG.md)). It is a single-vendor open project: one accountable team owns quality and support, with community contributions welcome on top.
+
+You are not tied to that team continuing: the source is available under the Elastic License 2.0, and you get **perpetual self-host and fork rights**, so a deployed copy keeps working no matter what, and you could fork and carry on if you ever needed to. Commercial support and an SLA are available for production use. Details in [GOVERNANCE.md](GOVERNANCE.md). Contributions: [CONTRIBUTING.md](CONTRIBUTING.md).
+
+---
+
 ## Licensing
 
 NowAIKit is free to use and source available under the [Elastic License 2.0](LICENSE). Read it, run it, fork it, and use it inside your organisation, including to deliver ServiceNow work for clients, at no charge.
