@@ -71,35 +71,62 @@ function claudeDesktopDetected(configPath: string): boolean {
   return existsSync(join(homedir(), '.config', 'Claude'));
 }
 
+/**
+ * Microsoft Store / MSIX builds of Claude Desktop run with AppData virtualization:
+ * they read their config from a per-package sandbox
+ * (`%LOCALAPPDATA%\Packages\<AnthropicClaude…>\LocalCache\Roaming\Claude\`), NOT the
+ * normal `%APPDATA%\Roaming\Claude\`. Writing to the plain path is silently ignored
+ * ("No servers added"). Return the packaged config path when that install is present.
+ */
+function storeClaudeConfigPath(): string | null {
+  if (process.platform !== 'win32') return null;
+  const lad = process.env['LOCALAPPDATA'] || '';
+  const packages = join(lad, 'Packages');
+  if (!lad || !existsSync(packages)) return null;
+  try {
+    const dirs = readdirSync(packages);
+    // Prefer the real package family name, fall back to any Claude package.
+    const match = dirs.find(d => /^AnthropicClaude/i.test(d)) || dirs.find(d => /claude/i.test(d));
+    if (!match) return null;
+    const claudeDir = join(packages, match, 'LocalCache', 'Roaming', 'Claude');
+    // Use it if the package's Claude data folder exists (created on first launch).
+    if (existsSync(claudeDir) || existsSync(dirname(claudeDir))) {
+      return join(claudeDir, 'claude_desktop_config.json');
+    }
+  } catch { /* ignore */ }
+  return null;
+}
+
 export function detectClients(): DetectedClient[] {
   const home = homedir();
   const p = process.platform;
   const appData = process.env['APPDATA'] || join(home, 'AppData', 'Roaming');
+  // On Windows, a Store/MSIX Claude reads from a sandboxed Packages path; prefer it.
+  const claudeDesktopConfig =
+    p === 'win32'
+      ? storeClaudeConfigPath() || join(appData, 'Claude', 'claude_desktop_config.json')
+      : p === 'darwin'
+      ? join(home, 'Library', 'Application Support', 'Claude', 'claude_desktop_config.json')
+      : join(home, '.config', 'Claude', 'claude_desktop_config.json');
 
   const clients: DetectedClient[] = [
     {
       id: 'claude-desktop',
       name: 'Claude Desktop',
       detected: false,
-      configPath:
-        p === 'win32'
-          ? join(appData, 'Claude', 'claude_desktop_config.json')
-          : p === 'darwin'
-          ? join(home, 'Library', 'Application Support', 'Claude', 'claude_desktop_config.json')
-          : join(home, '.config', 'Claude', 'claude_desktop_config.json'),
+      configPath: claudeDesktopConfig,
       configKey: 'mcpServers',
       writeMethod: 'json-mcpServers',
       requiresRestart: true,
-      note: 'Restart Claude Desktop to activate.',
+      note: 'Fully quit Claude Desktop (on Windows: right-click the tray icon → Quit) and reopen to activate.',
     },
     {
       id: 'cursor',
       name: 'Cursor',
       detected: false,
-      configPath:
-        p === 'win32'
-          ? join(appData, 'Cursor', 'mcp.json')
-          : join(home, '.cursor', 'mcp.json'),
+      // Cursor reads a global ~/.cursor/mcp.json on every platform (Windows too:
+      // C:\Users\<user>\.cursor\mcp.json), NOT %APPDATA%\Cursor.
+      configPath: join(home, '.cursor', 'mcp.json'),
       configKey: 'mcpServers',
       writeMethod: 'json-mcpServers',
       requiresRestart: true,
@@ -119,10 +146,9 @@ export function detectClients(): DetectedClient[] {
       id: 'windsurf',
       name: 'Windsurf',
       detected: false,
-      configPath:
-        p === 'win32'
-          ? join(appData, 'Codeium', 'windsurf', 'mcp_config.json')
-          : join(home, '.codeium', 'windsurf', 'mcp_config.json'),
+      // Windsurf reads ~/.codeium/windsurf/mcp_config.json on every platform
+      // (Windows too: C:\Users\<user>\.codeium\windsurf\), NOT %APPDATA%\Codeium.
+      configPath: join(home, '.codeium', 'windsurf', 'mcp_config.json'),
       configKey: 'mcpServers',
       writeMethod: 'json-mcpServers',
       requiresRestart: true,
