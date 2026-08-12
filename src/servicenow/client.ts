@@ -425,6 +425,19 @@ export class ServiceNowClient {
   }
 
   /**
+   * Verify authentication with the least possible privilege. `current_user` is
+   * readable by ANY authenticated user regardless of roles/ACLs, so it confirms
+   * the credentials work without falsely rejecting low-privilege accounts (which
+   * a sys_user/sys_properties read would). Returns the resolved user identity.
+   */
+  async getCurrentUser(): Promise<{ user_name?: string; user_sys_id?: string; user_display_name?: string; [k: string]: any }> {
+    await this.authenticate();
+    const url = `${this.baseUrl}/api/now/ui/user/current_user`;
+    const response = await this.request<{ result: Record<string, any> }>(url);
+    return response.result || {};
+  }
+
+  /**
    * Get table schema/structure
    */
   async getTableSchema(tableName: string): Promise<any> {

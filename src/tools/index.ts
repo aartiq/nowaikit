@@ -41,6 +41,7 @@ import { getCsmToolDefinitions, executeCsmToolCall } from './csm.js';
 import { getSecurityToolDefinitions, executeSecurityToolCall } from './security.js';
 // Flow Designer & Process Automation
 import { getFlowToolDefinitions, executeFlowToolCall } from './flow.js';
+import { getDecisionToolDefinitions, executeDecisionToolCall } from './decision.js';
 // Service Portal & UI Builder
 import { getPortalToolDefinitions, executePortalToolCall } from './portal.js';
 // Integration (REST Messages, Transform Maps, Events)
@@ -261,6 +262,7 @@ const ALL_TOOLS = [
   ...getCsmToolDefinitions(),
   ...getSecurityToolDefinitions(),
   ...getFlowToolDefinitions(),
+  ...getDecisionToolDefinitions(),
   ...getPortalToolDefinitions(),
   ...getIntegrationToolDefinitions(),
   ...getNotificationToolDefinitions(),
@@ -425,6 +427,7 @@ export async function executeTool(
     () => executeCsmToolCall(client, name, args),
     () => executeSecurityToolCall(client, name, args),
     () => executeFlowToolCall(client, name, args),
+    () => executeDecisionToolCall(client, name, args),
     () => executePortalToolCall(client, name, args),
     () => executeIntegrationToolCall(client, name, args),
     () => executeNotificationToolCall(client, name, args),

@@ -218,9 +218,11 @@ async function testConnection(
       requestTimeoutMs: 15000,
     });
 
-    const result = await client.queryRecords({ table: 'sys_user', limit: 1 });
+    // Least-privilege auth check: current_user works for ANY authenticated user,
+    // so a valid non-admin isn't falsely rejected (a sys_user read needs a role).
+    const me = await client.getCurrentUser();
     spinner.succeed(success('  Connected — authentication verified'));
-    return { ok: true, message: `Connected (${result.count >= 0 ? 'OK' : 'warning'})` };
+    return { ok: true, message: `Connected as ${me.user_name || me.user_display_name || 'user'}` };
   } catch (error) {
     const msg = extractFetchError(error);
     spinner.fail(err(`  Connection failed: ${msg}`));
