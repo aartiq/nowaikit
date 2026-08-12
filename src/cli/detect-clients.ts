@@ -7,7 +7,7 @@ import { homedir } from 'os';
 import { join, dirname } from 'path';
 import { execSync } from 'child_process';
 
-export type WriteMethod = 'json-mcpServers' | 'json-servers' | 'command' | 'env';
+export type WriteMethod = 'json-mcpServers' | 'json-servers' | 'command' | 'env' | 'manual';
 
 export interface DetectedClient {
   id: string;
@@ -175,6 +175,16 @@ export function detectClients(): DetectedClient[] {
       note: 'The `claude mcp add` command will be run automatically.',
     },
     {
+      id: 'chatgpt',
+      name: 'ChatGPT Desktop (manual)',
+      detected: false,
+      configPath: '',
+      configKey: '',
+      writeMethod: 'manual',
+      requiresRestart: true,
+      note: 'ChatGPT has no config file — MCP is added in its own Settings → Connectors UI. The setup will print the STDIO details to paste.',
+    },
+    {
       id: 'dotenv',
       name: 'Generate .env file only',
       detected: true,
@@ -225,6 +235,9 @@ export function detectClients(): DetectedClient[] {
     }
     if (c.id === 'claude-code') {
       return { ...c, detected: which('claude') };
+    }
+    if (c.id === 'chatgpt') {
+      return { ...c, detected: appExists('/Applications/ChatGPT.app', join('Programs', 'ChatGPT', 'ChatGPT.exe'), 'chatgpt') };
     }
     return c;
   });

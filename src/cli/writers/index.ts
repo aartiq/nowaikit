@@ -133,6 +133,25 @@ function writeDotEnv(client: DetectedClient, instance: InstanceConfig): WriteRes
   }
 }
 
+/**
+ * Clients with no writable config file (e.g. ChatGPT desktop): MCP is added in the
+ * app's own UI. Print the exact STDIO details for the user to paste in.
+ */
+function printManualInstructions(_client: DetectedClient, instance: InstanceConfig): WriteResult {
+  const env = buildEnvBlock(instance);
+  const envLines = Object.entries(env).map(([k, v]) => `      ${k} = ${v}`).join('\n');
+  const msg = [
+    'ChatGPT has no config file — add the server in its UI:',
+    '  Settings → Connectors (Developer mode) → MCP servers → Add → STDIO',
+    '  Name:    nowaikit',
+    '  Command: node',
+    `  Args:    ${serverPath()}`,
+    '  Environment variables:',
+    envLines,
+  ].join('\n');
+  return { success: true, message: msg };
+}
+
 /** Write to the appropriate config based on client type. */
 export function writeClientConfig(client: DetectedClient, instance: InstanceConfig): WriteResult {
   switch (client.writeMethod) {
@@ -144,6 +163,8 @@ export function writeClientConfig(client: DetectedClient, instance: InstanceConf
       return writeClaudeCode(client, instance);
     case 'env':
       return writeDotEnv(client, instance);
+    case 'manual':
+      return printManualInstructions(client, instance);
     default:
       return { success: false, message: `Unknown write method: ${client.writeMethod}` };
   }
