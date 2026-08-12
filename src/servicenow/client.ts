@@ -11,6 +11,28 @@ import { ServiceNowError } from '../utils/errors.js';
 import { logger } from '../utils/logging.js';
 import { missingRequiredFields } from './mandatory-fields.js';
 
+/**
+ * Actionable checklist appended to a 401 on Basic auth. A raw "User is not
+ * authenticated" sends people down a multi-hour rabbit hole; these are the real
+ * causes, in likelihood order, distilled from field debugging + ServiceNow's own
+ * Basic Auth guidance.
+ */
+export function basicAuthDiagnostic(): string {
+  return [
+    'Basic auth was rejected by the instance (HTTP 401). Common causes, in order:',
+    '  1. Username must be the login user_name, not the email or display name.',
+    '  2. The account needs a valid LOCAL password. If it is SSO/SAML-federated, browser login works',
+    '     but Basic REST does not (no local password). Use a dedicated local integration user.',
+    '  3. ServiceNow\'s "Basic Auth Restriction" may be blocking Basic auth. The account needs the',
+    '     snc_basic_auth_api_access role, or must be a Web Service Access Only (WSAO) account.',
+    '  4. A corporate proxy may be stripping the Authorization header (the request then arrives as',
+    '     "guest"). Test the same call from a different network / phone hotspot.',
+    '  5. Confirm the account is active, not locked out, and not flagged password-reset-required.',
+    '  6. If the instance restricts Basic auth, switch this connection to OAuth (the recommended path).',
+    '  Docs: https://www.servicenow.com/community/itsm-articles/review-basic-authentication-account-security/ta-p/3555125',
+  ].join('\n');
+}
+
 // ─── Input validation helpers ────────────────────────────────────────────────
 
 /** Validate and sanitize ServiceNow table names (alphanumeric + underscores only) */
@@ -302,6 +324,10 @@ export class ServiceNowClient {
           let errorCode = 'API_ERROR';
           if (response.status === 401) {
             errorCode = 'AUTHENTICATION_FAILED';
+            // Attach the actionable checklist so a bare 401 isn't a dead end.
+            if (this.authMethod === 'basic') {
+              errorMessage = `${errorMessage}\n\n${basicAuthDiagnostic()}`;
+            }
           } else if (response.status === 403) {
             errorCode = 'INSUFFICIENT_PRIVILEGES';
           } else if (response.status === 404) {
