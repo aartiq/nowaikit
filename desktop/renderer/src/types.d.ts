@@ -13,6 +13,9 @@ interface InstanceConfig {
   clientSecret?: string;
   toolPackage?: string;
   writeEnabled?: boolean;
+  scriptingEnabled?: boolean;
+  cmdbWriteEnabled?: boolean;
+  atfEnabled?: boolean;
   nowAssistEnabled?: boolean;
   group?: string;
   environment?: string;

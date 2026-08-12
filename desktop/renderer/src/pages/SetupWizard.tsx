@@ -15,14 +15,25 @@ const STEPS: { key: Step; label: string }[] = [
 ];
 
 const TOOL_PACKAGES = [
-  { value: 'full', label: 'Full', desc: 'All 350+ tools' },
+  { value: 'full', label: 'Full', desc: 'All 400+ tools' },
   { value: 'service_desk', label: 'Service Desk', desc: 'Incidents, approvals, knowledge, SLA' },
-  { value: 'platform_developer', label: 'Platform Developer', desc: 'Scripts, ACLs, ATF, changesets' },
-  { value: 'system_administrator', label: 'System Admin', desc: 'Users, groups, reports, jobs' },
-  { value: 'ai_developer', label: 'AI Developer', desc: 'Now Assist, NLQ, playbooks' },
   { value: 'change_coordinator', label: 'Change Coordinator', desc: 'Changes, approvals, CMDB' },
+  { value: 'knowledge_author', label: 'Knowledge Author', desc: 'KB articles, drafting, review' },
+  { value: 'catalog_builder', label: 'Catalog Builder', desc: 'Catalog items, variables, requests' },
+  { value: 'system_administrator', label: 'System Admin', desc: 'Users, groups, reports, jobs' },
+  { value: 'platform_developer', label: 'Platform Developer', desc: 'Scripts, ACLs, ATF, changesets' },
   { value: 'itom_engineer', label: 'ITOM Engineer', desc: 'CMDB, discovery, events' },
   { value: 'agile_manager', label: 'Agile Manager', desc: 'Stories, epics, sprints' },
+  { value: 'ai_developer', label: 'AI Developer', desc: 'Now Assist, NLQ, playbooks' },
+];
+
+const ENVIRONMENTS = [
+  { value: 'production', label: 'Production' },
+  { value: 'development', label: 'Development' },
+  { value: 'demo', label: 'Demo' },
+  { value: 'test', label: 'Test / QA' },
+  { value: 'staging', label: 'Staging / UAT' },
+  { value: 'pdi', label: 'Personal Dev (PDI)' },
 ];
 
 export function SetupWizard() {
@@ -36,7 +47,11 @@ export function SetupWizard() {
     clientId: '',
     clientSecret: '',
     toolPackage: 'full',
+    environment: 'development',
     writeEnabled: false,
+    scriptingEnabled: false,
+    cmdbWriteEnabled: false,
+    atfEnabled: false,
     nowAssistEnabled: false,
   });
   const [testing, setTesting] = useState(false);
@@ -130,6 +145,14 @@ export function SetupWizard() {
                 value={form.name}
                 onChange={e => update({ name: e.target.value })}
               />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Environment</label>
+              <select className="form-select" value={form.environment || 'development'} onChange={e => update({ environment: e.target.value })}>
+                {ENVIRONMENTS.map(env => (
+                  <option key={env.value} value={env.value}>{env.label}</option>
+                ))}
+              </select>
             </div>
             <button className="btn btn-primary" onClick={next} disabled={!form.instanceUrl}>
               Next
@@ -256,10 +279,34 @@ export function SetupWizard() {
             </div>
             <div className="form-group">
               <label className="form-checkbox">
-                <input type="checkbox" checked={form.writeEnabled || false} onChange={e => update({ writeEnabled: e.target.checked })} />
+                <input
+                  type="checkbox"
+                  checked={form.writeEnabled || false}
+                  onChange={e => update({
+                    writeEnabled: e.target.checked,
+                    // Turning write off clears the advanced sub-permissions it gates.
+                    ...(e.target.checked ? {} : { scriptingEnabled: false, cmdbWriteEnabled: false, atfEnabled: false }),
+                  })}
+                />
                 Enable write operations (create, update, delete records)
               </label>
             </div>
+            {form.writeEnabled && (
+              <div className="form-group" style={{ marginLeft: 24, paddingLeft: 12, borderLeft: '2px solid var(--border)' }}>
+                <label className="form-checkbox">
+                  <input type="checkbox" checked={form.scriptingEnabled || false} onChange={e => update({ scriptingEnabled: e.target.checked })} />
+                  Script execution (background scripts, server-side JS)
+                </label>
+                <label className="form-checkbox">
+                  <input type="checkbox" checked={form.cmdbWriteEnabled || false} onChange={e => update({ cmdbWriteEnabled: e.target.checked })} />
+                  CMDB writes (create / update CIs and relationships)
+                </label>
+                <label className="form-checkbox">
+                  <input type="checkbox" checked={form.atfEnabled || false} onChange={e => update({ atfEnabled: e.target.checked })} />
+                  ATF test execution (run Automated Test Framework suites)
+                </label>
+              </div>
+            )}
             <div className="form-group">
               <label className="form-checkbox">
                 <input type="checkbox" checked={form.nowAssistEnabled || false} onChange={e => update({ nowAssistEnabled: e.target.checked })} />
@@ -316,8 +363,12 @@ export function SetupWizard() {
                 <tr><td style={{ fontWeight: 600 }}>Instance Name</td><td>{form.name || '(auto)'}</td></tr>
                 <tr><td style={{ fontWeight: 600 }}>Auth Method</td><td>{form.authMethod === 'basic' ? 'Basic Auth' : 'OAuth 2.0'}</td></tr>
                 <tr><td style={{ fontWeight: 600 }}>Username</td><td>{form.username}</td></tr>
+                <tr><td style={{ fontWeight: 600 }}>Environment</td><td>{ENVIRONMENTS.find(e => e.value === form.environment)?.label || form.environment}</td></tr>
                 <tr><td style={{ fontWeight: 600 }}>Tool Package</td><td>{form.toolPackage}</td></tr>
                 <tr><td style={{ fontWeight: 600 }}>Write Enabled</td><td>{form.writeEnabled ? 'Yes' : 'No'}</td></tr>
+                {form.writeEnabled && (
+                  <tr><td style={{ fontWeight: 600 }}>Advanced writes</td><td>{[form.scriptingEnabled && 'Scripting', form.cmdbWriteEnabled && 'CMDB', form.atfEnabled && 'ATF'].filter(Boolean).join(', ') || 'None'}</td></tr>
+                )}
                 <tr><td style={{ fontWeight: 600 }}>Now Assist</td><td>{form.nowAssistEnabled ? 'Yes' : 'No'}</td></tr>
               </tbody>
             </table>
