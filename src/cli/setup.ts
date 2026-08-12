@@ -891,7 +891,7 @@ export async function runSetup(options: { add?: boolean } = {}): Promise<void> {
         } else {
           aiModel = await input({
             message: brand('?') + ' Model ' + dim('(API fetch failed — enter manually)') + brand(':'),
-            default: 'claude-sonnet-4-7',
+            default: 'claude-sonnet-5',
           });
         }
         console.log(`  ${success('✓')} Anthropic configured with ${accent(aiModel)}`);

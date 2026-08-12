@@ -44,7 +44,7 @@ export interface LlmResponse {
 export type OnToken = (delta: string) => void;
 
 const DEFAULT_MODELS: Record<LlmProvider, string> = {
-  anthropic: 'claude-sonnet-4-7',
+  anthropic: 'claude-sonnet-5',
   openai: 'gpt-5.5',
   gemini: 'gemini-3.5-flash',
   ollama: 'llama3.3',
