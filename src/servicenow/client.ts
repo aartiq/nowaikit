@@ -33,6 +33,28 @@ export function basicAuthDiagnostic(): string {
   ].join('\n');
 }
 
+/**
+ * Actionable checklist appended to a 403. The request authenticated but was not
+ * authorized — for OAuth this is almost always a missing scope/role on the token.
+ */
+export function forbiddenDiagnostic(authMethod: 'basic' | 'oauth'): string {
+  const lines = [
+    'Authenticated, but not authorized for this operation (HTTP 403). Common causes:',
+    '  1. The account is missing the roles this needs (e.g. itil for ITSM, or admin for config tables).',
+  ];
+  if (authMethod === 'oauth') {
+    lines.push(
+      '  2. Your OAuth app/token is missing API scope. In the OAuth application registry, grant the',
+      '     required scope (e.g. "useraccount"), and make sure the token\'s user actually holds the roles.',
+    );
+  }
+  lines.push(
+    '  3. Writes need WRITE_ENABLED=true AND the user\'s write roles; some tools also need scripting/CMDB/ATF flags.',
+    '  4. An ACL on the specific table may be denying access even with the role.',
+  );
+  return lines.join('\n');
+}
+
 // ─── Input validation helpers ────────────────────────────────────────────────
 
 /** Validate and sanitize ServiceNow table names (alphanumeric + underscores only) */
@@ -280,6 +302,7 @@ export class ServiceNowClient {
     options: RequestInit = {}
   ): Promise<T> {
     let lastError: Error | undefined;
+    let reauthed = false;   // one-shot OAuth token refresh on a 401
 
     for (let attempt = 0; attempt <= this.maxRetries; attempt++) {
       try {
@@ -324,12 +347,22 @@ export class ServiceNowClient {
           let errorCode = 'API_ERROR';
           if (response.status === 401) {
             errorCode = 'AUTHENTICATION_FAILED';
+            // OAuth token likely expired or was revoked — refresh once and retry,
+            // so a stale token self-heals without any external launcher/relaunch.
+            if (this.authMethod === 'oauth' && this.authMode !== 'per-user' && !reauthed) {
+              reauthed = true;
+              this.accessToken = undefined;
+              this.tokenExpiry = undefined;
+              try { await this.authenticate(); } catch { /* fall through to the throw below */ }
+              continue;
+            }
             // Attach the actionable checklist so a bare 401 isn't a dead end.
             if (this.authMethod === 'basic') {
               errorMessage = `${errorMessage}\n\n${basicAuthDiagnostic()}`;
             }
           } else if (response.status === 403) {
             errorCode = 'INSUFFICIENT_PRIVILEGES';
+            errorMessage = `${errorMessage}\n\n${forbiddenDiagnostic(this.authMethod)}`;
           } else if (response.status === 404) {
             errorCode = 'NOT_FOUND';
           } else if (response.status === 400) {
