@@ -910,7 +910,7 @@ export async function runSetup(options: { add?: boolean } = {}): Promise<void> {
         } else {
           aiModel = await input({
             message: brand('?') + ' Model ' + dim('(API fetch failed — enter manually)') + brand(':'),
-            default: 'gpt-5.5',
+            default: 'gpt-5.6-terra',
           });
         }
         console.log(`  ${success('✓')} OpenAI configured with ${accent(aiModel)}`);

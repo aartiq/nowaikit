@@ -15,7 +15,7 @@ const STEPS: { key: Step; label: string }[] = [
 ];
 
 const TOOL_PACKAGES = [
-  { value: 'full', label: 'Full', desc: 'All 400+ tools' },
+  { value: 'full', label: 'Full', desc: 'All 450+ tools' },
   { value: 'service_desk', label: 'Service Desk', desc: 'Incidents, approvals, knowledge, SLA' },
   { value: 'change_coordinator', label: 'Change Coordinator', desc: 'Changes, approvals, CMDB' },
   { value: 'knowledge_author', label: 'Knowledge Author', desc: 'KB articles, drafting, review' },

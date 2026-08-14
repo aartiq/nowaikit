@@ -6,6 +6,7 @@
  */
 
 import { TOOL_DEFINITIONS } from './tools-data';
+import { withAuthDiagnostic } from './auth-diagnostics';
 
 // ─── Detect environment ──────────────────────────────────────────────────────
 
@@ -94,7 +95,8 @@ async function snowFetch(
   const resp = await fetch(url, opts);
   if (!resp.ok) {
     const text = await resp.text().catch(() => '');
-    throw new Error(`ServiceNow ${resp.status}: ${text.slice(0, 200)}`);
+    const raw = `ServiceNow ${resp.status}: ${text.slice(0, 200)}`;
+    throw new Error(withAuthDiagnostic(raw, instance.authMethod === 'oauth' ? 'oauth' : 'basic'));
   }
   const data = await resp.json().catch(() => ({}));
   return { ok: true, status: resp.status, data };
@@ -337,8 +339,8 @@ const webApi: ElectronAPI = {
         headers['Authorization'] = `Basic ${btoa(`${instance.username}:${instance.password}`)}`;
       }
       const resp = await fetch(url, { headers, signal: AbortSignal.timeout(15000) });
-      if (resp.status === 401) return { success: false, error: 'Authentication failed. Check your credentials.' };
-      if (resp.status === 403) return { success: false, error: 'Access denied. Check user permissions.' };
+      if (resp.status === 401) return { success: false, error: withAuthDiagnostic('Authentication failed (HTTP 401). Check your credentials.', instance.authMethod === 'oauth' ? 'oauth' : 'basic') };
+      if (resp.status === 403) return { success: false, error: withAuthDiagnostic('Access denied (HTTP 403). Check user permissions.', instance.authMethod === 'oauth' ? 'oauth' : 'basic') };
       if (!resp.ok) return { success: false, error: `HTTP ${resp.status}: ${resp.statusText}` };
       const data = await resp.json() as { result?: Array<{ value?: string }> };
       const instanceName = data?.result?.[0]?.value || 'OK';

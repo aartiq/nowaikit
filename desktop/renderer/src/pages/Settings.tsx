@@ -14,6 +14,17 @@ interface Props {
 // ── Provider meta ──────────────────────────────────────────────────────────────
 const LOCAL_PROVIDERS = new Set<AiProviderId>(['ollama', 'lmstudio']);
 
+/** Merge the static (curated) model list with any live-detected models not already in it. */
+function mergeModelChoices(
+  base: { value: string; label: string; desc: string }[],
+  live: { value: string; label: string }[],
+): { value: string; label: string; desc: string }[] {
+  if (!live.length) return base;
+  const have = new Set(base.map(m => m.value));
+  const extra = live.filter(m => !have.has(m.value)).map(m => ({ value: m.value, label: m.label, desc: 'Live from provider' }));
+  return [...base, ...extra];
+}
+
 const PROVIDERS: {
   id: AiProviderId;
   label: string;
@@ -150,21 +161,16 @@ const PROVIDERS: {
 
 const MODELS_BY_PROVIDER: Record<AiProviderId, { value: string; label: string; desc: string }[]> = {
   anthropic: [
-    { value: 'claude-opus-4-6',           label: 'Claude Opus 4.6',   desc: 'Most capable, complex reasoning' },
-    { value: 'claude-sonnet-4-6',         label: 'Claude Sonnet 4.6', desc: 'Balanced — recommended' },
+    { value: 'claude-opus-5',             label: 'Claude Opus 5',     desc: 'Most capable, complex reasoning' },
+    { value: 'claude-fable-5',            label: 'Claude Fable 5',    desc: 'Creative, fast frontier model' },
+    { value: 'claude-sonnet-5',           label: 'Claude Sonnet 5',   desc: 'Balanced — recommended' },
     { value: 'claude-haiku-4-5-20251001', label: 'Claude Haiku 4.5',  desc: 'Fastest, lowest cost' },
   ],
   openai: [
-    { value: 'gpt-5.2',         label: 'GPT-5.2',         desc: 'Latest flagship — most capable' },
-    { value: 'gpt-5.2-pro',     label: 'GPT-5.2 Pro',     desc: 'Highest quality, extended thinking' },
-    { value: 'gpt-5.1',         label: 'GPT-5.1',         desc: 'Previous flagship — strong all-round' },
-    { value: 'gpt-5-mini',      label: 'GPT-5 mini',      desc: 'Fast & affordable — great for tool use' },
-    { value: 'gpt-5-nano',      label: 'GPT-5 nano',      desc: 'Ultra-fast, lowest cost' },
-    { value: 'gpt-4.1',         label: 'GPT-4.1',         desc: 'Strong coding & instruction following' },
-    { value: 'gpt-4.1-mini',    label: 'GPT-4.1 mini',    desc: 'Fast & budget-friendly' },
-    { value: 'gpt-4o',          label: 'GPT-4o',          desc: 'Versatile multimodal' },
-    { value: 'o3',              label: 'o3',               desc: 'Advanced reasoning' },
-    { value: 'o4-mini',         label: 'o4 mini',          desc: 'Fast reasoning' },
+    { value: 'gpt-5.6-sol',     label: 'GPT-5.6 Sol',     desc: 'Latest flagship — hardest reasoning & coding' },
+    { value: 'gpt-5.6-terra',   label: 'GPT-5.6 Terra',   desc: 'Balanced everyday — GPT-5.5 quality, lower cost' },
+    { value: 'gpt-5.6-luna',    label: 'GPT-5.6 Luna',    desc: 'Fastest & cheapest — high-volume, low latency' },
+    { value: 'gpt-5.5',         label: 'GPT-5.5',         desc: 'Previous flagship — strong all-round' },
   ],
   google: [
     { value: 'gemini-3.1-pro-preview',  label: 'Gemini 3.1 Pro',  desc: 'Latest — state-of-the-art reasoning' },
@@ -182,8 +188,8 @@ const MODELS_BY_PROVIDER: Record<AiProviderId, { value: string; label: string; d
   openrouter: [
     { value: 'openai/o1-pro',                                   label: 'OpenAI o1 Pro',       desc: 'High-end reasoning via OpenRouter' },
     { value: 'xai/grok-4',                                      label: 'Grok 4 (xAI)',        desc: 'Latest xAI general-purpose model' },
-    { value: 'anthropic/claude-3.7-sonnet',                      label: 'Claude 3.7 Sonnet',   desc: 'Latest Claude variant via OpenRouter' },
-    { value: 'google/gemini-2.0-flash-001',                      label: 'Gemini 2.0 Flash',    desc: 'Google Gemini Flash variant' },
+    { value: 'anthropic/claude-sonnet-5',                       label: 'Claude Sonnet 5',     desc: 'Latest Claude variant via OpenRouter' },
+    { value: 'google/gemini-3-flash-preview',                   label: 'Gemini 3 Flash',      desc: 'Google Gemini Flash variant' },
     { value: 'deepseek/deepseek-r1:free',                        label: 'DeepSeek R1',         desc: 'Free — open reasoning model' },
     { value: 'meta-llama/llama-4-maverick-17b-128e-instruct',    label: 'Llama 4 Maverick',    desc: 'Free — best open model' },
     { value: 'meta-llama/llama-3.3-70b-instruct',                label: 'Llama 3.3 70B',       desc: 'Free — strong general-purpose' },
@@ -300,6 +306,8 @@ export default function Settings({ settings, onSave, activeInstance, onNavigate 
         setTestResult({ ok: false, msg: `Key doesn't match expected format for ${tab}` });
       } else {
         setTestResult({ ok: true, msg: 'Key format looks valid — save to use it' });
+        // Pull the provider's current model list so the picker reflects the latest models.
+        void fetchCloudModels(tab, key);
       }
     } catch {
       setTestResult({ ok: false, msg: 'Validation error' });
@@ -316,6 +324,39 @@ export default function Settings({ settings, onSave, activeInstance, onNavigate 
       return res;
     } catch {
       return fetch(directUrl, { signal: AbortSignal.timeout(5000) });
+    }
+  }
+
+  // Live cloud-provider model discovery via the AI proxy, so the picker self-updates as
+  // providers ship new models. Populates detectedModels; falls back silently to the static
+  // list (e.g. Electron file:// mode where the proxy path is unavailable).
+  async function fetchCloudModels(providerId: AiProviderId, key: string): Promise<void> {
+    const jget = async (path: string, headers: Record<string, string>) => {
+      const r = await fetch(path, { signal: AbortSignal.timeout(6000), headers: { 'X-NowAIKit-Proxy': '1', ...headers } });
+      if (!r.ok) return null;
+      return r.json();
+    };
+    try {
+      let models: { value: string; label: string }[] = [];
+      if (providerId === 'anthropic') {
+        const d = await jget('/api/ai/anthropic/v1/models', { 'x-api-key': key, 'anthropic-version': '2023-06-01' });
+        models = (d?.data || []).filter((m: { id: string }) => /^claude-/.test(m.id) && !/-\d{8}$/.test(m.id)).map((m: { id: string; display_name?: string }) => ({ value: m.id, label: m.display_name || m.id }));
+      } else if (providerId === 'openai') {
+        const d = await jget('/api/ai/openai/v1/models', { Authorization: `Bearer ${key}` });
+        models = (d?.data || []).filter((m: { id: string }) => /^gpt-/.test(m.id) && !/instruct|realtime|audio|search|transcribe|tts|image/.test(m.id)).map((m: { id: string }) => ({ value: m.id, label: m.id })).sort((a: { value: string }, b: { value: string }) => b.value.localeCompare(a.value));
+      } else if (providerId === 'google') {
+        const d = await jget(`/api/ai/google/v1beta/models?key=${encodeURIComponent(key)}`, {});
+        models = (d?.models || []).map((m: { name: string; displayName?: string }) => ({ value: (m.name || '').replace(/^models\//, ''), label: m.displayName || (m.name || '').replace(/^models\//, '') })).filter((m: { value: string }) => /gemini/i.test(m.value) && !/embedding|aqa/.test(m.value));
+      } else if (providerId === 'groq') {
+        const d = await jget('/api/ai/groq/openai/v1/models', { Authorization: `Bearer ${key}` });
+        models = (d?.data || []).map((m: { id: string }) => ({ value: m.id, label: m.id }));
+      } else if (providerId === 'openrouter') {
+        const d = await jget('/api/ai/openrouter/api/v1/models', { Authorization: `Bearer ${key}` });
+        models = (d?.data || []).map((m: { id: string; name?: string }) => ({ value: m.id, label: m.name || m.id }));
+      }
+      if (models.length) setDetectedModels(models);
+    } catch {
+      /* keep static list */
     }
   }
 
@@ -496,6 +537,8 @@ export default function Settings({ settings, onSave, activeInstance, onNavigate 
                       return updated;
                     });
                     setSignInMode('none'); resetTest(); setShowKey(false); setDetectedModels([]);
+                    // If a key is already saved for this cloud provider, refresh its model list.
+                    { const savedKey = draft.providers[p.id]?.apiKey; if (savedKey && !LOCAL_PROVIDERS.has(p.id)) void fetchCloudModels(p.id, savedKey); }
                   }
                 }} style={{
                   width:'100%', display:'flex', alignItems:'center', gap:14,
@@ -753,7 +796,7 @@ export default function Settings({ settings, onSave, activeInstance, onNavigate 
                         <div style={{ borderTop:'1px solid var(--border)', paddingTop:16 }}>
                           <div style={{ fontWeight:500, marginBottom:10, fontSize:'0.85rem' }}>Default Model</div>
                           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:6 }}>
-                            {providerModels.map(m => {
+                            {mergeModelChoices(providerModels, detectedModels).map(m => {
                               const isSelected = draft.model === m.value;
                               return (
                                 <label key={m.value} style={{

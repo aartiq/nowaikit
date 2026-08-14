@@ -42,6 +42,20 @@ import { getSecurityToolDefinitions, executeSecurityToolCall } from './security.
 // Flow Designer & Process Automation
 import { getFlowToolDefinitions, executeFlowToolCall } from './flow.js';
 import { getDecisionToolDefinitions, executeDecisionToolCall } from './decision.js';
+// SLA/OLA, On-Call, Catalog fulfillment, Access admin, Surveys, GRC depth, Service portfolio, Platform ops, AI Agent execution
+import { getSlaToolDefinitions, executeSlaToolCall } from './sla.js';
+import { getOnCallToolDefinitions, executeOnCallToolCall } from './oncall.js';
+import { getCatalogFulfillmentToolDefinitions, executeCatalogFulfillmentToolCall } from './catalog-fulfillment.js';
+import { getAccessAdminToolDefinitions, executeAccessAdminToolCall } from './access-admin.js';
+import { getSurveyToolDefinitions, executeSurveyToolCall } from './survey.js';
+import { getGrcExtraToolDefinitions, executeGrcExtraToolCall } from './grc-extra.js';
+import { getServicePortfolioToolDefinitions, executeServicePortfolioToolCall } from './service-portfolio.js';
+import { getPlatformOpsToolDefinitions, executePlatformOpsToolCall } from './platform-ops.js';
+import { getAiAgentExecToolDefinitions, executeAiAgentExecToolCall } from './ai-agent-exec.js';
+// Parity with ServiceNow first-party MCP servers (Service Mapping, approvals/CPQ, HRSD/CSM, Now Assist)
+import { getServiceMappingToolDefinitions, executeServiceMappingToolCall } from './service-mapping.js';
+import { getApprovalsExtraToolDefinitions, executeApprovalsExtraToolCall } from './approvals-extra.js';
+import { getSnParityToolDefinitions, executeSnParityToolCall } from './sn-parity.js';
 // Service Portal & UI Builder
 import { getPortalToolDefinitions, executePortalToolCall } from './portal.js';
 // Integration (REST Messages, Transform Maps, Events)
@@ -263,6 +277,18 @@ const ALL_TOOLS = [
   ...getSecurityToolDefinitions(),
   ...getFlowToolDefinitions(),
   ...getDecisionToolDefinitions(),
+  ...getSlaToolDefinitions(),
+  ...getOnCallToolDefinitions(),
+  ...getCatalogFulfillmentToolDefinitions(),
+  ...getAccessAdminToolDefinitions(),
+  ...getSurveyToolDefinitions(),
+  ...getGrcExtraToolDefinitions(),
+  ...getServicePortfolioToolDefinitions(),
+  ...getPlatformOpsToolDefinitions(),
+  ...getAiAgentExecToolDefinitions(),
+  ...getServiceMappingToolDefinitions(),
+  ...getApprovalsExtraToolDefinitions(),
+  ...getSnParityToolDefinitions(),
   ...getPortalToolDefinitions(),
   ...getIntegrationToolDefinitions(),
   ...getNotificationToolDefinitions(),
@@ -428,6 +454,18 @@ export async function executeTool(
     () => executeSecurityToolCall(client, name, args),
     () => executeFlowToolCall(client, name, args),
     () => executeDecisionToolCall(client, name, args),
+    () => executeSlaToolCall(client, name, args),
+    () => executeOnCallToolCall(client, name, args),
+    () => executeCatalogFulfillmentToolCall(client, name, args),
+    () => executeAccessAdminToolCall(client, name, args),
+    () => executeSurveyToolCall(client, name, args),
+    () => executeGrcExtraToolCall(client, name, args),
+    () => executeServicePortfolioToolCall(client, name, args),
+    () => executePlatformOpsToolCall(client, name, args),
+    () => executeAiAgentExecToolCall(client, name, args),
+    () => executeServiceMappingToolCall(client, name, args),
+    () => executeApprovalsExtraToolCall(client, name, args),
+    () => executeSnParityToolCall(client, name, args),
     () => executePortalToolCall(client, name, args),
     () => executeIntegrationToolCall(client, name, args),
     () => executeNotificationToolCall(client, name, args),

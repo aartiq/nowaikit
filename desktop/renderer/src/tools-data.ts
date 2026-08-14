@@ -1,6 +1,6 @@
 // Auto-generated tool manifest for browser-only mode
-// Generated: 2026-02-28
-// Total tools: 365
+// Generated: 2026-08-13
+// Total tools: 492
 
 export interface ToolDefinition {
   name: string;
@@ -13,6 +13,26 @@ export interface ToolDefinition {
 }
 
 export const TOOL_DEFINITIONS: ToolDefinition[] = [
+  {
+    "name": "search_tools",
+    "description": "Search the full NowAIKit tool catalog (400+ tools) by keyword to discover the right tool without loading every definition. Returns matching tool names + descriptions ranked by relevance. Use this FIRST when you are unsure which tool to call. Especially useful with MCP_TOOL_DISCOVERY=lean, which exposes only a small core set plus this search.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "query": {
+          "type": "string",
+          "description": "Keywords to match against tool names and descriptions, e.g. \"create incident\", \"cmdb health\", \"run atf\""
+        },
+        "limit": {
+          "type": "number",
+          "description": "Max results to return (default 25)"
+        }
+      },
+      "required": [
+        "query"
+      ]
+    }
+  },
   {
     "name": "query_records",
     "description": "Query ServiceNow records with filtering, field selection, pagination, and sorting",
@@ -83,6 +103,102 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
       "required": [
         "table",
         "sys_id"
+      ]
+    }
+  },
+  {
+    "name": "create_record",
+    "description": "Create a new record in any ServiceNow table (requires WRITE_ENABLED=true). Pass dry_run=true to preview the resolved payload without writing.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "table": {
+          "type": "string",
+          "description": "Table name (e.g., \"incident\", \"sys_user_preference\")"
+        },
+        "fields": {
+          "type": "object",
+          "description": "Key-value pairs for the new record fields"
+        },
+        "dry_run": {
+          "type": "boolean",
+          "description": "Preview only — return the resolved payload without creating the record"
+        }
+      },
+      "required": [
+        "table",
+        "fields"
+      ]
+    }
+  },
+  {
+    "name": "update_record",
+    "description": "Update an existing record in any ServiceNow table (requires WRITE_ENABLED=true). Pass dry_run=true to preview a before→after field diff without writing.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "table": {
+          "type": "string",
+          "description": "Table name (e.g., \"incident\", \"sys_user_preference\")"
+        },
+        "sys_id": {
+          "type": "string",
+          "description": "32-character system ID of the record to update"
+        },
+        "fields": {
+          "type": "object",
+          "description": "Key-value pairs of fields to update"
+        },
+        "dry_run": {
+          "type": "boolean",
+          "description": "Preview only — return a before→after diff without updating the record"
+        }
+      },
+      "required": [
+        "table",
+        "sys_id",
+        "fields"
+      ]
+    }
+  },
+  {
+    "name": "delete_record",
+    "description": "Delete a record from any ServiceNow table (requires WRITE_ENABLED=true). Pass dry_run=true to preview the record that would be deleted without deleting it.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "table": {
+          "type": "string",
+          "description": "Table name"
+        },
+        "sys_id": {
+          "type": "string",
+          "description": "32-character system ID of the record to delete"
+        },
+        "dry_run": {
+          "type": "boolean",
+          "description": "Preview only — return the record that would be deleted without deleting it"
+        }
+      },
+      "required": [
+        "table",
+        "sys_id"
+      ]
+    }
+  },
+  {
+    "name": "validate_query",
+    "description": "Lint-check a ServiceNow encoded query BEFORE running it: validates javascript: expressions against the safe function allowlist, length limits, and common mistakes (e.g. using = instead of ^, raw spaces). Returns { valid, issues, suggestions }.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "query": {
+          "type": "string",
+          "description": "The encoded query to validate, e.g. \"active=true^priority=1^ORDERBYDESCsys_created_on\""
+        }
+      },
+      "required": [
+        "query"
       ]
     }
   },
@@ -381,6 +497,102 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
       },
       "required": [
         "schedule_id"
+      ]
+    }
+  },
+  {
+    "name": "bulk_create_records",
+    "description": "Create many records in one table in a single call, tracking every created sys_id and returning a rollback_token. With rollback_on_error=true, a mid-way failure deletes everything already created so the batch is all-or-nothing. Supports dry_run. Requires WRITE_ENABLED=true.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "table": {
+          "type": "string",
+          "description": "Target table"
+        },
+        "records": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          },
+          "description": "Array of field key-value objects to create"
+        },
+        "rollback_on_error": {
+          "type": "boolean",
+          "description": "If a create fails, delete the ones already created (default false)"
+        },
+        "dry_run": {
+          "type": "boolean",
+          "description": "Preview the resolved payloads without creating anything"
+        }
+      },
+      "required": [
+        "table",
+        "records"
+      ]
+    }
+  },
+  {
+    "name": "rollback_changes",
+    "description": "Delete a set of previously-created records, e.g. the rollback_token returned by bulk_create_records. Requires WRITE_ENABLED=true.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "changes": {
+          "type": "array",
+          "description": "Array of { table, sys_id } to delete",
+          "items": {
+            "type": "object",
+            "properties": {
+              "table": {
+                "type": "string"
+              },
+              "sys_id": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "table",
+              "sys_id"
+            ]
+          }
+        }
+      },
+      "required": [
+        "changes"
+      ]
+    }
+  },
+  {
+    "name": "compare_instances",
+    "description": "Compare two configured ServiceNow instances: record counts for a table (with optional query) and/or a specific system property value. Useful for dev→prod drift detection and governance.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "instance_a": {
+          "type": "string",
+          "description": "First instance name (as configured)"
+        },
+        "instance_b": {
+          "type": "string",
+          "description": "Second instance name (as configured)"
+        },
+        "table": {
+          "type": "string",
+          "description": "Table to compare record counts for (optional)"
+        },
+        "query": {
+          "type": "string",
+          "description": "Encoded query to scope the count (optional)"
+        },
+        "property": {
+          "type": "string",
+          "description": "A sys_properties name to compare values for (optional)"
+        }
+      },
+      "required": [
+        "instance_a",
+        "instance_b"
       ]
     }
   },
@@ -1716,22 +1928,28 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
   },
   {
     "name": "get_performance_analytics",
-    "description": "Get Performance Analytics widget data (requires PA plugin; latest release: /api/now/pa/widget/{sys_id})",
+    "description": "Read Performance Analytics scorecard/indicator data (requires PA plugin; GET /api/now/pa/scorecards). Pass an indicator sys_id, or a PA widget sys_id to resolve its indicator.",
     "inputSchema": {
       "type": "object",
       "properties": {
+        "indicator_sys_id": {
+          "type": "string",
+          "description": "sys_id of the PA indicator (pa_indicators)"
+        },
         "widget_sys_id": {
           "type": "string",
-          "description": "sys_id of the PA widget"
+          "description": "sys_id of a PA widget (pa_widgets); its indicator is resolved automatically"
         },
-        "time_range": {
+        "from": {
           "type": "string",
-          "description": "Time range (e.g., \"last_30_days\", \"last_quarter\")"
+          "description": "Optional score-series start date (YYYY-MM-DD)"
+        },
+        "to": {
+          "type": "string",
+          "description": "Optional score-series end date (YYYY-MM-DD)"
         }
       },
-      "required": [
-        "widget_sys_id"
-      ]
+      "required": []
     }
   },
   {
@@ -1764,13 +1982,17 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
   },
   {
     "name": "get_sys_log",
-    "description": "Retrieve system log entries for debugging or auditing",
+    "description": "Retrieve system log entries for debugging or auditing. Set app_scope=true to read the scoped-application log (syslog_app_scope), where scoped gs.info()/gs.log() output lands, instead of the global syslog.",
     "inputSchema": {
       "type": "object",
       "properties": {
         "query": {
           "type": "string",
           "description": "Filter (e.g., \"level=error^sys_created_onONToday@javascript:gs.beginningOfToday()@javascript:gs.endOfToday()\")"
+        },
+        "app_scope": {
+          "type": "boolean",
+          "description": "Read syslog_app_scope (scoped-app log output) instead of the global syslog."
         },
         "limit": {
           "type": "number",
@@ -2059,6 +2281,64 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     }
   },
   {
+    "name": "generate_report",
+    "description": "Generate a branded PDF or PPTX report from capability analysis results. Call this after completing a scan, review, or audit to create a management-ready document with charts, tables, and ServiceNow links. Supports single capability (content) or multiple capabilities (sections) in one combined report.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "content": {
+          "type": "string",
+          "description": "Full markdown analysis to convert into a branded report (for single capability)"
+        },
+        "sections": {
+          "type": "array",
+          "description": "Multiple capability analyses to combine into one report. Each section becomes a chapter. Use this instead of content for multi-capability reports.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "content": {
+                "type": "string",
+                "description": "Markdown analysis for this capability"
+              },
+              "title": {
+                "type": "string",
+                "description": "Section title (e.g. \"Instance Health Scan\")"
+              },
+              "capability": {
+                "type": "string",
+                "description": "Capability name (e.g. \"scan-health\")"
+              }
+            },
+            "required": [
+              "content",
+              "title"
+            ]
+          }
+        },
+        "format": {
+          "type": "string",
+          "enum": [
+            "pdf",
+            "pptx"
+          ],
+          "description": "Output format: pdf (branded document) or pptx (slide deck)"
+        },
+        "title": {
+          "type": "string",
+          "description": "Report title (e.g. \"Instance Health Scan\", \"Comprehensive Instance Audit\")"
+        },
+        "capability": {
+          "type": "string",
+          "description": "Capability name that produced the analysis (e.g. \"scan-health\", \"review-code\", \"combined-audit\")"
+        }
+      },
+      "required": [
+        "format",
+        "title"
+      ]
+    }
+  },
+  {
     "name": "list_atf_suites",
     "description": "List ATF test suites in the instance",
     "inputSchema": {
@@ -2268,45 +2548,8 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     }
   },
   {
-    "name": "generate_summary",
-    "description": "Generate an AI summary of any record using Now Assist (latest release: sn_assist/skill/summarize)",
-    "inputSchema": {
-      "type": "object",
-      "properties": {
-        "table": {
-          "type": "string",
-          "description": "Table name (e.g., \"incident\", \"change_request\")"
-        },
-        "sys_id": {
-          "type": "string",
-          "description": "System ID of the record"
-        }
-      },
-      "required": [
-        "table",
-        "sys_id"
-      ]
-    }
-  },
-  {
-    "name": "suggest_resolution",
-    "description": "Get AI-powered resolution suggestion for an incident based on similar past incidents",
-    "inputSchema": {
-      "type": "object",
-      "properties": {
-        "incident_sys_id": {
-          "type": "string",
-          "description": "System ID of the incident"
-        }
-      },
-      "required": [
-        "incident_sys_id"
-      ]
-    }
-  },
-  {
     "name": "categorize_incident",
-    "description": "Use Predictive Intelligence to predict category, assignment group, and priority (latest release: LightGBM algorithm)",
+    "description": "Suggest category, assignment group, and priority for an incident by analysing similar resolved incidents (Table API). Predictive Intelligence has no public REST prediction endpoint; for model-based scoring run PI on-record and read the predicted field.",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -2316,7 +2559,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
         },
         "description": {
           "type": "string",
-          "description": "Optional full description for better accuracy"
+          "description": "Optional full description (not required for the heuristic)"
         }
       },
       "required": [
@@ -2326,7 +2569,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
   },
   {
     "name": "get_virtual_agent_topics",
-    "description": "List Virtual Agent topics available in the instance (latest release: streaming VA API)",
+    "description": "List Virtual Agent topics available in the instance (sys_cs_topic)",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -2347,28 +2590,8 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     }
   },
   {
-    "name": "trigger_agentic_playbook",
-    "description": "Invoke an Agentic Playbook — context-aware AI agents that complete tasks autonomously ",
-    "inputSchema": {
-      "type": "object",
-      "properties": {
-        "playbook_sys_id": {
-          "type": "string",
-          "description": "System ID of the Agentic Playbook"
-        },
-        "context": {
-          "type": "object",
-          "description": "Context key-value pairs to pass to the playbook"
-        }
-      },
-      "required": [
-        "playbook_sys_id"
-      ]
-    }
-  },
-  {
     "name": "get_ms_copilot_topics",
-    "description": "List VA topics exposed to Microsoft Copilot 365 via Custom Engine Agent integration ",
+    "description": "List the Virtual Agent topics (sys_cs_topic) that back a Microsoft Copilot integration. Copilot topic mapping itself is configured in Copilot Studio on the Microsoft side, not exposed via ServiceNow REST.",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -2378,31 +2601,6 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
         }
       },
       "required": []
-    }
-  },
-  {
-    "name": "generate_work_notes",
-    "description": "Generate AI-drafted work notes for a record based on its current context",
-    "inputSchema": {
-      "type": "object",
-      "properties": {
-        "table": {
-          "type": "string",
-          "description": "Table name"
-        },
-        "sys_id": {
-          "type": "string",
-          "description": "System ID of the record"
-        },
-        "context": {
-          "type": "string",
-          "description": "Additional context to include in the draft"
-        }
-      },
-      "required": [
-        "table",
-        "sys_id"
-      ]
     }
   },
   {
@@ -2579,6 +2777,14 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
         "active": {
           "type": "boolean",
           "description": "Whether to activate (default: true)"
+        },
+        "client_callable": {
+          "type": "boolean",
+          "description": "Client callable, for GlideAjax use (default: false)"
+        },
+        "scope": {
+          "type": "string",
+          "description": "Target application scope: a sys_scope sys_id, or \"global\" for the global scope. Default: your current application. Overriding scope needs cross-scope create rights."
         }
       },
       "required": [
@@ -3280,6 +3486,134 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
         "assigned_to": {
           "type": "string",
           "description": "Filter by assignee"
+        },
+        "limit": {
+          "type": "number",
+          "description": "Max results (default: 20)"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "create_story_dependency",
+    "description": "Link one agile story as dependent on another (m2m_story_dependencies). Requires WRITE_ENABLED=true.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "story": {
+          "type": "string",
+          "description": "The dependent story sys_id (the one that is blocked)"
+        },
+        "dependent_story": {
+          "type": "string",
+          "description": "The story it depends on (the blocker) sys_id"
+        }
+      },
+      "required": [
+        "story",
+        "dependent_story"
+      ]
+    }
+  },
+  {
+    "name": "list_story_dependencies",
+    "description": "List dependency links for a story (m2m_story_dependencies).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "story": {
+          "type": "string",
+          "description": "Story sys_id to list dependencies for"
+        },
+        "limit": {
+          "type": "number",
+          "description": "Max results (default: 50)"
+        }
+      },
+      "required": [
+        "story"
+      ]
+    }
+  },
+  {
+    "name": "delete_story_dependency",
+    "description": "Remove a story dependency link by its m2m_story_dependencies sys_id. Requires WRITE_ENABLED=true.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "sys_id": {
+          "type": "string",
+          "description": "The m2m_story_dependencies record sys_id"
+        }
+      },
+      "required": [
+        "sys_id"
+      ]
+    }
+  },
+  {
+    "name": "create_project",
+    "description": "Create a PPM project (pm_project). Requires WRITE_ENABLED=true.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "short_description": {
+          "type": "string",
+          "description": "Project name / short description"
+        },
+        "description": {
+          "type": "string",
+          "description": "Project description"
+        },
+        "state": {
+          "type": "string",
+          "description": "Project state (e.g. pending, open, work in progress)"
+        },
+        "priority": {
+          "type": "string",
+          "description": "Priority (1-5)"
+        },
+        "fields": {
+          "type": "object",
+          "description": "Additional pm_project fields (start_date, end_date, project_manager, etc.)"
+        }
+      },
+      "required": [
+        "short_description"
+      ]
+    }
+  },
+  {
+    "name": "update_project",
+    "description": "Update a PPM project (pm_project). Requires WRITE_ENABLED=true.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "sys_id": {
+          "type": "string",
+          "description": "Project sys_id"
+        },
+        "fields": {
+          "type": "object",
+          "description": "Key-value pairs to update"
+        }
+      },
+      "required": [
+        "sys_id",
+        "fields"
+      ]
+    }
+  },
+  {
+    "name": "list_projects",
+    "description": "List PPM projects (pm_project).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "query": {
+          "type": "string",
+          "description": "Encoded query filter (e.g. state=open)"
         },
         "limit": {
           "type": "number",
@@ -4509,10 +4843,14 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
   },
   {
     "name": "list_action_instances",
-    "description": "List reusable Flow Designer action instances available in the environment",
+    "description": "List Flow Designer action instances. Pass flow_id to scope to a single flow's steps (recommended); otherwise lists across the environment.",
     "inputSchema": {
       "type": "object",
       "properties": {
+        "flow_id": {
+          "type": "string",
+          "description": "Parent flow sys_id (sys_hub_flow). Returns only that flow's action instances."
+        },
         "query": {
           "type": "string",
           "description": "Search actions by name or category"
@@ -4689,6 +5027,42 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     }
   },
   {
+    "name": "update_flow",
+    "description": "Update a flow or subflow's METADATA only (activate/deactivate, name, description, run-as). **[Write]** NOTE: this cannot safely insert or edit flow STEPS. Flow Designer executes a compiled snapshot, and writing action-instance rows over REST does not recompile the flow, which would desync/corrupt it. Edit steps in the Flow Designer UI.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "flow_sys_id": {
+          "type": "string",
+          "description": "Flow or subflow sys_id"
+        },
+        "type": {
+          "type": "string",
+          "description": "Type: flow or subflow (default flow)"
+        },
+        "active": {
+          "type": "boolean",
+          "description": "Activate (true) or deactivate (false)"
+        },
+        "name": {
+          "type": "string",
+          "description": "New name"
+        },
+        "description": {
+          "type": "string",
+          "description": "New description"
+        },
+        "run_as": {
+          "type": "string",
+          "description": "run_as value (e.g. user_who_triggers, system_user)"
+        }
+      },
+      "required": [
+        "flow_sys_id"
+      ]
+    }
+  },
+  {
     "name": "test_flow",
     "description": "Execute a flow in test mode with sample inputs. **[Write]**",
     "inputSchema": {
@@ -4729,6 +5103,1678 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
       },
       "required": [
         "flow_sys_id"
+      ]
+    }
+  },
+  {
+    "name": "list_decision_tables",
+    "description": "List Decision Builder decision tables (sys_decision), optionally filtered by name or active status",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "query": {
+          "type": "string",
+          "description": "Search decision tables by name or description"
+        },
+        "active": {
+          "type": "boolean",
+          "description": "Filter to active decision tables only"
+        },
+        "limit": {
+          "type": "number",
+          "description": "Max records to return (default 50)"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "get_decision_table",
+    "description": "Get a decision table with its inputs and answer rows, by name or sys_id",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "name_or_sysid": {
+          "type": "string",
+          "description": "Decision table name or sys_id"
+        }
+      },
+      "required": [
+        "name_or_sysid"
+      ]
+    }
+  },
+  {
+    "name": "list_decision_inputs",
+    "description": "List the inputs of a decision table",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "decision_sys_id": {
+          "type": "string",
+          "description": "sys_id of the decision table (sys_decision)"
+        }
+      },
+      "required": [
+        "decision_sys_id"
+      ]
+    }
+  },
+  {
+    "name": "list_decision_answers",
+    "description": "List the answer/result rows of a decision table",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "decision_sys_id": {
+          "type": "string",
+          "description": "sys_id of the decision table (sys_decision)"
+        },
+        "limit": {
+          "type": "number",
+          "description": "Max records to return (default 100)"
+        }
+      },
+      "required": [
+        "decision_sys_id"
+      ]
+    }
+  },
+  {
+    "name": "create_decision_table",
+    "description": "Create a Decision Builder decision table (sys_decision). Requires WRITE_ENABLED=true",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Decision table name"
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of what the decision returns"
+        },
+        "active": {
+          "type": "boolean",
+          "description": "Whether the decision table is active (default true)"
+        },
+        "fields": {
+          "type": "object",
+          "description": "Additional sys_decision field values to set"
+        }
+      },
+      "required": [
+        "name"
+      ]
+    }
+  },
+  {
+    "name": "create_decision_input",
+    "description": "Add an input to a decision table (sys_decision_input). Requires WRITE_ENABLED=true",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "decision_sys_id": {
+          "type": "string",
+          "description": "sys_id of the parent decision table (sys_decision)"
+        },
+        "name": {
+          "type": "string",
+          "description": "Input name/label"
+        },
+        "type": {
+          "type": "string",
+          "description": "Input data type (e.g., string, integer, reference, boolean)"
+        },
+        "order": {
+          "type": "number",
+          "description": "Display order of the input"
+        },
+        "fields": {
+          "type": "object",
+          "description": "Additional sys_decision_input field values to set"
+        }
+      },
+      "required": [
+        "decision_sys_id",
+        "name"
+      ]
+    }
+  },
+  {
+    "name": "list_sla_definitions",
+    "description": "List SLA/OLA definitions (contract_sla), optionally filtered by name, table, or active status",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "query": {
+          "type": "string",
+          "description": "Search definitions by name"
+        },
+        "table": {
+          "type": "string",
+          "description": "Filter to a collection/table (e.g. \"incident\")"
+        },
+        "active": {
+          "type": "boolean",
+          "description": "Filter to active definitions only"
+        },
+        "limit": {
+          "type": "number",
+          "description": "Max records to return (default 50)"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "create_sla_definition",
+    "description": "Create an SLA/OLA definition (contract_sla). Requires WRITE_ENABLED=true",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "SLA definition name"
+        },
+        "collection": {
+          "type": "string",
+          "description": "Table the SLA applies to (e.g. \"incident\")"
+        },
+        "duration_type": {
+          "type": "string",
+          "description": "Duration type (e.g. \"User specified\")"
+        },
+        "duration": {
+          "type": "string",
+          "description": "Duration value (e.g. \"1970-01-01 04:00:00\" for 4h)"
+        },
+        "start_condition": {
+          "type": "string",
+          "description": "Encoded start condition"
+        },
+        "stop_condition": {
+          "type": "string",
+          "description": "Encoded stop condition"
+        },
+        "schedule": {
+          "type": "string",
+          "description": "Schedule sys_id (business hours)"
+        },
+        "type": {
+          "type": "string",
+          "description": "\"SLA\" or \"OLA\" (default SLA)"
+        },
+        "fields": {
+          "type": "object",
+          "description": "Additional field values"
+        }
+      },
+      "required": [
+        "name",
+        "collection"
+      ]
+    }
+  },
+  {
+    "name": "update_sla_definition",
+    "description": "Update an SLA/OLA definition (contract_sla). Requires WRITE_ENABLED=true",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "sys_id": {
+          "type": "string",
+          "description": "sys_id of the definition"
+        },
+        "fields": {
+          "type": "object",
+          "description": "Field values to update"
+        }
+      },
+      "required": [
+        "sys_id",
+        "fields"
+      ]
+    }
+  },
+  {
+    "name": "get_task_sla",
+    "description": "Get live SLA instances (task_sla) for a task — percent complete, breach status, stage, planned end",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "task": {
+          "type": "string",
+          "description": "sys_id of the task (incident/change/etc.)"
+        },
+        "task_number": {
+          "type": "string",
+          "description": "Task number (e.g. INC0010001) if sys_id not known"
+        },
+        "active_only": {
+          "type": "boolean",
+          "description": "Only in-progress SLAs (default true)"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "list_breached_slas",
+    "description": "List SLA instances that have breached or are at risk within a window (task_sla)",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "breached": {
+          "type": "boolean",
+          "description": "true = already breached; false = at-risk/in-progress (default true)"
+        },
+        "min_percentage": {
+          "type": "number",
+          "description": "For at-risk: minimum business_percentage (e.g. 80)"
+        },
+        "sla_table": {
+          "type": "string",
+          "description": "Filter to a task table (e.g. \"incident\") via task.sys_class_name"
+        },
+        "limit": {
+          "type": "number",
+          "description": "Max records (default 50)"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "get_on_call_now",
+    "description": "Find who is on call for a group right now. Returns the current roster members for the group's rotations",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "group": {
+          "type": "string",
+          "description": "Group name or sys_id"
+        }
+      },
+      "required": [
+        "group"
+      ]
+    }
+  },
+  {
+    "name": "list_rotas",
+    "description": "List on-call rotations (cmn_rota), optionally filtered by group or name",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "group": {
+          "type": "string",
+          "description": "Filter by group sys_id"
+        },
+        "query": {
+          "type": "string",
+          "description": "Search rotations by name"
+        },
+        "limit": {
+          "type": "number",
+          "description": "Max records (default 50)"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "create_rota_schedule",
+    "description": "Create an on-call rotation (cmn_rota) for a group. Requires WRITE_ENABLED=true",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Rotation name"
+        },
+        "group": {
+          "type": "string",
+          "description": "Group sys_id that owns the rotation"
+        },
+        "time_zone": {
+          "type": "string",
+          "description": "Time zone (e.g. \"US/Eastern\")"
+        },
+        "fields": {
+          "type": "object",
+          "description": "Additional field values"
+        }
+      },
+      "required": [
+        "name",
+        "group"
+      ]
+    }
+  },
+  {
+    "name": "add_roster_member",
+    "description": "Add a member to an on-call roster (cmn_rota_member). Requires WRITE_ENABLED=true",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "roster": {
+          "type": "string",
+          "description": "sys_id of the roster (cmn_rota_roster)"
+        },
+        "member": {
+          "type": "string",
+          "description": "sys_id of the group member (sys_user_grmember) or user"
+        },
+        "order": {
+          "type": "number",
+          "description": "Rotation order"
+        },
+        "fields": {
+          "type": "object",
+          "description": "Additional field values"
+        }
+      },
+      "required": [
+        "roster",
+        "member"
+      ]
+    }
+  },
+  {
+    "name": "create_on_call_override",
+    "description": "Create an on-call coverage override for a date range (cmn_rota_override). Requires WRITE_ENABLED=true",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "roster": {
+          "type": "string",
+          "description": "sys_id of the roster being overridden"
+        },
+        "member": {
+          "type": "string",
+          "description": "sys_id of the covering user/member"
+        },
+        "start": {
+          "type": "string",
+          "description": "Override start (YYYY-MM-DD HH:MM:SS)"
+        },
+        "end": {
+          "type": "string",
+          "description": "Override end (YYYY-MM-DD HH:MM:SS)"
+        },
+        "fields": {
+          "type": "object",
+          "description": "Additional field values"
+        }
+      },
+      "required": [
+        "roster",
+        "member",
+        "start",
+        "end"
+      ]
+    }
+  },
+  {
+    "name": "get_request_item",
+    "description": "Get a requested item (RITM) with its variables, by number or sys_id",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "number": {
+          "type": "string",
+          "description": "RITM number (e.g. RITM0010001)"
+        },
+        "sys_id": {
+          "type": "string",
+          "description": "sys_id of the sc_req_item"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "update_request_item",
+    "description": "Update the state/stage or fields of a requested item (sc_req_item). Requires WRITE_ENABLED=true",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "sys_id": {
+          "type": "string",
+          "description": "sys_id of the RITM"
+        },
+        "state": {
+          "type": "string",
+          "description": "New state value"
+        },
+        "stage": {
+          "type": "string",
+          "description": "New stage value"
+        },
+        "fields": {
+          "type": "object",
+          "description": "Additional field values"
+        }
+      },
+      "required": [
+        "sys_id"
+      ]
+    }
+  },
+  {
+    "name": "list_catalog_tasks",
+    "description": "List catalog fulfillment tasks (SCTASK), optionally by request item, assignment group, or state",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "request_item": {
+          "type": "string",
+          "description": "Parent RITM sys_id"
+        },
+        "assignment_group": {
+          "type": "string",
+          "description": "Assignment group sys_id"
+        },
+        "active": {
+          "type": "boolean",
+          "description": "Filter to active tasks only"
+        },
+        "limit": {
+          "type": "number",
+          "description": "Max records (default 50)"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "complete_catalog_task",
+    "description": "Close a catalog fulfillment task (sc_task) as complete. Requires WRITE_ENABLED=true",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "sys_id": {
+          "type": "string",
+          "description": "sys_id of the SCTASK"
+        },
+        "close_notes": {
+          "type": "string",
+          "description": "Closure notes"
+        },
+        "state": {
+          "type": "string",
+          "description": "Closed state value (default 3 = Closed Complete)"
+        }
+      },
+      "required": [
+        "sys_id"
+      ]
+    }
+  },
+  {
+    "name": "list_catalog_categories",
+    "description": "List catalog categories (sc_category), optionally filtered by catalog or title",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "catalog": {
+          "type": "string",
+          "description": "Catalog sys_id to filter by"
+        },
+        "query": {
+          "type": "string",
+          "description": "Search categories by title"
+        },
+        "limit": {
+          "type": "number",
+          "description": "Max records (default 50)"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "create_catalog_category",
+    "description": "Create a catalog category (sc_category). Requires WRITE_ENABLED=true",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Category title"
+        },
+        "catalog": {
+          "type": "string",
+          "description": "Catalog sys_id (sc_catalog)"
+        },
+        "description": {
+          "type": "string",
+          "description": "Category description"
+        },
+        "parent": {
+          "type": "string",
+          "description": "Parent category sys_id (for sub-categories)"
+        },
+        "fields": {
+          "type": "object",
+          "description": "Additional field values"
+        }
+      },
+      "required": [
+        "title"
+      ]
+    }
+  },
+  {
+    "name": "create_user_criteria",
+    "description": "Create a user criteria record (user_criteria) for catalog entitlement/audience. Requires WRITE_ENABLED=true",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "User criteria name"
+        },
+        "roles": {
+          "type": "string",
+          "description": "Comma-separated role sys_ids"
+        },
+        "groups": {
+          "type": "string",
+          "description": "Comma-separated group sys_ids"
+        },
+        "users": {
+          "type": "string",
+          "description": "Comma-separated user sys_ids"
+        },
+        "match_all": {
+          "type": "boolean",
+          "description": "Require all conditions to match"
+        },
+        "fields": {
+          "type": "object",
+          "description": "Additional field values"
+        }
+      },
+      "required": [
+        "name"
+      ]
+    }
+  },
+  {
+    "name": "assign_user_criteria",
+    "description": "Attach a user criteria to a catalog item as available-for (sc_cat_item_user_criteria_mtom). Requires WRITE_ENABLED=true",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "catalog_item": {
+          "type": "string",
+          "description": "sys_id of the catalog item (sc_cat_item)"
+        },
+        "user_criteria": {
+          "type": "string",
+          "description": "sys_id of the user_criteria record"
+        }
+      },
+      "required": [
+        "catalog_item",
+        "user_criteria"
+      ]
+    }
+  },
+  {
+    "name": "list_user_roles",
+    "description": "List roles granted to a user (sys_user_has_role), including inherited flag",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "user": {
+          "type": "string",
+          "description": "User sys_id, user_name, or email"
+        }
+      },
+      "required": [
+        "user"
+      ]
+    }
+  },
+  {
+    "name": "grant_role",
+    "description": "Grant a role to a user (sys_user_has_role). Requires WRITE_ENABLED=true",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "user": {
+          "type": "string",
+          "description": "User sys_id, user_name, or email"
+        },
+        "role": {
+          "type": "string",
+          "description": "Role sys_id or name (e.g. \"itil\")"
+        }
+      },
+      "required": [
+        "user",
+        "role"
+      ]
+    }
+  },
+  {
+    "name": "revoke_role",
+    "description": "Revoke a directly-granted role from a user. Requires WRITE_ENABLED=true",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "user": {
+          "type": "string",
+          "description": "User sys_id, user_name, or email"
+        },
+        "role": {
+          "type": "string",
+          "description": "Role sys_id or name"
+        }
+      },
+      "required": [
+        "user",
+        "role"
+      ]
+    }
+  },
+  {
+    "name": "create_role",
+    "description": "Create a new role (sys_user_role). Requires WRITE_ENABLED=true",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Role name (e.g. \"x_acme.approver\")"
+        },
+        "description": {
+          "type": "string",
+          "description": "Role description"
+        },
+        "fields": {
+          "type": "object",
+          "description": "Additional field values"
+        }
+      },
+      "required": [
+        "name"
+      ]
+    }
+  },
+  {
+    "name": "deactivate_user",
+    "description": "Deactivate (offboard) a user by setting active=false. Requires WRITE_ENABLED=true",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "user": {
+          "type": "string",
+          "description": "User sys_id, user_name, or email"
+        }
+      },
+      "required": [
+        "user"
+      ]
+    }
+  },
+  {
+    "name": "create_delegation",
+    "description": "Create an approval/coverage delegation (sys_user_delegate). Requires WRITE_ENABLED=true",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "user": {
+          "type": "string",
+          "description": "User delegating (sys_id/user_name/email)"
+        },
+        "delegate": {
+          "type": "string",
+          "description": "User receiving the delegation"
+        },
+        "starts": {
+          "type": "string",
+          "description": "Start datetime (YYYY-MM-DD HH:MM:SS)"
+        },
+        "ends": {
+          "type": "string",
+          "description": "End datetime (YYYY-MM-DD HH:MM:SS)"
+        },
+        "approvals": {
+          "type": "boolean",
+          "description": "Delegate approvals (default true)"
+        },
+        "assignments": {
+          "type": "boolean",
+          "description": "Delegate assignments"
+        }
+      },
+      "required": [
+        "user",
+        "delegate"
+      ]
+    }
+  },
+  {
+    "name": "list_group_members",
+    "description": "List the members of a group (sys_user_grmember)",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "group": {
+          "type": "string",
+          "description": "Group sys_id or name"
+        },
+        "limit": {
+          "type": "number",
+          "description": "Max records (default 100)"
+        }
+      },
+      "required": [
+        "group"
+      ]
+    }
+  },
+  {
+    "name": "get_user_entitlements",
+    "description": "Summarize what a user can access: their roles, groups, and active status",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "user": {
+          "type": "string",
+          "description": "User sys_id, user_name, or email"
+        }
+      },
+      "required": [
+        "user"
+      ]
+    }
+  },
+  {
+    "name": "create_survey",
+    "description": "Create a survey/assessment definition (asmt_metric_type). Requires WRITE_ENABLED=true",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Survey name"
+        },
+        "description": {
+          "type": "string",
+          "description": "Survey description"
+        },
+        "type": {
+          "type": "string",
+          "description": "Metric type (e.g. \"survey\")"
+        },
+        "fields": {
+          "type": "object",
+          "description": "Additional field values"
+        }
+      },
+      "required": [
+        "name"
+      ]
+    }
+  },
+  {
+    "name": "send_survey",
+    "description": "Issue a survey/assessment instance to a user (asmt_assessment_instance). Requires WRITE_ENABLED=true",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "metric_type": {
+          "type": "string",
+          "description": "sys_id of the survey definition (asmt_metric_type)"
+        },
+        "user": {
+          "type": "string",
+          "description": "Recipient user sys_id"
+        },
+        "trigger_id": {
+          "type": "string",
+          "description": "Source record sys_id (e.g. the closed incident)"
+        },
+        "trigger_table": {
+          "type": "string",
+          "description": "Source table name"
+        },
+        "fields": {
+          "type": "object",
+          "description": "Additional field values"
+        }
+      },
+      "required": [
+        "metric_type",
+        "user"
+      ]
+    }
+  },
+  {
+    "name": "get_survey_results",
+    "description": "Get responses/scores for a survey instance or definition (asmt_assessment_instance_question)",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "instance": {
+          "type": "string",
+          "description": "sys_id of a specific assessment instance"
+        },
+        "metric_type": {
+          "type": "string",
+          "description": "sys_id of the survey definition (aggregate across instances)"
+        },
+        "limit": {
+          "type": "number",
+          "description": "Max question rows (default 100)"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "list_assessments",
+    "description": "List survey/assessment instances (asmt_assessment_instance) by state or user",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "state": {
+          "type": "string",
+          "description": "Instance state (e.g. \"ready\", \"complete\")"
+        },
+        "user": {
+          "type": "string",
+          "description": "Recipient user sys_id"
+        },
+        "metric_type": {
+          "type": "string",
+          "description": "Survey definition sys_id"
+        },
+        "limit": {
+          "type": "number",
+          "description": "Max records (default 50)"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "list_grc_issues",
+    "description": "List GRC issues/findings (sn_grc_issue), optionally by state or owner",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "state": {
+          "type": "string",
+          "description": "Issue state filter"
+        },
+        "owner": {
+          "type": "string",
+          "description": "Owner/assigned user sys_id"
+        },
+        "query": {
+          "type": "string",
+          "description": "Search issues by short description"
+        },
+        "limit": {
+          "type": "number",
+          "description": "Max records (default 50)"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "create_grc_issue",
+    "description": "Raise a GRC issue/finding (sn_grc_issue). Requires WRITE_ENABLED=true",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "short_description": {
+          "type": "string",
+          "description": "Issue summary"
+        },
+        "description": {
+          "type": "string",
+          "description": "Full description"
+        },
+        "source": {
+          "type": "string",
+          "description": "Source record sys_id (control/risk/audit)"
+        },
+        "fields": {
+          "type": "object",
+          "description": "Additional field values"
+        }
+      },
+      "required": [
+        "short_description"
+      ]
+    }
+  },
+  {
+    "name": "create_grc_control",
+    "description": "Author a compliance control (sn_compliance_control). Requires WRITE_ENABLED=true",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Control name"
+        },
+        "description": {
+          "type": "string",
+          "description": "Control description"
+        },
+        "profile": {
+          "type": "string",
+          "description": "Related profile/entity sys_id"
+        },
+        "fields": {
+          "type": "object",
+          "description": "Additional field values"
+        }
+      },
+      "required": [
+        "name"
+      ]
+    }
+  },
+  {
+    "name": "run_control_test",
+    "description": "Create/attest a control test (sn_compliance_control_test). Requires WRITE_ENABLED=true",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "control": {
+          "type": "string",
+          "description": "sys_id of the control (sn_compliance_control)"
+        },
+        "result": {
+          "type": "string",
+          "description": "Test result/state (e.g. \"pass\", \"fail\")"
+        },
+        "notes": {
+          "type": "string",
+          "description": "Test notes/evidence"
+        },
+        "fields": {
+          "type": "object",
+          "description": "Additional field values"
+        }
+      },
+      "required": [
+        "control"
+      ]
+    }
+  },
+  {
+    "name": "create_business_service",
+    "description": "Create a business service (cmdb_ci_service). Requires WRITE_ENABLED=true",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Business service name"
+        },
+        "owned_by": {
+          "type": "string",
+          "description": "Owner user sys_id"
+        },
+        "support_group": {
+          "type": "string",
+          "description": "Support group sys_id"
+        },
+        "fields": {
+          "type": "object",
+          "description": "Additional field values"
+        }
+      },
+      "required": [
+        "name"
+      ]
+    }
+  },
+  {
+    "name": "create_service_offering",
+    "description": "Create a service offering under a business service (service_offering). Requires WRITE_ENABLED=true",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Service offering name"
+        },
+        "parent": {
+          "type": "string",
+          "description": "Parent business service sys_id (cmdb_ci_service)"
+        },
+        "support_group": {
+          "type": "string",
+          "description": "Support group sys_id"
+        },
+        "fields": {
+          "type": "object",
+          "description": "Additional field values"
+        }
+      },
+      "required": [
+        "name"
+      ]
+    }
+  },
+  {
+    "name": "list_service_offerings",
+    "description": "List service offerings (service_offering), optionally by parent business service",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "parent": {
+          "type": "string",
+          "description": "Parent business service sys_id"
+        },
+        "query": {
+          "type": "string",
+          "description": "Search offerings by name"
+        },
+        "limit": {
+          "type": "number",
+          "description": "Max records (default 50)"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "list_scan_suites",
+    "description": "List Instance Scan suites (scan_suite) available to run",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "query": {
+          "type": "string",
+          "description": "Search suites by name"
+        },
+        "limit": {
+          "type": "number",
+          "description": "Max records (default 50)"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "get_instance_scan_findings",
+    "description": "List Instance Scan findings (scan_finding) — best-practice violations, optionally by check or suite result",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "check": {
+          "type": "string",
+          "description": "Filter by check name (contains)"
+        },
+        "suite_result": {
+          "type": "string",
+          "description": "Filter by scan suite result sys_id"
+        },
+        "table": {
+          "type": "string",
+          "description": "Filter by target table"
+        },
+        "limit": {
+          "type": "number",
+          "description": "Max records (default 50)"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "get_ecc_queue",
+    "description": "Inspect the ECC queue (ecc_queue) — MID server probes/sensors, by state, agent, or topic",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "state": {
+          "type": "string",
+          "description": "Filter by state (e.g. \"ready\", \"processed\", \"error\")"
+        },
+        "queue": {
+          "type": "string",
+          "description": "Direction: \"input\" or \"output\""
+        },
+        "agent": {
+          "type": "string",
+          "description": "MID server agent name (contains)"
+        },
+        "topic": {
+          "type": "string",
+          "description": "Topic (contains)"
+        },
+        "limit": {
+          "type": "number",
+          "description": "Max records (default 50)"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "resubmit_ecc_probe",
+    "description": "Re-queue an ECC probe/sensor by setting its state back to ready (ecc_queue). Requires WRITE_ENABLED=true",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "sys_id": {
+          "type": "string",
+          "description": "sys_id of the ecc_queue record"
+        }
+      },
+      "required": [
+        "sys_id"
+      ]
+    }
+  },
+  {
+    "name": "run_fix_script",
+    "description": "Execute a fix script (sys_script_fix) by name or sys_id on the server. Requires WRITE_ENABLED=true and SCRIPTING_ENABLED=true",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Fix script name"
+        },
+        "sys_id": {
+          "type": "string",
+          "description": "sys_id of the fix script"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "list_ai_agent_executions",
+    "description": "List recent Now Assist AI Agent execution plans (sn_aia_execution_plan)",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "description": "Filter by execution status"
+        },
+        "query": {
+          "type": "string",
+          "description": "Encoded query for additional filtering"
+        },
+        "limit": {
+          "type": "number",
+          "description": "Max records (default 25)"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "get_ai_agent_execution",
+    "description": "Get an AI Agent execution plan with its steps/tool calls (sn_aia_execution_plan + _step)",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "sys_id": {
+          "type": "string",
+          "description": "sys_id of the execution plan"
+        }
+      },
+      "required": [
+        "sys_id"
+      ]
+    }
+  },
+  {
+    "name": "list_agent_use_cases",
+    "description": "List AI Agent Studio use cases (sn_aia_usecase) and their configuration",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "query": {
+          "type": "string",
+          "description": "Search use cases by name"
+        },
+        "limit": {
+          "type": "number",
+          "description": "Max records (default 50)"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "list_application_services",
+    "description": "List discovered application services (cmdb_ci_service_auto), optionally by name or operational status. Parity with ServiceNow get_all_application_service_names",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "query": {
+          "type": "string",
+          "description": "Search application services by name"
+        },
+        "operational_status": {
+          "type": "string",
+          "description": "Filter by operational_status value"
+        },
+        "limit": {
+          "type": "number",
+          "description": "Max records (default 50)"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "cmdb_services_for_ci",
+    "description": "Reverse lookup: which application services contain a given CI/server (svc_ci_assoc). Parity with ServiceNow get_all_application_services_for_a_server",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "ci": {
+          "type": "string",
+          "description": "sys_id of the CI/server"
+        },
+        "ci_name": {
+          "type": "string",
+          "description": "CI name if sys_id not known"
+        },
+        "limit": {
+          "type": "number",
+          "description": "Max records (default 50)"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "cmdb_find_unmapped_cis",
+    "description": "Find operational CIs that have relationships but belong to no application service (mapping gaps). Parity with ServiceNow get_unmapped_topology",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "ci_class": {
+          "type": "string",
+          "description": "Restrict to a CI class/table (e.g. cmdb_ci_server)"
+        },
+        "limit": {
+          "type": "number",
+          "description": "Max CIs to scan/return (default 100)"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "suggest_ci_class",
+    "description": "Suggest the correct CMDB CI class for a keyword before creating a CI (cmdb_class_info). Parity with ServiceNow Get_SimilarCI_Classes",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "keyword": {
+          "type": "string",
+          "description": "Device/technology keyword, e.g. \"linux server\", \"load balancer\""
+        },
+        "limit": {
+          "type": "number",
+          "description": "Max classes to return (default 10)"
+        }
+      },
+      "required": [
+        "keyword"
+      ]
+    }
+  },
+  {
+    "name": "get_quote",
+    "description": "Get a CPQ/sales quote record by number or sys_id (tries known quote tables)",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "number": {
+          "type": "string",
+          "description": "Quote number"
+        },
+        "sys_id": {
+          "type": "string",
+          "description": "Quote sys_id"
+        },
+        "table": {
+          "type": "string",
+          "description": "Explicit quote table if you know it"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "list_quotes",
+    "description": "List CPQ/sales quotes with optional filters (state, account)",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "table": {
+          "type": "string",
+          "description": "Explicit quote table if you know it"
+        },
+        "state": {
+          "type": "string",
+          "description": "Filter by state"
+        },
+        "account": {
+          "type": "string",
+          "description": "Filter by account sys_id"
+        },
+        "limit": {
+          "type": "number",
+          "description": "Max records (default 25)"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "get_approval_history",
+    "description": "Get the approval progression/history for any record (sysapproval_approver rows, ordered)",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "record": {
+          "type": "string",
+          "description": "sys_id of the record under approval (source record)"
+        },
+        "limit": {
+          "type": "number",
+          "description": "Max approver rows (default 100)"
+        }
+      },
+      "required": [
+        "record"
+      ]
+    }
+  },
+  {
+    "name": "preview_approval_routing",
+    "description": "Preview the planned approver path for a record before/after submission (existing sysapproval_approver rows + matching approval rules)",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "record": {
+          "type": "string",
+          "description": "sys_id of the record to preview routing for"
+        },
+        "table": {
+          "type": "string",
+          "description": "Table of the record (to match approval rules)"
+        }
+      },
+      "required": [
+        "record"
+      ]
+    }
+  },
+  {
+    "name": "add_adhoc_approver",
+    "description": "Add an ad-hoc approver to an in-flight approval on a record (inserts a sysapproval_approver row). Requires WRITE_ENABLED=true",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "record": {
+          "type": "string",
+          "description": "sys_id of the record under approval (sets sysapproval)"
+        },
+        "approver": {
+          "type": "string",
+          "description": "sys_id of the user to add as approver"
+        },
+        "source_table": {
+          "type": "string",
+          "description": "Table of the source record (source_table field)"
+        }
+      },
+      "required": [
+        "record",
+        "approver"
+      ]
+    }
+  },
+  {
+    "name": "recall_approval_request",
+    "description": "Recall/withdraw approval requests on a record by cancelling pending approver rows (state → cancelled/no_longer_required). Requires WRITE_ENABLED=true",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "record": {
+          "type": "string",
+          "description": "sys_id of the record whose approvals to recall"
+        }
+      },
+      "required": [
+        "record"
+      ]
+    }
+  },
+  {
+    "name": "submit_for_approval",
+    "description": "Submit any record for approval by setting its approval field to \"requested\" (generic, not just change). Requires WRITE_ENABLED=true",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "table": {
+          "type": "string",
+          "description": "Table of the record"
+        },
+        "sys_id": {
+          "type": "string",
+          "description": "sys_id of the record"
+        },
+        "approval_field": {
+          "type": "string",
+          "description": "Approval field name (default \"approval\")"
+        }
+      },
+      "required": [
+        "table",
+        "sys_id"
+      ]
+    }
+  },
+  {
+    "name": "list_csm_case_tasks",
+    "description": "List the tasks on a CSM case (sn_customerservice_task). Parity with ServiceNow CSM \"Get Case Tasks\"",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "case": {
+          "type": "string",
+          "description": "CSM case number or sys_id"
+        },
+        "active": {
+          "type": "boolean",
+          "description": "Only active tasks"
+        },
+        "limit": {
+          "type": "number",
+          "description": "Max records (default 50)"
+        }
+      },
+      "required": [
+        "case"
+      ]
+    }
+  },
+  {
+    "name": "advance_hr_case",
+    "description": "Advance an HR case to its next state/stage (sn_hr_core_case). Parity with ServiceNow HRSD \"HR Case Advance\". Requires WRITE_ENABLED=true",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "case": {
+          "type": "string",
+          "description": "HR case number or sys_id"
+        },
+        "state": {
+          "type": "string",
+          "description": "Target state value (if known); otherwise increments the current state"
+        },
+        "work_notes": {
+          "type": "string",
+          "description": "Optional work note to add on advance"
+        }
+      },
+      "required": [
+        "case"
+      ]
+    }
+  },
+  {
+    "name": "search_hr_knowledge",
+    "description": "Search HR-scoped knowledge articles (kb_knowledge in HR knowledge bases). Parity with ServiceNow HRSD \"HR Knowledge Search\"",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "query": {
+          "type": "string",
+          "description": "Search text"
+        },
+        "kb": {
+          "type": "string",
+          "description": "Optional specific HR knowledge base sys_id"
+        },
+        "limit": {
+          "type": "number",
+          "description": "Max records (default 20)"
+        }
+      },
+      "required": [
+        "query"
+      ]
+    }
+  },
+  {
+    "name": "mcp_health_check",
+    "description": "Health check: confirm the instance is reachable and the configured credentials resolve to a valid user. Parity with ServiceNow MCP \"Health Check\"",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": []
+    }
+  },
+  {
+    "name": "summarize_record",
+    "description": "Summarize a record (incident/case/etc.) using the Now Assist summarization skill when available, otherwise return the assembled record + activity for the caller to summarize. Parity with ServiceNow Quickstart incident/case summarization",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "table": {
+          "type": "string",
+          "description": "Table (e.g. incident, sn_customerservice_case, sn_hr_core_case)"
+        },
+        "record": {
+          "type": "string",
+          "description": "Record number or sys_id"
+        }
+      },
+      "required": [
+        "table",
+        "record"
+      ]
+    }
+  },
+  {
+    "name": "get_case_sentiment",
+    "description": "Assess customer sentiment on a CSM case via the Now Assist sentiment skill when available, else return the case + customer comments for sentiment analysis. Parity with ServiceNow CSM \"Sentiment Analysis\"",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "case": {
+          "type": "string",
+          "description": "CSM case number or sys_id"
+        },
+        "table": {
+          "type": "string",
+          "description": "Case table (default sn_customerservice_case)"
+        }
+      },
+      "required": [
+        "case"
+      ]
+    }
+  },
+  {
+    "name": "generate_case_activity_response",
+    "description": "Draft an agent reply for a CSM case activity stream via the Now Assist activity-response skill when available, else return the case context to draft from. Parity with ServiceNow CSM \"Activity Response\"",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "case": {
+          "type": "string",
+          "description": "CSM case number or sys_id"
+        },
+        "table": {
+          "type": "string",
+          "description": "Case table (default sn_customerservice_case)"
+        },
+        "instruction": {
+          "type": "string",
+          "description": "Optional tone/instruction for the reply"
+        }
+      },
+      "required": [
+        "case"
+      ]
+    }
+  },
+  {
+    "name": "generate_csm_resolution_notes",
+    "description": "Generate CSM resolution notes via the Now Assist resolution-notes skill when available, else return the case + work notes to summarize. Parity with ServiceNow CSM \"Generate Resolution Notes\"",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "case": {
+          "type": "string",
+          "description": "CSM case number or sys_id"
+        },
+        "table": {
+          "type": "string",
+          "description": "Case table (default sn_customerservice_case)"
+        }
+      },
+      "required": [
+        "case"
+      ]
+    }
+  },
+  {
+    "name": "check_hr_eligibility",
+    "description": "Check an employee's eligibility for an HR service/policy via the Policy Based HR Case Evaluator skill when available, else return the employee + service context. Parity with ServiceNow HRSD \"HR Eligibility Check\"",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "user": {
+          "type": "string",
+          "description": "Employee sys_id, user_name, or email"
+        },
+        "hr_service": {
+          "type": "string",
+          "description": "HR service sys_id or name to check eligibility for"
+        }
+      },
+      "required": [
+        "user",
+        "hr_service"
       ]
     }
   },
@@ -6081,6 +8127,93 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     }
   },
   {
+    "name": "create_pa_indicator",
+    "description": "Create a Performance Analytics (PA) indicator / KPI on `pa_indicators` (requires WRITE_ENABLED=true). Define the source facts table, aggregation and conditions; collect data via a PA job afterward.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Indicator name (e.g. \"Open P1 incidents\")"
+        },
+        "description": {
+          "type": "string",
+          "description": "What the indicator measures"
+        },
+        "facts_table": {
+          "type": "string",
+          "description": "Source/facts table the indicator counts (e.g. \"incident\")"
+        },
+        "aggregate": {
+          "type": "string",
+          "description": "Aggregation function",
+          "enum": [
+            "count",
+            "sum",
+            "average",
+            "maximum",
+            "minimum"
+          ]
+        },
+        "field": {
+          "type": "string",
+          "description": "Field to aggregate (required for sum/average/max/min; ignored for count)"
+        },
+        "conditions": {
+          "type": "string",
+          "description": "Encoded query on the facts table (e.g. \"active=true^priority=1\")"
+        },
+        "unit": {
+          "type": "string",
+          "description": "Unit (pa_units name or sys_id)"
+        },
+        "direction": {
+          "type": "string",
+          "description": "Desired trend",
+          "enum": [
+            "maximize",
+            "minimize"
+          ]
+        },
+        "active": {
+          "type": "boolean",
+          "description": "Activate immediately (default: true)"
+        }
+      },
+      "required": [
+        "name"
+      ]
+    }
+  },
+  {
+    "name": "create_pa_breakdown",
+    "description": "Create a Performance Analytics (PA) breakdown on `pa_breakdowns` (requires WRITE_ENABLED=true). Breakdowns slice an indicator by a dimension (e.g. by Assignment group or Category).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Breakdown name (e.g. \"By Assignment group\")"
+        },
+        "description": {
+          "type": "string",
+          "description": "What this breakdown slices by"
+        },
+        "related_field": {
+          "type": "string",
+          "description": "Optional dotted field path the breakdown maps to (e.g. \"assignment_group\")"
+        },
+        "active": {
+          "type": "boolean",
+          "description": "Activate immediately (default: true)"
+        }
+      },
+      "required": [
+        "name"
+      ]
+    }
+  },
+  {
     "name": "check_table_completeness",
     "description": "Analyze data quality and field completeness for a ServiceNow table — returns percentage of non-empty values per field",
     "inputSchema": {
@@ -7410,6 +9543,52 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     }
   },
   {
+    "name": "ml_similar_incidents",
+    "description": "Find similar past incidents using keyword-based matching. Provide either an incident sys_id (to find similar incidents) or a short_description (for free-text matching). Returns resolved incidents ranked by keyword match count.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "incident_sys_id": {
+          "type": "string",
+          "description": "Sys_id of an existing incident to find similar ones for"
+        },
+        "short_description": {
+          "type": "string",
+          "description": "Free-text description to match against (required if no sys_id)"
+        },
+        "limit": {
+          "type": "number",
+          "description": "Max results to return (default 10)"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "ml_auto_categorize",
+    "description": "Auto-categorize a record based on its description by analysing resolved records of the same table. Queries the last 500 resolved records, groups by category, and matches input keywords to suggest a category.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "short_description": {
+          "type": "string",
+          "description": "Short description of the record to categorize"
+        },
+        "description": {
+          "type": "string",
+          "description": "Full description (optional, improves accuracy)"
+        },
+        "table": {
+          "type": "string",
+          "description": "Table to analyse (default \"incident\")"
+        }
+      },
+      "required": [
+        "short_description"
+      ]
+    }
+  },
+  {
     "name": "list_uib_pages",
     "description": "List UI Builder pages and their route configurations",
     "inputSchema": {
@@ -8209,6 +10388,1148 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
         "days_stale": {
           "type": "number",
           "description": "Consider records stale after N days without update (default 180)"
+        }
+      },
+      "required": [
+        "table"
+      ]
+    }
+  },
+  {
+    "name": "fluent_query",
+    "description": "GlideQuery-style fluent query builder. Supports select, where, aggregate (COUNT/AVG/SUM/MIN/MAX), orderBy, limit, and groupBy. Returns records or aggregate results. Example: { table: \"incident\", where: [[\"active\",\"=\",true],[\"priority\",\"<\",3]], select: [\"number\",\"short_description\"], limit: 10 }",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "table": {
+          "type": "string",
+          "description": "Table name (e.g., \"incident\")"
+        },
+        "where": {
+          "type": "array",
+          "description": "Array of conditions: [field, operator, value]. Operators: =, !=, >, >=, <, <=, LIKE, STARTSWITH, CONTAINS, IN, NOT IN, ISEMPTY, ISNOTEMPTY",
+          "items": {
+            "type": "array",
+            "items": {},
+            "minItems": 2,
+            "maxItems": 3
+          }
+        },
+        "orWhere": {
+          "type": "array",
+          "description": "Array of OR conditions (same format as where)",
+          "items": {
+            "type": "array",
+            "items": {},
+            "minItems": 2,
+            "maxItems": 3
+          }
+        },
+        "select": {
+          "type": "array",
+          "description": "Fields to return. Supports dot-walking (e.g., \"caller_id.email\"). If omitted, returns all fields.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "aggregate": {
+          "type": "string",
+          "description": "Aggregate operation: COUNT, AVG, SUM, MIN, MAX",
+          "enum": [
+            "COUNT",
+            "AVG",
+            "SUM",
+            "MIN",
+            "MAX"
+          ]
+        },
+        "aggregateField": {
+          "type": "string",
+          "description": "Field to aggregate on (required for AVG, SUM, MIN, MAX)"
+        },
+        "groupBy": {
+          "type": "string",
+          "description": "Field to group results by (for aggregate queries)"
+        },
+        "orderBy": {
+          "type": "string",
+          "description": "Field to sort by. Prefix with \"-\" for descending."
+        },
+        "limit": {
+          "type": "number",
+          "description": "Max records to return (default: 20, max: 200)"
+        },
+        "displayValue": {
+          "type": "boolean",
+          "description": "Return display values instead of internal values (default: false)"
+        }
+      },
+      "required": [
+        "table"
+      ]
+    }
+  },
+  {
+    "name": "batch_request",
+    "description": "Execute multiple ServiceNow REST API operations in a single HTTP call. Reduces round-trips by 50-70%. Each operation specifies method, URL path, and optional body. Max 50 operations per batch.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "operations": {
+          "type": "array",
+          "description": "Array of REST operations to execute",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "Unique operation ID for correlating responses"
+              },
+              "method": {
+                "type": "string",
+                "description": "HTTP method: GET, POST, PATCH, DELETE",
+                "enum": [
+                  "GET",
+                  "POST",
+                  "PATCH",
+                  "DELETE"
+                ]
+              },
+              "url": {
+                "type": "string",
+                "description": "API URL path (e.g., \"/api/now/table/incident?sysparm_limit=5\")"
+              },
+              "body": {
+                "type": "object",
+                "description": "Request body for POST/PATCH operations"
+              }
+            },
+            "required": [
+              "id",
+              "method",
+              "url"
+            ]
+          },
+          "minItems": 1,
+          "maxItems": 50
+        }
+      },
+      "required": [
+        "operations"
+      ]
+    }
+  },
+  {
+    "name": "execute_script",
+    "description": "Execute a server-side script on the ServiceNow instance (Background Script). Supports GlideRecord, GlideQuery, GlideAggregate, and all server-side APIs. Returns the script output. Use for complex queries that cannot be expressed via REST. REQUIRES WRITE_ENABLED=true.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "script": {
+          "type": "string",
+          "description": "Server-side JavaScript to execute. Use gs.print() or gs.info() for output."
+        },
+        "scope": {
+          "type": "string",
+          "description": "Application scope to run in (default: global)"
+        }
+      },
+      "required": [
+        "script"
+      ]
+    }
+  },
+  {
+    "name": "fluent_sdk_query",
+    "description": "Run `now-sdk query <table>` — a read-only Table REST API query executed via the ServiceNow SDK CLI against your authenticated instance (no browser). New in @servicenow/sdk 4.8. Ideal while authoring Fluent code: resolve sys_ids, inspect table schemas, check existing records, read choice values. Example: { table: \"sys_user_role\", query: \"name=admin\", fields: [\"sys_id\",\"name\"], limit: 1 }",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "table": {
+          "type": "string",
+          "description": "Table to query (e.g., \"incident\", \"sys_dictionary\")"
+        },
+        "query": {
+          "type": "string",
+          "description": "Encoded query string (e.g., \"name=admin^active=true\")"
+        },
+        "fields": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Fields to return (e.g., [\"sys_id\",\"name\"])"
+        },
+        "limit": {
+          "type": "number",
+          "description": "Max rows to return"
+        }
+      },
+      "required": [
+        "table"
+      ]
+    }
+  },
+  {
+    "name": "fluent_version",
+    "description": "Report the installed `@servicenow/sdk` (now-sdk) version and whether it meets the version NowAIKit tracks features against (currently 4.10.1). Returns an upgrade hint when out of date.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": []
+    }
+  },
+  {
+    "name": "fluent_explain",
+    "description": "Run `npx @servicenow/sdk explain <topic>` to get live SDK documentation on a topic — always current API signatures, not training-data guesses. Returns explanations of Fluent APIs, types, patterns, and best practices. Known topics include: GlideQuery, table API, scoped app, now.config.json, keys.ts, metadata, Record, Now.del, Now.attach, DataLookup, RestMessage, Alias, AliasTemplate, RetryPolicy, Playbook, Flow, Subflow, CustomAction, TryCatch, DoInParallel, FlowStages, AiAgent, AiAgentWorkflow, roleMap, NowAssistSkillConfig, UiPolicy, DataPolicy, Form, InstanceScan, ServicePortal, ImportSet, override, StateModel, cicd.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "topic": {
+          "type": "string",
+          "description": "Topic to explain. Examples: GlideQuery, table API, scoped app, now.config.json, keys.ts, metadata, Record, Now.del, etc."
+        }
+      },
+      "required": [
+        "topic"
+      ]
+    }
+  },
+  {
+    "name": "fluent_init",
+    "description": "Initialize a new ServiceNow fluent/now-sdk project. Runs `npx @servicenow/sdk init`. REQUIRES FLUENT_ENABLED=true and WRITE_ENABLED=true.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Project name"
+        },
+        "template": {
+          "type": "string",
+          "description": "Project template (optional)"
+        },
+        "directory": {
+          "type": "string",
+          "description": "Target directory (optional, defaults to cwd)"
+        }
+      },
+      "required": [
+        "name"
+      ]
+    }
+  },
+  {
+    "name": "fluent_build",
+    "description": "Build a ServiceNow fluent/now-sdk project. Runs `npx @servicenow/sdk build`. REQUIRES FLUENT_ENABLED=true and WRITE_ENABLED=true.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "directory": {
+          "type": "string",
+          "description": "Project directory (optional, defaults to cwd)"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "fluent_validate",
+    "description": "Validate a ServiceNow fluent/now-sdk project. Runs `npx @servicenow/sdk validate`. REQUIRES FLUENT_ENABLED=true.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "directory": {
+          "type": "string",
+          "description": "Project directory (optional, defaults to cwd)"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "fluent_cicd",
+    "description": "Run ServiceNow CI/CD operations via the SDK (`now-sdk cicd`, new in @servicenow/sdk 4.10). Drive scoped-app install/publish and ATF test-suite runs from a promotion pipeline, outside the local build/install flow. REQUIRES FLUENT_ENABLED=true and WRITE_ENABLED=true.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "action": {
+          "type": "string",
+          "enum": [
+            "install",
+            "publish",
+            "testsuite"
+          ],
+          "description": "install a published app version, publish an app scope to the app repo, or run an ATF test suite"
+        },
+        "appSysId": {
+          "type": "string",
+          "description": "App sys_id (required for action=install)"
+        },
+        "scope": {
+          "type": "string",
+          "description": "App scope, e.g. x_acme_app (required for action=publish)"
+        },
+        "appVersion": {
+          "type": "string",
+          "description": "App version, e.g. 1.0.0 (install/publish)"
+        },
+        "testSuiteName": {
+          "type": "string",
+          "description": "ATF test suite name (required for action=testsuite)"
+        }
+      },
+      "required": [
+        "action"
+      ]
+    }
+  },
+  {
+    "name": "search_servicenow_docs",
+    "description": "Search the official ServiceNow product documentation (servicenow.com/docs) — API references (GlideRecord, GlideSystem, GlideAjax…), admin & developer guides, encoded-query operators, release notes. Returns ranked results with title, breadcrumb, URL, snippet, and a `ref` to read the full page with fetch_servicenow_doc. Use this to ground answers in current ServiceNow docs rather than memory. Read-only; uses the public docs site, not your instance.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "query": {
+          "type": "string",
+          "description": "What to look up (e.g., \"GlideRecord addEncodedQuery\", \"flow designer rest step\", \"CSDM 4.0\")."
+        },
+        "limit": {
+          "type": "number",
+          "description": "Max results to return (default 6, max 20)."
+        },
+        "product": {
+          "type": "string",
+          "description": "Optional product/area to bias the search (e.g., \"ITSM\", \"CMDB\", \"Flow Designer\", \"Performance Analytics\")."
+        }
+      },
+      "required": [
+        "query"
+      ]
+    }
+  },
+  {
+    "name": "fetch_servicenow_doc",
+    "description": "Fetch the full readable text of a specific ServiceNow documentation page. Pass either the `ref` returned by search_servicenow_docs (fastest, exact) or a servicenow.com/docs page URL. Use after search_servicenow_docs to read a result in full. Read-only; only ServiceNow docs are reachable.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "ref": {
+          "type": "string",
+          "description": "The `ref` from a search_servicenow_docs result (preferred — resolves directly to page content)."
+        },
+        "url": {
+          "type": "string",
+          "description": "A servicenow.com/docs page URL (used when no ref is available; resolved via docs search)."
+        },
+        "maxChars": {
+          "type": "number",
+          "description": "Truncate the returned text to this many characters (default 9000, max 30000)."
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "create_now_assist_skill",
+    "description": "Create a Now Assist skill definition (requires NOW_ASSIST_ENABLED + WRITE_ENABLED)",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Skill name"
+        },
+        "description": {
+          "type": "string",
+          "description": "Skill description"
+        },
+        "input_schema": {
+          "type": "string",
+          "description": "JSON schema string defining the skill input"
+        },
+        "output_schema": {
+          "type": "string",
+          "description": "JSON schema string defining the skill output"
+        },
+        "prompt_template": {
+          "type": "string",
+          "description": "Prompt template for the skill"
+        },
+        "model": {
+          "type": "string",
+          "description": "Optional model identifier to use for this skill"
+        }
+      },
+      "required": [
+        "name",
+        "description",
+        "input_schema",
+        "output_schema",
+        "prompt_template"
+      ]
+    }
+  },
+  {
+    "name": "list_now_assist_skills",
+    "description": "List Now Assist skill definitions (requires NOW_ASSIST_ENABLED)",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "active": {
+          "type": "boolean",
+          "description": "Filter by active status"
+        },
+        "limit": {
+          "type": "number",
+          "description": "Max records to return (default 25)"
+        },
+        "query": {
+          "type": "string",
+          "description": "Additional encoded query string"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "get_now_assist_skill",
+    "description": "Get a single Now Assist skill definition by sys_id (requires NOW_ASSIST_ENABLED)",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "sys_id": {
+          "type": "string",
+          "description": "System ID of the skill"
+        }
+      },
+      "required": [
+        "sys_id"
+      ]
+    }
+  },
+  {
+    "name": "test_now_assist_skill",
+    "description": "Invoke a Now Assist skill with test input to verify behavior (requires NOW_ASSIST_ENABLED)",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "skill_sys_id": {
+          "type": "string",
+          "description": "System ID of the skill to test"
+        },
+        "test_input": {
+          "type": "object",
+          "description": "Test input payload to send to the skill"
+        }
+      },
+      "required": [
+        "skill_sys_id",
+        "test_input"
+      ]
+    }
+  },
+  {
+    "name": "create_ai_agent",
+    "description": "Create an AI agent definition with optional auto-generated ACLs (requires NOW_ASSIST_ENABLED + WRITE_ENABLED)",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Agent name"
+        },
+        "description": {
+          "type": "string",
+          "description": "Agent description"
+        },
+        "capabilities": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "List of capability identifiers the agent supports"
+        },
+        "auto_generate_acls": {
+          "type": "boolean",
+          "description": "Automatically create ACL records for the agent (default true)"
+        }
+      },
+      "required": [
+        "name",
+        "description",
+        "capabilities"
+      ]
+    }
+  },
+  {
+    "name": "list_ai_agents",
+    "description": "List AI agent definitions",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "active": {
+          "type": "boolean",
+          "description": "Filter by active status"
+        },
+        "limit": {
+          "type": "number",
+          "description": "Max records to return (default 25)"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "get_ai_agent",
+    "description": "Get an AI agent definition and its related ACLs",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "sys_id": {
+          "type": "string",
+          "description": "System ID of the AI agent"
+        }
+      },
+      "required": [
+        "sys_id"
+      ]
+    }
+  },
+  {
+    "name": "create_agentic_workflow",
+    "description": "Create an agentic workflow linked to an AI agent (requires NOW_ASSIST_ENABLED + WRITE_ENABLED)",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Workflow name"
+        },
+        "description": {
+          "type": "string",
+          "description": "Workflow description"
+        },
+        "agent_sys_id": {
+          "type": "string",
+          "description": "System ID of the parent AI agent"
+        },
+        "steps": {
+          "type": "array",
+          "description": "Ordered list of workflow steps",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Step name"
+              },
+              "action": {
+                "type": "string",
+                "description": "Action identifier"
+              },
+              "inputs": {
+                "type": "object",
+                "description": "Step input parameters"
+              },
+              "condition": {
+                "type": "string",
+                "description": "Optional condition expression"
+              }
+            },
+            "required": [
+              "name",
+              "action"
+            ]
+          }
+        },
+        "trigger_conditions": {
+          "type": "string",
+          "description": "Optional trigger condition expression"
+        }
+      },
+      "required": [
+        "name",
+        "description",
+        "agent_sys_id",
+        "steps"
+      ]
+    }
+  },
+  {
+    "name": "cmdb_find_duplicates",
+    "description": "Find duplicate CIs by matching on specified fields (in-memory grouping)",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "ci_class": {
+          "type": "string",
+          "description": "CI class table (default cmdb_ci)"
+        },
+        "match_fields": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Fields to match on for duplicate detection (default: name, serial_number, ip_address)"
+        },
+        "limit": {
+          "type": "number",
+          "description": "Max CIs to scan (default 100)"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "cmdb_find_orphans",
+    "description": "Find CIs with no relationships in cmdb_rel_ci",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "ci_class": {
+          "type": "string",
+          "description": "CI class table (default cmdb_ci)"
+        },
+        "limit": {
+          "type": "number",
+          "description": "Max orphan CIs to return (default 50)"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "cmdb_find_stale",
+    "description": "Find CIs not updated within a given number of days that are still operational",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "ci_class": {
+          "type": "string",
+          "description": "CI class table (default cmdb_ci)"
+        },
+        "days_threshold": {
+          "type": "number",
+          "description": "Number of days since last update to consider stale (default 90)"
+        },
+        "limit": {
+          "type": "number",
+          "description": "Max stale CIs to return (default 50)"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "cmdb_reconcile",
+    "description": "Act on duplicate, stale, or orphan CIs — merge, retire, or remove (requires CMDB_WRITE_ENABLED). Supports dry_run mode.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "action": {
+          "type": "string",
+          "enum": [
+            "merge_duplicates",
+            "retire_stale",
+            "remove_orphans"
+          ],
+          "description": "Reconciliation action to perform"
+        },
+        "targets": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Array of CI sys_ids to act on"
+        },
+        "dry_run": {
+          "type": "boolean",
+          "description": "Preview changes without applying (default true)"
+        }
+      },
+      "required": [
+        "action",
+        "targets"
+      ]
+    }
+  },
+  {
+    "name": "create_playbook",
+    "description": "Create a playbook definition with ordered steps that chain tool calls (requires NOW_ASSIST_ENABLED + WRITE_ENABLED)",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Playbook name"
+        },
+        "description": {
+          "type": "string",
+          "description": "Playbook description"
+        },
+        "steps": {
+          "type": "array",
+          "description": "Ordered list of playbook steps",
+          "items": {
+            "type": "object",
+            "properties": {
+              "tool_name": {
+                "type": "string",
+                "description": "Name of the tool to invoke"
+              },
+              "args_template": {
+                "type": "object",
+                "description": "Arguments template — can reference {{context.key}} or {{steps[N].result.key}}"
+              },
+              "condition": {
+                "type": "string",
+                "description": "Optional JS-like condition expression. Step runs only when truthy."
+              },
+              "on_error": {
+                "type": "string",
+                "enum": [
+                  "stop",
+                  "skip",
+                  "continue"
+                ],
+                "description": "Error handling: stop (default), skip this step, or continue to next"
+              }
+            },
+            "required": [
+              "tool_name",
+              "args_template"
+            ]
+          }
+        }
+      },
+      "required": [
+        "name",
+        "description",
+        "steps"
+      ]
+    }
+  },
+  {
+    "name": "execute_playbook",
+    "description": "Execute a playbook step by step, passing results forward through context (requires NOW_ASSIST_ENABLED). Supports dry_run.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "playbook": {
+          "type": "object",
+          "description": "Playbook object with name, description, and steps array",
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "description": {
+              "type": "string"
+            },
+            "steps": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "tool_name": {
+                    "type": "string"
+                  },
+                  "args_template": {
+                    "type": "object"
+                  },
+                  "condition": {
+                    "type": "string"
+                  },
+                  "on_error": {
+                    "type": "string",
+                    "enum": [
+                      "stop",
+                      "skip",
+                      "continue"
+                    ]
+                  }
+                },
+                "required": [
+                  "tool_name",
+                  "args_template"
+                ]
+              }
+            }
+          },
+          "required": [
+            "steps"
+          ]
+        },
+        "context": {
+          "type": "object",
+          "description": "Initial context key-value pairs available to all steps"
+        },
+        "dry_run": {
+          "type": "boolean",
+          "description": "Preview execution plan without invoking tools (default true)"
+        }
+      },
+      "required": [
+        "playbook"
+      ]
+    }
+  },
+  {
+    "name": "list_playbooks",
+    "description": "List stored playbook definitions from sys_hub_action_type_definition",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "limit": {
+          "type": "number",
+          "description": "Max records to return (default 25)"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "discover_table",
+    "description": "Discover a ServiceNow table schema and register dynamic CRUD tools for it. After discovery, new tools become available: dynamic_query_<table>, dynamic_get_<table>, dynamic_create_<table>, dynamic_update_<table>, dynamic_delete_<table>. Schemas are cached for 30 minutes.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "table": {
+          "type": "string",
+          "description": "Table name to discover (e.g., \"u_custom_table\")"
+        },
+        "operations": {
+          "type": "array",
+          "description": "Operations to enable: query, get, create, update, delete. Default: all.",
+          "items": {
+            "type": "string",
+            "enum": [
+              "query",
+              "get",
+              "create",
+              "update",
+              "delete"
+            ]
+          }
+        }
+      },
+      "required": [
+        "table"
+      ]
+    }
+  },
+  {
+    "name": "list_table_config",
+    "description": "List every configuration artifact on a table — business rules, client scripts, UI policies, ACLs, UI actions, data policies, and dictionary fields — with per-type counts. Use it to see what depends on a table before changing or removing it. This is config/metadata impact, not CMDB CI impact. Each lane returns {count, records} or {error} if that table/plugin is unavailable.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "table": {
+          "type": "string",
+          "description": "Table name, e.g. \"incident\""
+        },
+        "limit": {
+          "type": "number",
+          "description": "Max records per artifact type (default 50)"
+        }
+      },
+      "required": [
+        "table"
+      ]
+    }
+  },
+  {
+    "name": "find_field_references",
+    "description": "Find where a table field is used — its dictionary entry plus any scripts (business rules, script includes, client scripts, UI actions, widgets) that mention the field name. Use it before renaming or removing a field. Script matches are substring (LIKE) hits, so expect false positives (comments, similarly-named symbols) and misses for dynamically-built references; treat results as candidates to review, not a definitive list.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "table": {
+          "type": "string",
+          "description": "Table name, e.g. \"incident\""
+        },
+        "field": {
+          "type": "string",
+          "description": "Field (column) name, e.g. \"u_custom_field\""
+        },
+        "limit": {
+          "type": "number",
+          "description": "Max matches per source (default 50)"
+        }
+      },
+      "required": [
+        "table",
+        "field"
+      ]
+    }
+  },
+  {
+    "name": "find_script_references",
+    "description": "Find what references a Script Include or named artifact — scans script-bearing config tables for textual use of the name. Use it before renaming or deleting a Script Include, Script Action, etc. Matches are substring (LIKE) hits, so treat them as candidates to review (false positives from comments/similar names; misses for dynamic references).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Artifact name to search for, e.g. a Script Include class name"
+        },
+        "limit": {
+          "type": "number",
+          "description": "Max matches per source (default 50)"
+        }
+      },
+      "required": [
+        "name"
+      ]
+    }
+  },
+  {
+    "name": "find_update_sets",
+    "description": "List the update sets that contain changes to an artifact (by name), so you know what is in-flight or already captured for promotion before you touch it.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Artifact name (or partial) to match against captured updates"
+        },
+        "limit": {
+          "type": "number",
+          "description": "Max update records to scan (default 100)"
+        }
+      },
+      "required": [
+        "name"
+      ]
+    }
+  },
+  {
+    "name": "find_property_usage",
+    "description": "Find scripts that read a system property (sys_properties) by name, plus the property record itself. Use it before changing or removing a property. Matches are substring (LIKE) hits — candidates to review, not definitive.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "System property name, e.g. \"glide.ui.incident_reassignment_action\""
+        },
+        "limit": {
+          "type": "number",
+          "description": "Max matches per source (default 50)"
+        }
+      },
+      "required": [
+        "name"
+      ]
+    }
+  },
+  {
+    "name": "list_supported_artifacts",
+    "description": "Local sync: list the artifact types (tables) that support pull/push to local files and which fields sync for each.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": []
+    }
+  },
+  {
+    "name": "pull_artifact",
+    "description": "Local sync: fetch an artifact's editable fields (e.g. a Service Portal widget's template/css/script) for local editing. Returns the content inline; when NOWAIKIT_SYNC_DIR is set it also writes one file per field and returns the paths. This is config/pro-code editing of a single artifact, not an update-set export.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "table": {
+          "type": "string",
+          "description": "Artifact table, e.g. \"sp_widget\", \"sys_script_include\""
+        },
+        "sys_id": {
+          "type": "string",
+          "description": "sys_id OR name of the record (a name is resolved to its sys_id)"
+        }
+      },
+      "required": [
+        "table",
+        "sys_id"
+      ]
+    }
+  },
+  {
+    "name": "push_artifact",
+    "description": "Local sync: write edited fields back to an artifact (requires WRITE_ENABLED=true). Pass fields inline as {field:value}; if omitted and NOWAIKIT_SYNC_DIR is set, reads them from the pulled files on disk. Overwrites the listed fields with NO merge — run sync_status first, and pass expected_updated_on to abort if the instance changed since you pulled.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "table": {
+          "type": "string",
+          "description": "Artifact table"
+        },
+        "sys_id": {
+          "type": "string",
+          "description": "sys_id OR name of the record"
+        },
+        "fields": {
+          "type": "object",
+          "description": "Optional map of {field: newValue} to update; defaults to the on-disk files under NOWAIKIT_SYNC_DIR"
+        },
+        "expected_updated_on": {
+          "type": "string",
+          "description": "Optional sys_updated_on from your last pull/sync_status; the push aborts with a CONFLICT if the record has changed since."
+        }
+      },
+      "required": [
+        "table",
+        "sys_id"
+      ]
+    }
+  },
+  {
+    "name": "sync_status",
+    "description": "Local sync: compare an artifact's current instance content against your local/edited content field-by-field. Each field reports unchanged | changed | not_local (no local copy to compare). Also returns sys_updated_on to feed into push_artifact's conflict check.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "table": {
+          "type": "string",
+          "description": "Artifact table"
+        },
+        "sys_id": {
+          "type": "string",
+          "description": "sys_id OR name of the record"
+        },
+        "fields": {
+          "type": "object",
+          "description": "Optional {field: localValue} to compare; defaults to files under NOWAIKIT_SYNC_DIR"
+        }
+      },
+      "required": [
+        "table",
+        "sys_id"
+      ]
+    }
+  },
+  {
+    "name": "visualize_aggregate",
+    "description": "Build a real-time chart of ServiceNow records grouped by a field (e.g. incidents by priority, cases by state). Returns chart-ready data, a Teams Adaptive Card (Chart.*) to drop into a Copilot Studio \"Send an adaptive card\" step, a markdown table, and a summary. Read-only.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "table": {
+          "type": "string",
+          "description": "Table to aggregate, e.g. \"incident\", \"sn_customerservice_case\""
+        },
+        "group_by": {
+          "type": "string",
+          "description": "Field to group by, e.g. \"priority\", \"state\", \"category\", \"assignment_group\""
+        },
+        "query": {
+          "type": "string",
+          "description": "Optional encoded query filter, e.g. \"active=true\""
+        },
+        "chart_type": {
+          "type": "string",
+          "description": "column (default) | bar | pie | donut"
+        },
+        "title": {
+          "type": "string",
+          "description": "Optional chart title"
+        },
+        "limit": {
+          "type": "number",
+          "description": "Keep the top N groups by count (default 12)"
+        }
+      },
+      "required": [
+        "table",
+        "group_by"
+      ]
+    }
+  },
+  {
+    "name": "aggregate_report",
+    "description": "Server-side aggregate REPORT grouped by a field, in ONE query with no 1000-row truncation. Returns per-group record count PLUS averages/sums/mins/maxes of numeric or duration fields — the right tool for a periodic summary like \"incident volume by category with average resolution time\". Do NOT list raw records for this; use this. For task tables (incident, problem, change_request, cases, etc.) it INCLUDES average resolution time automatically even if avg_fields is omitted. Duration fields come back pre-formatted (e.g. \"21 14:03:10\"). Returns a stats table (markdown), the rows, a count chart Adaptive Card, and a summary. Read-only.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "table": {
+          "type": "string",
+          "description": "Table to aggregate, e.g. \"incident\""
+        },
+        "group_by": {
+          "type": "string",
+          "description": "Field to group by, e.g. \"category\", \"assignment_group\", \"priority\""
+        },
+        "query": {
+          "type": "string",
+          "description": "Encoded query filter, e.g. resolved in the last 7 days: \"stateIN6,7^resolved_atRELATIVEGT@dayofweek@ago@7\""
+        },
+        "avg_fields": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Fields to average per group, e.g. [\"business_duration\"] or [\"calendar_duration\"] for resolution time. Comma string also accepted."
+        },
+        "sum_fields": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Fields to sum per group"
+        },
+        "min_fields": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Fields to take the minimum of per group"
+        },
+        "max_fields": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Fields to take the maximum of per group"
+        },
+        "title": {
+          "type": "string",
+          "description": "Optional report title"
+        },
+        "limit": {
+          "type": "number",
+          "description": "Keep the top N groups by count (default 25)"
+        }
+      },
+      "required": [
+        "table",
+        "group_by"
+      ]
+    }
+  },
+  {
+    "name": "visualize_trend",
+    "description": "Build a real-time trend line of ServiceNow record counts over time (e.g. incidents opened per day). Returns chart-ready series, a Teams Adaptive Card line chart, a markdown table, and a summary. Read-only.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "table": {
+          "type": "string",
+          "description": "Table to count, e.g. \"incident\""
+        },
+        "date_field": {
+          "type": "string",
+          "description": "Date/time field to bucket on (default \"sys_created_on\")"
+        },
+        "interval": {
+          "type": "string",
+          "description": "day (default) | week | month"
+        },
+        "query": {
+          "type": "string",
+          "description": "Recommended: a span filter, e.g. \"sys_created_onONLast 30 days@...\" or \"active=true\""
+        },
+        "title": {
+          "type": "string",
+          "description": "Optional chart title"
         }
       },
       "required": [

@@ -31,7 +31,7 @@ interface FormState {
 }
 
 const PACKAGES = [
-  { value: 'full', label: 'Full — all 400+ tools' },
+  { value: 'full', label: 'Full — all 450+ tools' },
   { value: 'service_desk', label: 'Service Desk' },
   { value: 'change_coordinator', label: 'Change Coordinator' },
   { value: 'platform_developer', label: 'Platform Developer' },

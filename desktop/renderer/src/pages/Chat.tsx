@@ -167,21 +167,16 @@ const PROVIDER_META: { id: AiProviderId; label: string }[] = [
 
 const MODELS_BY_PROVIDER: Record<AiProviderId, { value: string; label: string }[]> = {
   anthropic: [
-    { value: 'claude-opus-4-6',           label: 'Claude Opus 4.6' },
-    { value: 'claude-sonnet-4-6',         label: 'Claude Sonnet 4.6' },
+    { value: 'claude-opus-5',             label: 'Claude Opus 5' },
+    { value: 'claude-fable-5',            label: 'Claude Fable 5' },
+    { value: 'claude-sonnet-5',           label: 'Claude Sonnet 5' },
     { value: 'claude-haiku-4-5-20251001', label: 'Claude Haiku 4.5' },
   ],
   openai: [
-    { value: 'gpt-5.2',         label: 'GPT-5.2' },
-    { value: 'gpt-5.2-pro',     label: 'GPT-5.2 Pro' },
-    { value: 'gpt-5.1',         label: 'GPT-5.1' },
-    { value: 'gpt-5-mini',      label: 'GPT-5 mini' },
-    { value: 'gpt-5-nano',      label: 'GPT-5 nano' },
-    { value: 'gpt-4.1',         label: 'GPT-4.1' },
-    { value: 'gpt-4.1-mini',    label: 'GPT-4.1 mini' },
-    { value: 'gpt-4o',          label: 'GPT-4o' },
-    { value: 'o3',              label: 'o3' },
-    { value: 'o4-mini',         label: 'o4 mini' },
+    { value: 'gpt-5.6-sol',     label: 'GPT-5.6 Sol' },
+    { value: 'gpt-5.6-terra',   label: 'GPT-5.6 Terra' },
+    { value: 'gpt-5.6-luna',    label: 'GPT-5.6 Luna' },
+    { value: 'gpt-5.5',         label: 'GPT-5.5' },
   ],
   google: [
     { value: 'gemini-3.1-pro-preview',  label: 'Gemini 3.1 Pro' },
@@ -199,8 +194,8 @@ const MODELS_BY_PROVIDER: Record<AiProviderId, { value: string; label: string }[
   openrouter: [
     { value: 'openai/o1-pro',                                   label: 'OpenAI o1 Pro' },
     { value: 'xai/grok-4',                                      label: 'Grok 4 (xAI)' },
-    { value: 'anthropic/claude-3.7-sonnet',                      label: 'Claude 3.7 Sonnet' },
-    { value: 'google/gemini-2.0-flash-001',                      label: 'Gemini 2.0 Flash' },
+    { value: 'anthropic/claude-sonnet-5',                       label: 'Claude Sonnet 5' },
+    { value: 'google/gemini-3-flash-preview',                   label: 'Gemini 3 Flash' },
     { value: 'deepseek/deepseek-r1:free',                        label: 'DeepSeek R1 (free)' },
     { value: 'meta-llama/llama-4-maverick-17b-128e-instruct',    label: 'Llama 4 Maverick' },
     { value: 'meta-llama/llama-3.3-70b-instruct',                label: 'Llama 3.3 70B' },
@@ -477,7 +472,7 @@ function clearChatHistory(providerId: string) {
 
 export default function Chat({ settings, serverUrl, instances }: Props): React.ReactElement {
   const [provider,  setProvider]  = useState<AiProviderId>(settings.activeProvider || 'anthropic');
-  const [model,     setModel]     = useState(settings.model || 'claude-sonnet-4-6');
+  const [model,     setModel]     = useState(settings.model || 'claude-sonnet-5');
   const [messages,  setMessages]  = useState<ChatMessage[]>(() => loadChatHistory(settings.activeProvider || 'anthropic'));
   const [input,     setInput]     = useState('');
   const [loading,   setLoading]   = useState(false);
