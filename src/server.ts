@@ -19,7 +19,8 @@ import { connectTransport } from './transport/index.js';
 import { getDelegatedAuth } from './utils/request-context.js';
 import { VERSION, SERVER_NAME } from './utils/version.js';
 
-dotenv.config();
+// quiet: suppress dotenv v17+ startup banner (keeps MCP stdio + CLI output clean)
+dotenv.config({ quiet: true });
 
 // Require at least one instance to be configured
 const hasLegacy = !!process.env.SERVICENOW_INSTANCE_URL;

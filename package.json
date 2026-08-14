@@ -122,16 +122,23 @@
   },
   "license": "Elastic-2.0",
   "overrides": {
-    "minimatch": "^10.2.2"
+    "minimatch": "^10.2.2",
+    "fast-uri": "^3.1.5",
+    "ip-address": "^10.5.0",
+    "body-parser": "^2.3.0",
+    "qs": "^6.15.3",
+    "image-size": "^2.0.2",
+    "hono": "^4.13.2",
+    "@hono/node-server": "^1.19.15"
   },
   "dependencies": {
-    "@inquirer/prompts": "^8.2.1",
-    "@modelcontextprotocol/sdk": "^1.26.0",
-    "chalk": "^5.6.2",
+    "@inquirer/prompts": "^8.5.2",
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "chalk": "^6.0.0",
     "commander": "^14.0.3",
-    "dotenv": "^16.4.5",
-    "ora": "^9.3.0",
-    "pdfmake": "^0.3.7",
+    "dotenv": "^17.4.2",
+    "ora": "^9.4.1",
+    "pdfmake": "^0.3.11",
     "pptxgenjs": "^4.0.1",
     "zod": "^3.22.4"
   },
