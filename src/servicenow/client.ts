@@ -39,18 +39,22 @@ export function basicAuthDiagnostic(): string {
  */
 export function forbiddenDiagnostic(authMethod: 'basic' | 'oauth'): string {
   const lines = [
-    'Authenticated, but not authorized for this operation (HTTP 403). Common causes:',
-    '  1. The account is missing the roles this needs (e.g. itil for ITSM, or admin for config tables).',
+    'Authenticated, but not authorized (HTTP 403). If ServiceNow returned a specific reason above',
+    '(e.g. a "Data Policy Exception" or an ACL detail), that IS the actual cause — read it first.',
+    'Otherwise, common causes are:',
+    '  1. A data policy or field-level ACL is rejecting a field in the request (e.g. a conditionally',
+    '     mandatory or read-only field). This can fail some requests and succeed on others depending on',
+    '     the exact fields sent, even for the same user.',
+    '  2. The account is missing a role this needs (e.g. itil for ITSM, admin for config tables).',
   ];
   if (authMethod === 'oauth') {
     lines.push(
-      '  2. Your OAuth app/token is missing API scope. In the OAuth application registry, grant the',
+      '  3. Your OAuth app/token is missing API scope. In the OAuth application registry, grant the',
       '     required scope (e.g. "useraccount"), and make sure the token\'s user actually holds the roles.',
     );
   }
   lines.push(
-    '  3. Writes need WRITE_ENABLED=true AND the user\'s write roles; some tools also need scripting/CMDB/ATF flags.',
-    '  4. An ACL on the specific table may be denying access even with the role.',
+    '  4. Writes need WRITE_ENABLED=true AND the user\'s write roles; some tools also need scripting/CMDB/ATF flags.',
   );
   return lines.join('\n');
 }
@@ -338,6 +342,11 @@ export class ServiceNowClient {
             const errorJson = JSON.parse(errorText);
             if (errorJson.error?.message) {
               errorMessage = errorJson.error.message;
+              // ServiceNow puts the ACTUAL reason (data policy, ACL, mandatory/read-only field) in
+              // `detail`; `message` is often just the generic "Operation Failed". Surface both.
+              if (errorJson.error.detail) {
+                errorMessage += `: ${String(errorJson.error.detail).replace(/\s+/g, ' ').trim()}`;
+              }
             }
           } catch {
             // Error response wasn't JSON, use status text
@@ -380,7 +389,9 @@ export class ServiceNowClient {
 
         // Don't retry on auth errors or invalid requests
         if (error instanceof ServiceNowError) {
-          if (['AUTHENTICATION_FAILED', 'INVALID_REQUEST', 'NOT_FOUND'].includes(error.code)) {
+          // 403 is not transient (a role/ACL/data-policy denial won't clear in 4s), so fail fast
+          // instead of burning ~7s on retries.
+          if (['AUTHENTICATION_FAILED', 'INVALID_REQUEST', 'NOT_FOUND', 'INSUFFICIENT_PRIVILEGES'].includes(error.code)) {
             throw error;
           }
         }
@@ -1186,7 +1197,10 @@ export class ServiceNowClient {
         let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
         try {
           const errorJson = JSON.parse(errorText);
-          if (errorJson.error?.message) errorMessage = errorJson.error.message;
+          if (errorJson.error?.message) {
+            errorMessage = errorJson.error.message;
+            if (errorJson.error.detail) errorMessage += `: ${String(errorJson.error.detail).replace(/\s+/g, ' ').trim()}`;
+          }
         } catch {
           // ignore parse error
         }
