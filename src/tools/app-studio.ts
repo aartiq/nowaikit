@@ -7,6 +7,45 @@ import type { ServiceNowClient } from '../servicenow/client.js';
 import { ServiceNowError } from '../utils/errors.js';
 import { requireWrite } from '../utils/permissions.js';
 
+/** Slugify an app name into the scope suffix (lowercase, underscores, alnum only). */
+function appNameSlug(name: string): string {
+  return String(name).toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 40) || 'app';
+}
+
+/**
+ * The instance's REGISTERED vendor prefix for custom apps. Primary source is the
+ * `glide.appcreator.company.code` property; falls back to the most common `x_<code>_`
+ * among existing custom scopes (ignoring ServiceNow's own `x_snc_`). Returns '' if unknown.
+ */
+async function getInstanceVendorPrefix(client: ServiceNowClient): Promise<string> {
+  try {
+    const r = await client.queryRecords({
+      table: 'sys_properties',
+      query: 'name=glide.appcreator.company.code',
+      fields: 'value',
+      limit: 1,
+    });
+    const code = ((r.records?.[0] as any)?.value || '').toString().trim();
+    if (code) return code.toLowerCase();
+  } catch { /* fall through */ }
+  try {
+    const r = await client.queryRecords({
+      table: 'sys_scope',
+      query: 'scopeSTARTSWITHx_^scopeNOT LIKEx_snc_',
+      fields: 'scope',
+      limit: 100,
+    });
+    const counts: Record<string, number> = {};
+    for (const s of (r.records || []) as any[]) {
+      const m = String(s.scope).match(/^x_([a-z0-9]+)_/);
+      if (m) counts[m[1]] = (counts[m[1]] || 0) + 1;
+    }
+    const top = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
+    if (top) return top[0];
+  } catch { /* fall through */ }
+  return '';
+}
+
 export function getAppStudioToolDefinitions() {
   return [
     // ── Scoped Applications ─────────────────────────────────────────────────
@@ -38,14 +77,17 @@ export function getAppStudioToolDefinitions() {
       name: 'create_scoped_app',
       description:
         'Create a new scoped application in App Studio (requires WRITE_ENABLED=true). ' +
-        'The scope prefix must be unique and follow the pattern x_<vendor>_<appname>.',
+        'The scope follows x_<vendor>_<appname>, where <vendor> is the instance\'s REGISTERED ' +
+        'vendor prefix (glide.appcreator.company.code), not an arbitrary value. Leave scope blank ' +
+        'to auto-derive it from the instance vendor prefix + app name; if you pass a scope whose ' +
+        'vendor segment differs from the instance prefix, it is corrected to the registered one.',
       inputSchema: {
         type: 'object',
         properties: {
           name: { type: 'string', description: 'Human-readable application name' },
           scope: {
             type: 'string',
-            description: 'Unique scope prefix, e.g. "x_myco_myapp". Must start with "x_".',
+            description: 'Optional. Scope like "x_<instanceVendor>_myapp". If omitted, derived from the instance vendor prefix + app name. Must start with "x_".',
           },
           version: {
             type: 'string',
@@ -57,7 +99,7 @@ export function getAppStudioToolDefinitions() {
           active: { type: 'boolean', description: 'Activate the app immediately (default: true)' },
           logo: { type: 'string', description: 'App logo attachment sys_id (optional)' },
         },
-        required: ['name', 'scope'],
+        required: ['name'],
       },
     },
     {
@@ -113,13 +155,41 @@ export async function executeAppStudioToolCall(
 
     case 'create_scoped_app': {
       requireWrite();
-      if (!args.name || !args.scope)
-        throw new ServiceNowError('name and scope are required', 'INVALID_REQUEST');
-      if (!args.scope.startsWith('x_'))
-        throw new ServiceNowError('scope must start with "x_" (e.g. x_myco_myapp)', 'INVALID_REQUEST');
+      if (!args.name) throw new ServiceNowError('name is required', 'INVALID_REQUEST');
+
+      // Determine the instance's REGISTERED vendor prefix so we never create an app under an
+      // arbitrary/guessed prefix (e.g. x_ukpn_...). ServiceNow custom apps must use the company code.
+      const vendorCode = await getInstanceVendorPrefix(client);
+      let scope: string = args.scope;
+      let note: string | undefined;
+
+      if (!scope) {
+        if (!vendorCode) {
+          throw new ServiceNowError(
+            'No scope given and the instance vendor prefix could not be determined ' +
+            '(glide.appcreator.company.code is empty). Pass an explicit scope like x_<vendor>_<app>.',
+            'INVALID_REQUEST',
+          );
+        }
+        scope = `x_${vendorCode}_${appNameSlug(args.name)}`;
+        note = `Scope derived from the instance's registered vendor prefix (glide.appcreator.company.code="${vendorCode}").`;
+      } else {
+        if (!scope.startsWith('x_'))
+          throw new ServiceNowError('scope must start with "x_" (e.g. x_myco_myapp)', 'INVALID_REQUEST');
+        // If the caller's vendor segment differs from the instance's registered prefix, correct it.
+        if (vendorCode) {
+          const m = scope.match(/^x_([a-z0-9]+)_(.+)$/i);
+          if (m && m[1].toLowerCase() !== vendorCode.toLowerCase()) {
+            const corrected = `x_${vendorCode}_${m[2]}`;
+            note = `Corrected the vendor prefix from "x_${m[1]}_" to the instance's registered prefix "x_${vendorCode}_" (requested "${scope}").`;
+            scope = corrected;
+          }
+        }
+      }
+
       const data: Record<string, any> = {
         name: args.name,
-        scope: args.scope,
+        scope,
         version: args.version ?? '1.0.0',
         active: args.active !== false,
       };
@@ -130,7 +200,9 @@ export async function executeAppStudioToolCall(
       const result = await client.createRecord('sys_app', data);
       return {
         ...result,
-        summary: `Created scoped app "${args.name}" with scope "${args.scope}"`,
+        scope,
+        summary: `Created scoped app "${args.name}" with scope "${scope}"`,
+        ...(note ? { note } : {}),
       };
     }
 
