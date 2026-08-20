@@ -8,7 +8,7 @@
 import { input, password, select } from '@inquirer/prompts';
 import chalk from 'chalk';
 import ora from 'ora';
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
+import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
 import { homedir } from 'os';
 import { join } from 'path';
 import { listInstances } from './config-store.js';
@@ -28,7 +28,9 @@ interface TokenStore {
 
 function tokenPath(): string {
   const dir = join(homedir(), '.config', 'nowaikit');
-  if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+  // mode is honored on POSIX (owner-only) and harmlessly ignored on Windows,
+  // where the file is already scoped to the user profile.
+  if (!existsSync(dir)) mkdirSync(dir, { recursive: true, mode: 0o700 });
   return join(dir, 'tokens.json');
 }
 
@@ -43,7 +45,12 @@ function loadTokens(): TokenStore {
 }
 
 function saveTokens(store: TokenStore): void {
-  writeFileSync(tokenPath(), JSON.stringify(store, null, 2), 'utf8');
+  const p = tokenPath();
+  // tokens.json holds OAuth access + refresh tokens: keep it owner-only.
+  // `mode` only applies when the file is created, so also chmod an existing file.
+  // Both are POSIX-effective and safely ignored/no-op on Windows (user-profile scoped).
+  writeFileSync(p, JSON.stringify(store, null, 2), { encoding: 'utf8', mode: 0o600 });
+  try { chmodSync(p, 0o600); } catch { /* Windows / restricted FS: ignore */ }
 }
 
 function tokenKey(instanceUrl: string): string {
