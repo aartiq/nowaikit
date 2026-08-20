@@ -1358,6 +1358,7 @@ export class ServiceNowClient {
     // and this executes through it; otherwise we fail with a clear, actionable message rather than
     // silently hitting a non-existent endpoint (the previous implementation targeted a bogus
     // sys_script_execution table wrapped in a malformed Batch request and never worked).
+    // 1) Optional customer-installed helper (a scoped, secured Scripted REST API) if configured.
     const endpoint = process.env.SCRIPT_EXEC_ENDPOINT;
     if (endpoint) {
       logger.info('Executing server-side script via SCRIPT_EXEC_ENDPOINT');
@@ -1369,14 +1370,58 @@ export class ServiceNowClient {
       return { status: 200, output: (response && response.result !== undefined) ? response.result : response, scope: scope || 'global' };
     }
 
+    // 2) Default (no install): run via a one-time, self-terminating scheduled job. ServiceNow has no
+    // REST endpoint to run background scripts, but the SCHEDULER is a separate path — and the job record
+    // is created with the Table API, which works. The wrapper captures the result to a temp property,
+    // then deactivates and deletes the job.
+    return await this.executeViaScheduledJob(script);
+  }
+
+  private async executeViaScheduledJob(script: string): Promise<any> {
+    const runId = `nwk_${Date.now().toString(36)}_${Math.floor(Math.random() * 1e9).toString(36)}`;
+    const jobName = `NowAIKit exec ${runId}`;
+    const prop = `nowaikit.exec.${runId}`;
+    const wrapper =
+      `var __r, __e = null;\n` +
+      `try { __r = (function(){\n${script}\n})(); } catch (e) { __e = '' + e; }\n` +
+      `try { gs.setProperty(${JSON.stringify(prop)}, JSON.stringify({ ok: __e === null, result: (__r === undefined ? null : __r), error: __e })); } catch (ig) {}\n` +
+      `try { var __j = new GlideRecord('sysauto_script'); if (__j.get('name', ${JSON.stringify(jobName)})) { __j.active = false; __j.deleteRecord(); } } catch (ig) {}\n`;
+    const nowGmt = new Date().toISOString().replace('T', ' ').slice(0, 19);
+
+    let jobSysId: string | undefined;
+    try {
+      const job = await this.createRecord('sysauto_script', {
+        name: jobName, script: wrapper, active: 'true', run_type: 'once', run_start: nowGmt, next_action: nowGmt,
+      });
+      jobSysId = (job as any)?.sys_id;
+    } catch (e) {
+      throw new ServiceNowError(
+        `Server-side script execution needs to create a one-time scheduled job (sysauto_script), but that ` +
+        `write was rejected: ${e instanceof Error ? e.message : String(e)}. ` +
+        `Alternatives: use the Table API tools for data changes, run it in ServiceNow (Scripts - Background), ` +
+        `or install the optional script-exec helper and set SCRIPT_EXEC_ENDPOINT.`,
+        'SCRIPT_EXEC_UNAVAILABLE',
+      );
+    }
+
+    // Poll for the result property (scheduler latency is typically a few to ~60s).
+    const deadline = Date.now() + 90_000;
+    while (Date.now() < deadline) {
+      await new Promise((r) => setTimeout(r, 3000));
+      const res = await this.queryRecords({ table: 'sys_properties', query: `name=${prop}`, fields: 'sys_id,value', limit: 1 });
+      if (res.count > 0) {
+        const rec = res.records[0] as any;
+        try { await this.deleteRecord('sys_properties', rec.sys_id); } catch { /* leave it */ }
+        let parsed: any;
+        try { parsed = JSON.parse(rec.value); } catch { parsed = { ok: true, result: rec.value }; }
+        return { status: 200, ...parsed, via: 'scheduled-job' };
+      }
+    }
     throw new ServiceNowError(
-      'Server-side script execution is not available over the ServiceNow REST API — ServiceNow provides no ' +
-      'supported REST endpoint for running arbitrary background scripts. Options:\n' +
-      '  1. Make the change with the Table API tools (create_record / update_record / query_records) instead of a script.\n' +
-      '  2. Run it in ServiceNow yourself (Scripts - Background, or a Fix Script in Studio).\n' +
-      '  3. Install the optional NowAIKit script-exec helper (a scoped, secured Scripted REST API you review and\n' +
-      '     install), then set SCRIPT_EXEC_ENDPOINT to its path so this tool can execute through it.',
-      'SCRIPT_EXEC_UNAVAILABLE',
+      `Script was scheduled (sysauto_script "${jobName}"${jobSysId ? ' ' + jobSysId : ''}) but did not report a ` +
+      `result within 90s — the scheduler may be backed up or the script was blocked by instance hardening. ` +
+      `Check the job and its output on the instance.`,
+      'SCRIPT_EXEC_TIMEOUT',
     );
   }
 

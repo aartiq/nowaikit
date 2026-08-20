@@ -1,8 +1,16 @@
-# Optional: server-side script execution helper
+# Server-side script execution
 
-ServiceNow has **no supported REST endpoint** for running arbitrary background scripts, so
-`execute_script`, `execute_background_script`, and `run_fix_script` cannot run server-side code out of
-the box. They return a clear `SCRIPT_EXEC_UNAVAILABLE` message unless you install this optional helper.
+ServiceNow has **no supported REST endpoint** for running arbitrary background scripts. NowAIKit works
+around this **by default, with no install**: `execute_script` / `execute_background_script` /
+`run_fix_script` create a one-time, self-terminating **scheduled job** (`sysauto_script`) via the Table
+API — the scheduler is a separate execution path — capture the result to a temp property, then the job
+deactivates and deletes itself. Expect a short delay (scheduler latency, typically a few to ~60s). If
+the job record can't be created (e.g. a hardened instance), it fails with a clear `SCRIPT_EXEC_UNAVAILABLE`.
+
+## Optional faster/synchronous helper
+
+If you want synchronous execution (no scheduler wait), or the scheduled-job path is blocked on your
+instance, install this optional helper and set `SCRIPT_EXEC_ENDPOINT` — NowAIKit will use it instead.
 
 This helper is **opt-in and auditable on purpose**: it is an arbitrary-code-execution endpoint, so you
 should review it, scope it, and protect it. Do not install it on an instance where that is not
