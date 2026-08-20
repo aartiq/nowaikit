@@ -1351,56 +1351,33 @@ export class ServiceNowClient {
    */
   async executeScript(script: string, scope?: string): Promise<any> {
     await this.authenticate();
-    logger.info('Executing server-side script');
 
-    try {
-      // Use the standard script execution endpoint
-      const response = await this.request<any>(
-        `${this.baseUrl}/api/now/v1/batch`,
-        {
-          method: 'POST',
-          body: JSON.stringify({
-            batch_request_id: `script_${Date.now()}`,
-            rest_requests: [{
-              id: 'script_exec',
-              method: 'POST',
-              url: '/api/now/table/sys_script_execution',
-              headers: [
-                { name: 'Content-Type', value: 'application/json' },
-                { name: 'Accept', value: 'application/json' },
-              ],
-              body: JSON.stringify({
-                script,
-                scope: scope || 'global',
-              }),
-            }],
-          }),
-        }
-      );
-
-      const results = response.serviced_requests || [];
-      if (results.length > 0) {
-        let body: any;
-        try {
-          body = typeof results[0].body === 'string' ? JSON.parse(results[0].body) : results[0].body;
-        } catch {
-          body = results[0].body;
-        }
-        return {
-          status: results[0].status_code,
-          output: body,
-          scope: scope || 'global',
-        };
-      }
-
-      return { status: 200, output: 'Script executed (no output captured)', scope: scope || 'global' };
-    } catch (error) {
-      if (error instanceof ServiceNowError) throw error;
-      throw new ServiceNowError(
-        `Script execution failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        'SCRIPT_FAILED'
-      );
+    // ServiceNow has NO supported REST endpoint for running arbitrary background scripts. The only
+    // reliable server-side path is an optional helper the customer installs and reviews: a scoped,
+    // secured Scripted REST API. Point us at it with SCRIPT_EXEC_ENDPOINT (e.g. "/api/x_nowaikit/exec")
+    // and this executes through it; otherwise we fail with a clear, actionable message rather than
+    // silently hitting a non-existent endpoint (the previous implementation targeted a bogus
+    // sys_script_execution table wrapped in a malformed Batch request and never worked).
+    const endpoint = process.env.SCRIPT_EXEC_ENDPOINT;
+    if (endpoint) {
+      logger.info('Executing server-side script via SCRIPT_EXEC_ENDPOINT');
+      const url = `${this.baseUrl}${endpoint.startsWith('/') ? endpoint : '/' + endpoint}`;
+      const response = await this.request<any>(url, {
+        method: 'POST',
+        body: JSON.stringify({ script, scope: scope || 'global' }),
+      });
+      return { status: 200, output: (response && response.result !== undefined) ? response.result : response, scope: scope || 'global' };
     }
+
+    throw new ServiceNowError(
+      'Server-side script execution is not available over the ServiceNow REST API — ServiceNow provides no ' +
+      'supported REST endpoint for running arbitrary background scripts. Options:\n' +
+      '  1. Make the change with the Table API tools (create_record / update_record / query_records) instead of a script.\n' +
+      '  2. Run it in ServiceNow yourself (Scripts - Background, or a Fix Script in Studio).\n' +
+      '  3. Install the optional NowAIKit script-exec helper (a scoped, secured Scripted REST API you review and\n' +
+      '     install), then set SCRIPT_EXEC_ENDPOINT to its path so this tool can execute through it.',
+      'SCRIPT_EXEC_UNAVAILABLE',
+    );
   }
 
   /**
