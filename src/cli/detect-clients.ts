@@ -45,6 +45,33 @@ function appExists(macPath: string, winExe: string, linuxBin: string): boolean {
 }
 
 /**
+ * VS Code's GLOBAL (user-profile) MCP config, which applies across every workspace — unlike the
+ * project-level .vscode/mcp.json. Path is platform-specific:
+ *   macOS   ~/Library/Application Support/Code/User/mcp.json
+ *   Windows %APPDATA%\Code\User\mcp.json
+ *   Linux   ~/.config/Code/User/mcp.json
+ */
+function vscodeUserConfigPath(): string {
+  const p = process.platform;
+  if (p === 'darwin') return join(homedir(), 'Library', 'Application Support', 'Code', 'User', 'mcp.json');
+  if (p === 'win32') return join(process.env['APPDATA'] || join(homedir(), 'AppData', 'Roaming'), 'Code', 'User', 'mcp.json');
+  return join(homedir(), '.config', 'Code', 'User', 'mcp.json');
+}
+
+/** VS Code User directory (holds extension globalStorage), platform-specific. */
+function vscodeUserDir(): string {
+  const p = process.platform;
+  if (p === 'darwin') return join(homedir(), 'Library', 'Application Support', 'Code', 'User');
+  if (p === 'win32') return join(process.env['APPDATA'] || join(homedir(), 'AppData', 'Roaming'), 'Code', 'User');
+  return join(homedir(), '.config', 'Code', 'User');
+}
+
+/** Cline stores MCP config in its VS Code extension globalStorage (uses the standard mcpServers key). */
+function clineConfigPath(): string {
+  return join(vscodeUserDir(), 'globalStorage', 'saoudrizwan.claude-dev', 'settings', 'cline_mcp_settings.json');
+}
+
+/**
  * Robust Claude Desktop detection. The config file only appears once you've added an MCP server,
  * so a fresh install shows nothing there. Check the config FOLDER (created on first launch), and on
  * Windows the several places Claude Desktop actually installs, including the Squirrel versioned dir.
@@ -136,11 +163,13 @@ export function detectClients(): DetectedClient[] {
       id: 'vscode',
       name: 'VS Code (GitHub Copilot)',
       detected: false,
-      configPath: join(process.cwd(), '.vscode', 'mcp.json'),
+      // Global user config → works in every workspace (was project-only .vscode/mcp.json, which
+      // depended on where setup was run). Cross-platform via vscodeUserConfigPath().
+      configPath: vscodeUserConfigPath(),
       configKey: 'servers',
       writeMethod: 'json-servers',
       requiresRestart: false,
-      note: 'VS Code reads .vscode/mcp.json from the workspace root. Open the workspace folder in VS Code.',
+      note: 'Written to your global VS Code MCP config (all workspaces). A project-level .vscode/mcp.json also works. Needs VS Code 1.102+ with MCP enabled.',
     },
     {
       id: 'windsurf',
@@ -163,6 +192,38 @@ export function detectClients(): DetectedClient[] {
       writeMethod: 'json-mcpServers',
       requiresRestart: false,
       note: 'Continue.dev will pick up the change automatically.',
+    },
+    {
+      id: 'antigravity',
+      name: 'Antigravity (Google)',
+      detected: false,
+      // Antigravity reads ~/.gemini/antigravity/mcp_config.json on every platform (standard format).
+      configPath: join(home, '.gemini', 'antigravity', 'mcp_config.json'),
+      configKey: 'mcpServers',
+      writeMethod: 'json-mcpServers',
+      requiresRestart: true,
+      note: 'Restart Antigravity (or Manage MCP Servers → reload) to activate.',
+    },
+    {
+      id: 'cline',
+      name: 'Cline (VS Code)',
+      detected: false,
+      configPath: clineConfigPath(),
+      configKey: 'mcpServers',
+      writeMethod: 'json-mcpServers',
+      requiresRestart: false,
+      note: 'Cline picks up the change automatically. (VS Code Insiders/VSCodium use a different folder.)',
+    },
+    {
+      id: 'gemini-cli',
+      name: 'Gemini CLI',
+      detected: false,
+      // Global settings ~/.gemini/settings.json (mcpServers). Project .gemini/settings.json also works.
+      configPath: join(home, '.gemini', 'settings.json'),
+      configKey: 'mcpServers',
+      writeMethod: 'json-mcpServers',
+      requiresRestart: true,
+      note: 'Restart the Gemini CLI session to load the server.',
     },
     {
       id: 'claude-code',
@@ -232,6 +293,21 @@ export function detectClients(): DetectedClient[] {
     }
     if (c.id === 'continue') {
       return { ...c, detected: existsSync(c.configPath) };
+    }
+    if (c.id === 'antigravity') {
+      return {
+        ...c,
+        detected:
+          existsSync(c.configPath) || existsSync(dirname(c.configPath)) ||
+          appExists('/Applications/Antigravity.app', join('Programs', 'Antigravity', 'Antigravity.exe'), 'antigravity'),
+      };
+    }
+    if (c.id === 'cline') {
+      // Detect via the extension's globalStorage folder (created once Cline runs).
+      return { ...c, detected: existsSync(c.configPath) || existsSync(dirname(c.configPath)) };
+    }
+    if (c.id === 'gemini-cli') {
+      return { ...c, detected: existsSync(c.configPath) || existsSync(dirname(c.configPath)) || which('gemini') };
     }
     if (c.id === 'claude-code') {
       return { ...c, detected: which('claude') };
