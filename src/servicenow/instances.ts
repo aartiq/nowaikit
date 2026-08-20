@@ -15,9 +15,31 @@
  *   const client = instanceManager.getClient('prod');    // specific instance
  *   instanceManager.switch('prod');                      // switch active instance
  */
-import { readFileSync, existsSync } from 'fs';
+import { readFileSync, existsSync, writeFileSync, chmodSync } from 'fs';
 import { homedir } from 'os';
 import { join } from 'path';
+
+// ─── Local per-user OAuth token store (written by `nowaikit auth login`) ─────────────────────────
+// Read/write here directly (rather than importing the CLI layer) to avoid a servicenow→cli import.
+function tokenStorePath(): string { return join(homedir(), '.config', 'nowaikit', 'tokens.json'); }
+function storeKey(url: string): string { return url.replace(/https?:\/\//, '').replace(/[^a-z0-9]/gi, '_'); }
+interface StoredToken { accessToken: string; refreshToken: string; expiresAt: number; snUser?: string; snUserSysId?: string }
+function readStoredToken(url: string): StoredToken | undefined {
+  try {
+    const store = JSON.parse(readFileSync(tokenStorePath(), 'utf8')) as { tokens?: Record<string, StoredToken> };
+    return store.tokens?.[storeKey(url)];
+  } catch { return undefined; }
+}
+function writeStoredToken(url: string, t: { accessToken: string; refreshToken: string; expiresAt: number }): void {
+  try {
+    const p = tokenStorePath();
+    const store = (existsSync(p) ? JSON.parse(readFileSync(p, 'utf8')) : { tokens: {} }) as { tokens: Record<string, StoredToken> };
+    const prev = store.tokens[storeKey(url)] || {} as StoredToken;
+    store.tokens[storeKey(url)] = { ...prev, accessToken: t.accessToken, refreshToken: t.refreshToken, expiresAt: t.expiresAt };
+    writeFileSync(p, JSON.stringify(store, null, 2), { encoding: 'utf8', mode: 0o600 });
+    try { chmodSync(p, 0o600); } catch { /* Windows: ignore */ }
+  } catch { /* best-effort persistence */ }
+}
 import { ServiceNowClient } from './client.js';
 import type { ServiceNowConfig } from './types.js';
 
@@ -69,9 +91,36 @@ class InstanceManager {
         const defaultName: string = raw.defaultInstance || 'default';
         for (const [name, cfg] of Object.entries(raw.instances || {})) {
           const c = cfg as Record<string, unknown>;
+          const url = c['instanceUrl'] as string;
+          const authMethod = (c['authMethod'] as 'basic' | 'oauth') || 'basic';
+          const group = (c['group'] as string) || 'Default';
+          const environment = (c['environment'] as string) || '';
+
+          // Local per-user OAuth: if the user ran `nowaikit auth login`, use their own stored token
+          // and let the client refresh it (self-heals the 30-min token, no launcher needed). This
+          // path is entirely separate from the multi-tenant gateway (which injects tokens via the
+          // SERVICENOW_BEARER_TOKEN env branch and never reads this config file), and from basic/ROPC.
+          const stored = authMethod === 'oauth' ? readStoredToken(url) : undefined;
+          if (stored?.accessToken && stored.refreshToken && c['clientId']) {
+            this.register(name, {
+              instanceUrl: url,
+              authMethod: 'oauth',
+              authMode: 'per-user',
+              perUserBearerToken: stored.accessToken,
+              perUserRefreshToken: stored.refreshToken,
+              perUserTokenExpiry: stored.expiresAt,
+              oauth: {
+                clientId: c['clientId'] as string | undefined,
+                clientSecret: c['clientSecret'] as string | undefined,
+              },
+              onTokenRefreshed: (t) => writeStoredToken(url, t),
+            }, group, environment);
+            continue;
+          }
+
           this.register(name, {
-            instanceUrl: c['instanceUrl'] as string,
-            authMethod: (c['authMethod'] as 'basic' | 'oauth') || 'basic',
+            instanceUrl: url,
+            authMethod,
             basic: {
               username: c['username'] as string | undefined,
               password: c['password'] as string | undefined,
@@ -82,7 +131,7 @@ class InstanceManager {
               username: c['username'] as string | undefined,
               password: c['password'] as string | undefined,
             },
-          }, (c['group'] as string) || 'Default', (c['environment'] as string) || '');
+          }, group, environment);
         }
         if (this.instances.has(defaultName)) this.currentName = defaultName;
 

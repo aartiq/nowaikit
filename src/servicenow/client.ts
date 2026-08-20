@@ -116,6 +116,10 @@ export class ServiceNowClient {
   private impersonateUserSysId?: string;
   /** For per-user mode: pre-loaded token overrides service-account auth */
   private perUserBearerToken?: string;
+  /** Local per-user OAuth only: refresh token + expiry + persist callback (unset for the gateway). */
+  private perUserRefreshToken?: string;
+  private perUserTokenExpiry?: number;
+  private onTokenRefreshed?: ServiceNowConfig['onTokenRefreshed'];
 
   private accessToken?: string;
   private tokenExpiry?: number;
@@ -131,6 +135,48 @@ export class ServiceNowClient {
     this.requestTimeoutMs = config.requestTimeoutMs || 30000;
     this.impersonateUserSysId = config.impersonateUserSysId;
     this.perUserBearerToken = config.perUserBearerToken;
+    this.perUserRefreshToken = config.perUserRefreshToken;
+    this.perUserTokenExpiry = config.perUserTokenExpiry;
+    this.onTokenRefreshed = config.onTokenRefreshed;
+  }
+
+  /**
+   * True only for LOCAL per-user OAuth that owns a refresh token + client id (i.e. can renew its
+   * own token). The multi-tenant gateway's per-user mode has no refresh token, so this is false
+   * there and the injected token is used as-is — the gateway path is unchanged.
+   */
+  private hasPerUserRefresh(): boolean {
+    return this.authMode === 'per-user' && !!this.perUserRefreshToken && !!this.oauthConfig?.clientId;
+  }
+
+  /** Renew the per-user access token using the stored refresh token (refresh_token grant). */
+  private async refreshPerUserToken(): Promise<void> {
+    if (!this.perUserRefreshToken || !this.oauthConfig?.clientId) {
+      throw new ServiceNowError('Cannot refresh: no refresh token or OAuth client configured', 'AUTHENTICATION_FAILED');
+    }
+    const body = new URLSearchParams({
+      grant_type: 'refresh_token',
+      client_id: this.oauthConfig.clientId,
+      refresh_token: this.perUserRefreshToken,
+    });
+    // Confidential clients send the secret; public (PKCE) clients omit it.
+    if (this.oauthConfig.clientSecret) body.set('client_secret', this.oauthConfig.clientSecret);
+    const resp = await fetch(`${this.baseUrl}/oauth_token.do`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: body.toString(),
+    });
+    if (!resp.ok) {
+      throw new ServiceNowError(`OAuth token refresh failed: ${resp.status} ${resp.statusText}`, 'AUTHENTICATION_FAILED');
+    }
+    const data = await resp.json() as { access_token: string; refresh_token?: string; expires_in?: number };
+    this.perUserBearerToken = data.access_token;
+    if (data.refresh_token) this.perUserRefreshToken = data.refresh_token; // honour rotation
+    const expiresAt = Date.now() + (data.expires_in ? data.expires_in * 1000 * 0.9 : 25 * 60 * 1000);
+    this.perUserTokenExpiry = expiresAt;
+    try {
+      this.onTokenRefreshed?.({ accessToken: this.perUserBearerToken!, refreshToken: this.perUserRefreshToken!, expiresAt });
+    } catch { /* persistence is best-effort; never fail the request over it */ }
   }
 
   /**
@@ -173,6 +219,11 @@ export class ServiceNowClient {
     if (options.bearerToken) {
       copy.authMode = 'per-user';
       copy.perUserBearerToken = options.bearerToken;
+      // A per-request injected token (the gateway path) is not ours to refresh — never carry over
+      // any refresh state from the base client. Keeps hasPerUserRefresh() false for the gateway.
+      copy.perUserRefreshToken = undefined;
+      copy.perUserTokenExpiry = undefined;
+      copy.onTokenRefreshed = undefined;
     }
     return copy;
   }
@@ -184,6 +235,11 @@ export class ServiceNowClient {
     // Per-user mode carries the user's own bearer token (delegated auth) —
     // no service-account token acquisition needed.
     if (this.authMode === 'per-user' && this.perUserBearerToken) {
+      // Local stored-session OAuth: proactively refresh a token that is expired or within 60s of it.
+      // The gateway path has no refresh token (hasPerUserRefresh() === false), so it is untouched.
+      if (this.hasPerUserRefresh() && this.perUserTokenExpiry && Date.now() >= this.perUserTokenExpiry - 60_000) {
+        await this.refreshPerUserToken();
+      }
       return;
     }
 
@@ -363,6 +419,14 @@ export class ServiceNowClient {
               this.accessToken = undefined;
               this.tokenExpiry = undefined;
               try { await this.authenticate(); } catch { /* fall through to the throw below */ }
+              continue;
+            }
+            // Local per-user OAuth that owns a refresh token: renew once and retry. The multi-tenant
+            // gateway's injected-token per-user mode has NO refresh token, so hasPerUserRefresh() is
+            // false there and this is skipped — the live Copilot path is unchanged.
+            if (this.hasPerUserRefresh() && !reauthed) {
+              reauthed = true;
+              try { await this.refreshPerUserToken(); } catch { /* fall through to the throw below */ }
               continue;
             }
             // Attach the actionable checklist so a bare 401 isn't a dead end.

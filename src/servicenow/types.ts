@@ -17,6 +17,17 @@ export interface ServiceNowConfig {
   impersonateUserSysId?: string;
   /** For per-user mode: pre-loaded Bearer token (from keychain / auth store) */
   perUserBearerToken?: string;
+  /**
+   * For LOCAL per-user OAuth (authorization-code login via `nowaikit auth`): the stored refresh
+   * token used to renew an expired access token. NOTE: the multi-tenant gateway does NOT set this
+   * (it has no refresh token — the token is injected per request by the caller's OAuth), so refresh
+   * only activates for the local stored-session case. Requires oauth.clientId to be usable.
+   */
+  perUserRefreshToken?: string;
+  /** Epoch ms when perUserBearerToken expires; used to refresh proactively before a 401. */
+  perUserTokenExpiry?: number;
+  /** Called after a successful per-user token refresh so the caller can persist the rotated token. */
+  onTokenRefreshed?: (t: { accessToken: string; refreshToken: string; expiresAt: number }) => void;
   oauth?: {
     clientId?: string;
     clientSecret?: string;

@@ -11,7 +11,10 @@ import ora from 'ora';
 import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
 import { homedir } from 'os';
 import { join } from 'path';
+import { createHash, randomBytes } from 'crypto';
 import { listInstances } from './config-store.js';
+
+const b64url = (b: Buffer): string => b.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 
 interface UserToken {
   instanceUrl: string;
@@ -80,11 +83,18 @@ export async function authLogin(): Promise<void> {
   console.log('');
 
   if (instance.authMethod === 'oauth' && instance.clientId) {
-    // OAuth Authorization Code flow — open browser
+    // OAuth Authorization Code flow — open browser.
+    // PKCE is added ONLY for public clients (no client secret configured), so existing
+    // confidential-client setups keep the exact same request they use today.
+    const usePkce = !instance.clientSecret;
+    const codeVerifier = usePkce ? b64url(randomBytes(32)) : '';
+    const codeChallenge = usePkce ? b64url(createHash('sha256').update(codeVerifier).digest()) : '';
+
     const authUrl =
       `${instanceUrl}/oauth_auth.do` +
       `?response_type=code&client_id=${instance.clientId}` +
-      `&redirect_uri=http://localhost:8765/callback`;
+      `&redirect_uri=http://localhost:8765/callback` +
+      (usePkce ? `&code_challenge=${codeChallenge}&code_challenge_method=S256` : '');
 
     console.log(chalk.cyan('Open this URL in your browser to authenticate:'));
     console.log(chalk.underline(authUrl));
@@ -96,16 +106,18 @@ export async function authLogin(): Promise<void> {
 
     const spinner = ora('Exchanging authorization code for token…').start();
     try {
+      const tokenBody = new URLSearchParams({
+        grant_type: 'authorization_code',
+        client_id: instance.clientId,
+        code,
+        redirect_uri: 'http://localhost:8765/callback',
+      });
+      if (instance.clientSecret) tokenBody.set('client_secret', instance.clientSecret);
+      if (usePkce) tokenBody.set('code_verifier', codeVerifier);
       const resp = await fetch(`${instanceUrl}/oauth_token.do`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({
-          grant_type: 'authorization_code',
-          client_id: instance.clientId,
-          client_secret: instance.clientSecret || '',
-          code,
-          redirect_uri: 'http://localhost:8765/callback',
-        }).toString(),
+        body: tokenBody.toString(),
       });
 
       if (!resp.ok) {
@@ -119,16 +131,17 @@ export async function authLogin(): Promise<void> {
         expires_in: number;
       };
 
-      // Get the ServiceNow user tied to this token
-      const meResp = await fetch(`${instanceUrl}/api/now/table/sys_user?sysparm_query=sys_idINSTANCEOF&sysparm_limit=1`, {
+      // Identify the ServiceNow user this token belongs to via the current-user endpoint
+      // (the old sys_idINSTANCEOF query matched nothing → always "unknown").
+      const meResp = await fetch(`${instanceUrl}/api/now/ui/user/current_user`, {
         headers: {
           Authorization: `Bearer ${data.access_token}`,
           Accept: 'application/json',
         },
       });
-      const meData = await meResp.json() as { result?: Array<{ sys_id?: { value: string }; user_name?: { value: string } }> };
-      const snUserSysId = meData.result?.[0]?.sys_id?.value || '';
-      const snUser = meData.result?.[0]?.user_name?.value || 'unknown';
+      const meData = await meResp.json() as { result?: { user_name?: string; name?: string; user_sys_id?: string; sys_id?: string } };
+      const snUser = meData.result?.user_name || meData.result?.name || 'unknown';
+      const snUserSysId = meData.result?.user_sys_id || meData.result?.sys_id || '';
 
       const store = loadTokens();
       store.tokens[tokenKey(instanceUrl)] = {
@@ -217,4 +230,56 @@ export function authWhoami(): void {
 export function getStoredToken(instanceUrl: string): UserToken | undefined {
   const store = loadTokens();
   return store.tokens[tokenKey(instanceUrl)];
+}
+
+/**
+ * Return a currently-valid stored token for an instance, refreshing it first if it is expired (or
+ * within 60s of expiry) and a refresh token + OAuth client are available. Persists the rotated
+ * token. Returns undefined if there is no stored token. Never throws (falls back to the stale token
+ * so the caller can still try, and the client will refresh reactively on a 401).
+ */
+export async function getValidUserToken(instanceUrl: string): Promise<UserToken | undefined> {
+  const store = loadTokens();
+  const key = tokenKey(instanceUrl);
+  const t = store.tokens[key];
+  if (!t) return undefined;
+  // Basic-auth stored creds (no refresh token) or a token that is still fresh: use as-is.
+  if (!t.refreshToken || Date.now() < t.expiresAt - 60_000) return t;
+  const inst = listInstances().find(i => i.instanceUrl === instanceUrl);
+  if (!inst?.clientId) return t; // cannot refresh without the OAuth client id
+  try {
+    const body = new URLSearchParams({ grant_type: 'refresh_token', client_id: inst.clientId, refresh_token: t.refreshToken });
+    if (inst.clientSecret) body.set('client_secret', inst.clientSecret);
+    const resp = await fetch(`${instanceUrl}/oauth_token.do`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: body.toString(),
+    });
+    if (!resp.ok) return t;
+    const data = await resp.json() as { access_token: string; refresh_token?: string; expires_in?: number };
+    t.accessToken = data.access_token;
+    if (data.refresh_token) t.refreshToken = data.refresh_token;
+    t.expiresAt = Date.now() + (data.expires_in ? data.expires_in * 1000 * 0.9 : 25 * 60 * 1000);
+    store.tokens[key] = t;
+    saveTokens(store);
+    return t;
+  } catch {
+    return t;
+  }
+}
+
+/** Persist a refreshed per-user token (used as the client's onTokenRefreshed callback). */
+export function persistRefreshedToken(instanceUrl: string, t: { accessToken: string; refreshToken: string; expiresAt: number }): void {
+  const store = loadTokens();
+  const key = tokenKey(instanceUrl);
+  const existing = store.tokens[key];
+  store.tokens[key] = {
+    instanceUrl,
+    accessToken: t.accessToken,
+    refreshToken: t.refreshToken,
+    expiresAt: t.expiresAt,
+    snUser: existing?.snUser || 'unknown',
+    snUserSysId: existing?.snUserSysId || '',
+  };
+  saveTokens(store);
 }
