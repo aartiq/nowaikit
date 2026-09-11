@@ -6,6 +6,19 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ---
 
+## [4.16.0] - 2026-09-11
+
+### Added: first-class Strategic Portfolio Management (SPM) tools
+- `list_portfolios`, `get_portfolio` (with its linked projects), `list_programs`, `list_demands`,
+  `create_demand`, `list_goals`, and `list_project_tasks`, on the verified SPM tables (`pm_portfolio`,
+  `pm_program`, `dmn_demand`, `sn_gf_goal`, `pm_project_task`). SPM is the evolution of PPM. These make
+  the portfolio layer discoverable as named tools rather than reaching it through generic table access.
+
+### Added: bundled outcome tool `investigate_incident`
+- One call returns the incident, similar recent incidents, the affected CI with its relationships, and
+  related knowledge articles, instead of the assistant chaining several queries. Cuts round trips and
+  tokens for a common investigation. Each sub-lookup degrades gracefully if a section is unavailable.
+
 ## [4.15.1] - 2026-09-03
 
 ### Fixed

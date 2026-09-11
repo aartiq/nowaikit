@@ -42,6 +42,10 @@ import { getSecurityToolDefinitions, executeSecurityToolCall } from './security.
 // Flow Designer & Process Automation
 import { getFlowToolDefinitions, executeFlowToolCall } from './flow.js';
 import { getDecisionToolDefinitions, executeDecisionToolCall } from './decision.js';
+// Strategic Portfolio Management (SPM, formerly PPM): portfolios, programs, demands, goals, project tasks
+import { getSpmToolDefinitions, executeSpmToolCall } from './spm.js';
+// Bundled outcome tools: one call assembles related context (e.g. investigate_incident)
+import { getBundleToolDefinitions, executeBundleToolCall } from './bundles.js';
 // SLA/OLA, On-Call, Catalog fulfillment, Access admin, Surveys, GRC depth, Service portfolio, Platform ops, AI Agent execution
 import { getSlaToolDefinitions, executeSlaToolCall } from './sla.js';
 import { getOnCallToolDefinitions, executeOnCallToolCall } from './oncall.js';
@@ -277,6 +281,8 @@ const ALL_TOOLS = [
   ...getSecurityToolDefinitions(),
   ...getFlowToolDefinitions(),
   ...getDecisionToolDefinitions(),
+  ...getSpmToolDefinitions(),
+  ...getBundleToolDefinitions(),
   ...getSlaToolDefinitions(),
   ...getOnCallToolDefinitions(),
   ...getCatalogFulfillmentToolDefinitions(),
@@ -454,6 +460,8 @@ export async function executeTool(
     () => executeSecurityToolCall(client, name, args),
     () => executeFlowToolCall(client, name, args),
     () => executeDecisionToolCall(client, name, args),
+    () => executeSpmToolCall(client, name, args),
+    () => executeBundleToolCall(client, name, args),
     () => executeSlaToolCall(client, name, args),
     () => executeOnCallToolCall(client, name, args),
     () => executeCatalogFulfillmentToolCall(client, name, args),
