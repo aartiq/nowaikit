@@ -21,14 +21,18 @@ export function basicAuthDiagnostic(): string {
   return [
     'Basic auth was rejected by the instance (HTTP 401). Common causes, in order:',
     '  1. Username must be the login user_name, not the email or display name.',
-    '  2. The account needs a valid LOCAL password. If it is SSO/SAML-federated, browser login works',
-    '     but Basic REST does not (no local password). Use a dedicated local integration user.',
-    '  3. ServiceNow\'s "Basic Auth Restriction" may be blocking Basic auth. The account needs the',
+    '  2. The account needs a valid LOCAL password. A populated "Federated ID" on the sys_user record',
+    '     means the account is SSO/federated: browser login works but Basic REST does not (no local',
+    '     password), even with the right roles. Use a dedicated local integration user, or use OAuth.',
+    '  3. ServiceNow\'s "Basic Auth Restriction" may be blocking Basic auth (property',
+    '     glide.authenticate.basic_auth.restriction.default_decision = deny). The account then needs the',
     '     snc_basic_auth_api_access role, or must be a Web Service Access Only (WSAO) account.',
     '  4. A corporate proxy may be stripping the Authorization header (the request then arrives as',
     '     "guest"). Test the same call from a different network / phone hotspot.',
     '  5. Confirm the account is active, not locked out, and not flagged password-reset-required.',
-    '  6. If the instance restricts Basic auth, switch this connection to OAuth (the recommended path).',
+    '  6. On Windows, test with curl.exe — PowerShell\'s "curl" is Invoke-WebRequest and will not send -u.',
+    '  7. If the instance uses SSO or restricts Basic auth, switch this connection to OAuth (recommended):',
+    '     nowaikit setup -> OAuth, then nowaikit auth login.',
     '  Docs: https://www.servicenow.com/community/itsm-articles/review-basic-authentication-account-security/ta-p/3555125',
   ].join('\n');
 }
@@ -51,10 +55,13 @@ export function forbiddenDiagnostic(authMethod: 'basic' | 'oauth'): string {
     lines.push(
       '  3. Your OAuth app/token is missing API scope. In the OAuth application registry, grant the',
       '     required scope (e.g. "useraccount"), and make sure the token\'s user actually holds the roles.',
+      '  4. "Enforce Token Restriction" is likely ON for the OAuth app, which limits the token to APIs',
+      '     that have an ACTIVE REST API Access Policy. If the API you need has no active policy, uncheck',
+      '     "Enforce Token Restriction" on the app (app-scoped, does not change the shared policies).',
     );
   }
   lines.push(
-    '  4. Writes need WRITE_ENABLED=true AND the user\'s write roles; some tools also need scripting/CMDB/ATF flags.',
+    `  ${authMethod === 'oauth' ? '5' : '3'}. Writes need WRITE_ENABLED=true AND the user\'s write roles; some tools also need scripting/CMDB/ATF flags.`,
   );
   return lines.join('\n');
 }

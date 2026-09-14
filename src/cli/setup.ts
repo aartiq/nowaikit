@@ -812,20 +812,24 @@ export async function runSetup(options: { add?: boolean } = {}): Promise<void> {
   }
 
   while (!connected) {
-    // A public OAuth client (PKCE, no secret) can't be exercised by the setup-time password grant —
-    // the per-user token comes later from `nowaikit auth login`. Verify the instance and the
-    // service-account credentials with basic auth instead. The saved config stays OAuth.
-    const testMethod: 'basic' | 'oauth' = (authMethod === 'oauth' && !clientSecret) ? 'basic' : authMethod;
-    const { ok } = await testConnection(instanceUrl, testMethod, {
-      username,
-      password: userPassword,
-      clientId,
-      clientSecret,
-    });
-
-    if (ok) {
-      connected = true;
-      break;
+    if (authMethod === 'oauth') {
+      // The per-user OAuth token is obtained later by `nowaikit auth login` (browser/SSO). A setup-time
+      // password grant can't validate OAuth and would false-fail for SSO/federated users even when the
+      // app is configured correctly, so we only confirm the instance is reachable and move on. The
+      // saved config stays OAuth; `nowaikit auth login` does the real sign-in.
+      const reachable = await isUrlReachable(instanceUrl);
+      if (reachable) {
+        console.log('  ' + success('✓') + ' OAuth configured. Finish per-user sign-in with ' + accent('nowaikit auth login') + '.');
+        connected = true;
+        break;
+      }
+      console.log('  ' + err('✗') + ` Instance not reachable at ${accent(instanceUrl)}.`);
+    } else {
+      const { ok } = await testConnection(instanceUrl, 'basic', { username, password: userPassword });
+      if (ok) {
+        connected = true;
+        break;
+      }
     }
 
     console.log('');

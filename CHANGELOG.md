@@ -6,6 +6,27 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ---
 
+## [4.19.0] - 2026-09-14
+
+### Added
+- `nowaikit auth test` validates a connection end-to-end without an AI client: stored token, a live
+  authenticated API call, and (for OAuth) a `refresh_token` exchange, with a clear pass/fail and an
+  actionable hint per check (`invalid_client` -> wrong secret, `invalid_grant` -> re-login, 403 ->
+  token restriction).
+
+### Changed / Fixed (auth robustness)
+- OAuth setup no longer shows a misleading "Connection failed". The setup-time password grant cannot
+  validate OAuth for SSO/federated users, so setup now confirms the instance is reachable and points
+  to `nowaikit auth login` for the real per-user sign-in.
+- `nowaikit auth login` marks each instance as `[OAuth]` or `[basic]` in the picker and hints toward
+  OAuth when a basic-auth instance is chosen (for SSO/MFA instances).
+- The OAuth loopback port is configurable via `NOWAIKIT_OAUTH_PORT` (default 8765) for port conflicts.
+- Richer 401 basic-auth diagnostics: a populated **Federated ID** means the account is SSO (use OAuth,
+  even a role won't help without a local password), the restriction property name
+  (`glide.authenticate.basic_auth.restriction.default_decision`), and a note to use `curl.exe` on
+  Windows (PowerShell's `curl` is Invoke-WebRequest). 403 diagnostics now call out **Enforce Token
+  Restriction** on the OAuth app.
+
 ## [4.18.0] - 2026-09-14
 
 ### Fixed: setup defaults to lean tool exposure (works with every client)

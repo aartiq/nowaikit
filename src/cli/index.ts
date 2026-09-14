@@ -21,7 +21,7 @@ import { existsSync, readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import path from 'path';
 import { runSetup } from './setup.js';
-import { authLogin, authLogout, authWhoami } from './auth.js';
+import { authLogin, authLogout, authWhoami, authTest } from './auth.js';
 import { listInstances, removeInstance, getDefaultInstance, loadConfig } from './config-store.js';
 
 // Read version from package.json so it stays in sync
@@ -191,6 +191,13 @@ auth
   .description('Show which ServiceNow user is currently authenticated')
   .action(() => {
     authWhoami();
+  });
+
+auth
+  .command('test')
+  .description('Validate a connection end-to-end: stored token, a live API call, and OAuth refresh')
+  .action(async () => {
+    await authTest();
   });
 
 // ─── instances ────────────────────────────────────────────────────────────────

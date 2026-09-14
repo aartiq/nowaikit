@@ -121,12 +121,19 @@ export async function authLogin(): Promise<void> {
     ? instances[0]!.name
     : await select<string>({
         message: 'Choose instance to authenticate against:',
-        choices: instances.map(i => ({ name: `${i.name} (${i.instanceUrl})`, value: i.name })),
+        choices: instances.map(i => ({
+          name: `${i.name} (${i.instanceUrl}) [${i.authMethod === 'oauth' && i.clientId ? 'OAuth' : 'basic'}]`,
+          value: i.name,
+        })),
       });
 
   const instance = instances.find(i => i.name === instanceName);
   if (!instance) return;
   const instanceUrl = instance.instanceUrl;
+  // Loopback port for the OAuth redirect. Defaults to 8765 (what the docs tell you to register);
+  // override with NOWAIKIT_OAUTH_PORT if 8765 is taken, but the OAuth app's redirect URL must match.
+  const port = Number(process.env.NOWAIKIT_OAUTH_PORT) || 8765;
+  const redirectUri = `http://localhost:${port}/callback`;
 
   console.log('');
   console.log(chalk.bold('Per-user OAuth login'));
@@ -147,7 +154,7 @@ export async function authLogin(): Promise<void> {
     const authUrl =
       `${instanceUrl}/oauth_auth.do` +
       `?response_type=code&client_id=${instance.clientId}` +
-      `&redirect_uri=http://localhost:8765/callback` +
+      `&redirect_uri=${redirectUri}` +
       `&state=${state}` +
       (usePkce ? `&code_challenge=${codeChallenge}&code_challenge_method=S256` : '');
 
@@ -159,7 +166,7 @@ export async function authLogin(): Promise<void> {
       console.log(chalk.dim('If it does not open, use this URL:'));
       console.log(chalk.underline(authUrl));
       console.log('');
-      code = await captureCodeViaLoopback(authUrl, 8765, state);
+      code = await captureCodeViaLoopback(authUrl, port, state);
     } catch {
       console.log('');
       console.log(chalk.yellow('Could not capture the sign-in automatically.'));
@@ -189,7 +196,7 @@ export async function authLogin(): Promise<void> {
         grant_type: 'authorization_code',
         client_id: instance.clientId,
         code,
-        redirect_uri: 'http://localhost:8765/callback',
+        redirect_uri: redirectUri,
       });
       if (instance.clientSecret) tokenBody.set('client_secret', instance.clientSecret);
       if (usePkce) tokenBody.set('code_verifier', codeVerifier);
@@ -246,8 +253,98 @@ export async function authLogin(): Promise<void> {
       spinner.fail(chalk.red(`Error: ${err instanceof Error ? err.message : String(err)}`));
     }
   } else {
+    console.log(chalk.dim('This instance is configured for basic auth. For an SSO or MFA instance, set up OAuth with `nowaikit setup` instead.'));
     await basicAuthLogin(instanceUrl);
   }
+}
+
+/**
+ * Validate a connection end-to-end without any AI client: stored token, a live authenticated API
+ * call, and (for OAuth) a refresh_token exchange to confirm the client id/secret still mint tokens.
+ * Prints a clear pass/fail per check with an actionable hint on failure.
+ */
+export async function authTest(): Promise<void> {
+  const instances = listInstances();
+  if (instances.length === 0) {
+    console.log(chalk.yellow('No instances configured. Run `nowaikit setup` first.'));
+    return;
+  }
+  const instanceName = instances.length === 1
+    ? instances[0]!.name
+    : await select<string>({
+        message: 'Test which instance?',
+        choices: instances.map(i => ({ name: `${i.name} (${i.instanceUrl})`, value: i.name })),
+      });
+  const instance = instances.find(i => i.name === instanceName);
+  if (!instance) return;
+  const url = instance.instanceUrl;
+  console.log('');
+  console.log(chalk.bold(`Testing ${instance.name} → ${url}`));
+  console.log('');
+
+  // 1. stored token
+  const stored = getStoredToken(url);
+  if (!stored) {
+    console.log(chalk.red('  ✗ No stored token.') + chalk.dim('  Run `nowaikit auth login`.'));
+    return;
+  }
+  const expiredNote = Date.now() > stored.expiresAt ? chalk.yellow(' (expired — will try to refresh)') : '';
+  console.log(chalk.green(`  ✓ Stored token for ${chalk.bold(stored.snUser)}`) + expiredNote);
+
+  // 2. obtain a valid token (refreshes OAuth if needed)
+  const tok = await getValidUserToken(url);
+  if (!tok) {
+    console.log(chalk.red('  ✗ Could not obtain a valid token.') + chalk.dim('  Run `nowaikit auth login`.'));
+    return;
+  }
+  const isBasic = instance.authMethod === 'basic' || !tok.refreshToken;
+  const authHeader = isBasic ? `Basic ${tok.accessToken}` : `Bearer ${tok.accessToken}`;
+
+  // 3. live authenticated call
+  try {
+    const resp = await fetch(`${url}/api/now/table/incident?sysparm_limit=1&sysparm_fields=number`, {
+      headers: { Authorization: authHeader, Accept: 'application/json' },
+    });
+    if (resp.ok) {
+      console.log(chalk.green('  ✓ Live authenticated API call succeeded (read the incident table)'));
+    } else if (resp.status === 401) {
+      console.log(chalk.red('  ✗ Live call returned 401 Unauthorized.'));
+      console.log(chalk.dim(isBasic
+        ? '    Basic credentials rejected — likely an SSO/federated account (no local password) or the basic-auth restriction. Switch this connection to OAuth.'
+        : '    Token rejected — run `nowaikit auth login` to re-authenticate.'));
+    } else if (resp.status === 403) {
+      console.log(chalk.red('  ✗ Live call returned 403 Forbidden.'));
+      console.log(chalk.dim('    Authenticated but not authorized. For OAuth, uncheck "Enforce Token Restriction" on the OAuth app; otherwise check the user\'s roles/ACLs.'));
+    } else {
+      console.log(chalk.red(`  ✗ Live call returned ${resp.status} ${resp.statusText}.`));
+    }
+  } catch (e) {
+    console.log(chalk.red(`  ✗ Live call error: ${e instanceof Error ? e.message : String(e)}`));
+  }
+
+  // 4. OAuth refresh check (confirms client id + secret)
+  if (!isBasic && instance.clientId && stored.refreshToken) {
+    try {
+      const body = new URLSearchParams({ grant_type: 'refresh_token', client_id: instance.clientId, refresh_token: stored.refreshToken });
+      if (instance.clientSecret) body.set('client_secret', instance.clientSecret);
+      const resp = await fetch(`${url}/oauth_token.do`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: body.toString(),
+      });
+      if (resp.ok) {
+        console.log(chalk.green('  ✓ OAuth refresh works (Client ID + Secret are valid)'));
+      } else {
+        const txt = await resp.text();
+        console.log(chalk.red(`  ✗ OAuth refresh failed: ${resp.status}`));
+        if (/invalid_client/.test(txt)) console.log(chalk.dim('    invalid_client → wrong Client ID or Secret. Re-check against the OAuth app.'));
+        else if (/invalid_grant/.test(txt)) console.log(chalk.dim('    invalid_grant → refresh token expired or revoked. Run `nowaikit auth login`.'));
+      }
+    } catch (e) {
+      console.log(chalk.dim(`  (refresh check skipped: ${e instanceof Error ? e.message : String(e)})`));
+    }
+  }
+  console.log('');
 }
 
 /**
