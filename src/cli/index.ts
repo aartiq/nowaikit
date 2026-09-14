@@ -13,6 +13,7 @@
  *   nowaikit capabilities    — list all 26 Apex capabilities
  *   nowaikit run <capability> — run a capability in direct mode (BYOK)
  */
+import './suppress-warnings.js'; // must be first: installs the warning filter before ora/cli-spinners load
 import { Command } from 'commander';
 import chalk from 'chalk';
 import { execSync, spawn } from 'child_process';
@@ -91,7 +92,9 @@ async function checkForUpdate(): Promise<string | null> {
 async function installUpdate(version: string): Promise<boolean> {
   const { spawnSync } = await import('node:child_process');
   console.log(dim(`  Installing nowaikit@${version} ...`));
-  const r = spawnSync('npm', ['install', '-g', `nowaikit@${version}`], { stdio: 'inherit' });
+  // shell:true on Windows so `npm` resolves to npm.cmd (a bare spawn can't find the .cmd and the
+  // self-update silently "fails"). POSIX doesn't need a shell.
+  const r = spawnSync('npm', ['install', '-g', `nowaikit@${version}`], { stdio: 'inherit', shell: process.platform === 'win32' });
   if (r.status === 0) { console.log(success(`  ✓ Updated to ${version}`)); return true; }
   console.log(err(`  Update failed. Run it manually: npm install -g nowaikit@latest`));
   return false;
@@ -130,7 +133,7 @@ async function maybePromptUpdate(latest: string | null): Promise<void> {
 
   // Re-run the original command on the freshly installed version so it just works.
   const { spawnSync } = await import('node:child_process');
-  const re = spawnSync('nowaikit', argv, { stdio: 'inherit', env: { ...process.env, NOWAIKIT_NO_UPDATE_CHECK: '1' } });
+  const re = spawnSync('nowaikit', argv, { stdio: 'inherit', shell: process.platform === 'win32', env: { ...process.env, NOWAIKIT_NO_UPDATE_CHECK: '1' } });
   if (re.error) { console.log(dim(`  Run your command again to use ${latest}.`)); process.exit(0); }
   process.exit(re.status ?? 0);
 }

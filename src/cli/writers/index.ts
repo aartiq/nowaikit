@@ -24,6 +24,13 @@ function buildEnvBlock(instance: InstanceConfig): Record<string, string> {
     ATF_ENABLED: instance.atfEnabled ? 'true' : 'false',
     MCP_TOOL_PACKAGE: instance.toolPackage || 'full',
   };
+  // Expose the full catalog lazily by default: advertise a small core + search_tools so the
+  // tool list stays well under client caps (e.g. Claude cloud tasks limit an MCP server to 500
+  // tools). search_tools + dynamic execution still reach every one of the 500+ tools on demand.
+  // Role packages are already small, so they stay eager (no discovery override).
+  if ((instance.toolPackage || 'full').toLowerCase() === 'full') {
+    env['MCP_TOOL_DISCOVERY'] = 'lean';
+  }
   if (instance.authMethod === 'basic') {
     env['SERVICENOW_BASIC_USERNAME'] = instance.username || '';
     env['SERVICENOW_BASIC_PASSWORD'] = instance.password || '';

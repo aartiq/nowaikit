@@ -6,6 +6,23 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ---
 
+## [4.18.0] - 2026-09-14
+
+### Fixed: setup defaults to lean tool exposure (works with every client)
+- `nowaikit setup` now writes `MCP_TOOL_DISCOVERY=lean` for the `full` package, so a fresh install
+  advertises a small core plus `search_tools` (~13 tools) instead of all 500+. Clients that cap the
+  tool list (Claude cloud tasks limit an MCP server to 500 tools) now work out of the box. The full
+  catalog stays reachable on demand via `search_tools` and dynamic execution, so nothing is lost.
+- Role packages are unchanged (already small, still eager).
+
+### Fixed
+- Windows self-update no longer silently fails: the `npm install -g` and re-run spawns use a shell on
+  Windows so `npm`/`nowaikit` resolve to their `.cmd` shims.
+- Suppressed the Node `ExperimentalWarning` about JSON module imports (pulled in transitively by
+  `ora` -> `cli-spinners`) so it no longer prints on every CLI run.
+- Tool-count copy corrected from "400+" to "500+" in the setup wizard, `search_tools` description,
+  and the A2A agent card.
+
 ## [4.17.0] - 2026-09-14
 
 ### Added: more bundled outcome tools

@@ -48,7 +48,7 @@ const subtle  = chalk.dim;                   // terminal-adaptive secondary text
 const TOTAL_STEPS = 11;
 
 const TOOL_PACKAGES = [
-  { value: 'full',                 name: `${brand('full')}                 ${dim('— all 400+ tools')}` },
+  { value: 'full',                 name: `${brand('full')}                 ${dim('- all 500+ tools, loaded on demand (recommended)')}` },
   { value: 'service_desk',        name: `${brand('service_desk')}        ${dim('— help desk agents')}` },
   { value: 'change_coordinator',  name: `${brand('change_coordinator')}  ${dim('— change managers')}` },
   { value: 'knowledge_author',   name: `${brand('knowledge_author')}   ${dim('— KB writers')}` },
@@ -114,7 +114,7 @@ function banner(): void {
   console.log(`  ${logoText()}  ${dim('—')} ${subtle('Setup Wizard')}`);
   console.log('');
   console.log(dim('  Connect ') + teal.bold('Any AI') + dim(' to ServiceNow. Instantly.'));
-  console.log(dim('  400+ tools  ·  All modules  ·  Any AI client'));
+  console.log(dim('  500+ tools  ·  All modules  ·  Any AI client'));
   console.log('');
   divider();
   console.log('');
@@ -979,7 +979,7 @@ export async function runSetup(options: { add?: boolean } = {}): Promise<void> {
   else integrationMode = 'mcp';
 
   console.log('');
-  if (mcpEnabled)  console.log(`  ${success('✓')} MCP Server — AI clients will auto-discover your 400+ tools`);
+  if (mcpEnabled)  console.log(`  ${success('✓')} MCP Server — AI clients will auto-discover your 500+ tools`);
   if (sdkEnabled)  console.log(`  ${success('✓')} TypeScript SDK — import NowAIKit in your project`);
   if (apexEnabled) console.log(`  ${success('✓')} AI Skills (Apex) — 26 capabilities enabled`);
   if (!apexEnabled) console.log(`  ${dim('✗')} Apex AI Skills disabled — only MCP tools and ITSM prompts active`);

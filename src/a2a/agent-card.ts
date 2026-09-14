@@ -58,7 +58,7 @@ export function buildAgentCard(): AgentCard {
 
   return {
     name: 'NowAIKit',
-    description: 'The most comprehensive ServiceNow AI toolkit — 400+ tools covering ITSM, CMDB, HRSD, CSM, SecOps, GRC, DevOps, and more.',
+    description: 'The most comprehensive ServiceNow AI toolkit: 500+ tools covering ITSM, CMDB, HRSD, CSM, SecOps, GRC, DevOps, and more.',
     url: baseUrl,
     version: VERSION,
     capabilities: {
