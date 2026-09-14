@@ -6,6 +6,23 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ---
 
+## [4.17.0] - 2026-09-14
+
+### Added: more bundled outcome tools
+- `change_readiness` returns a change with its conflict status, approvals, affected CIs, and other active
+  changes that overlap the same CI, in one call.
+- `service_health` returns a business service or CI with its open incidents, related CIs, and recent
+  changes, in one call.
+- Both are read-only and degrade gracefully if a section is unavailable. With `investigate_incident`,
+  that is three bundled tools that cut the read-query-reason-retry loop.
+- Added `scripts/benchmark-bundles.mjs` to measure a bundled call against the equivalent chain of
+  `query_records` (round trips, bytes, latency).
+
+### Changed
+- The public tool figure is now 500+; the build genuinely extracts 506 tools. Documented that tools load
+  on demand via `search_tools`, so a large catalog does not mean a heavy context or high token cost.
+- SPM (formerly PPM) naming in the project tool descriptions.
+
 ## [4.16.0] - 2026-09-11
 
 ### Added: first-class Strategic Portfolio Management (SPM) tools

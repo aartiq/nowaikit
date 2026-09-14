@@ -2,8 +2,8 @@
  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
  "name": "io.github.aartiq/nowaikit",
  "title": "ServiceNow MCP Server (NowAIKit)",
- "description": "ServiceNow MCP server: 450+ tools for Claude, ChatGPT, Copilot & any AI. Read-only by default.",
- "version": "4.9.1",
+ "description": "ServiceNow MCP server: 500+ tools for Claude, ChatGPT, Copilot & any AI. Read-only by default.",
+ "version": "4.17.0",
  "websiteUrl": "https://servicenow-mcp.com",
  "repository": {
   "url": "https://github.com/aartiq/servicenow-mcp",
@@ -13,7 +13,7 @@
   {
    "registryType": "npm",
    "identifier": "nowaikit",
-   "version": "4.9.1",
+   "version": "4.17.0",
    "transport": {
     "type": "stdio"
    },

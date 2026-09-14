@@ -96,8 +96,46 @@ describe('investigate_incident bundles context in one call', () => {
   });
 });
 
+describe('change_readiness bundles change context', () => {
+  beforeEach(() => { vi.clearAllMocks(); });
+  it('returns change + conflict + approvals + affected CIs + overlapping changes', async () => {
+    qr()
+      .mockResolvedValueOnce({ count: 1, records: [{ sys_id: { value: 'CHG_SID' }, number: { value: 'CHG001' }, cmdb_ci: { value: 'CI1' }, conflict_status: { display_value: 'Conflict', value: 'conflict' } }] })
+      .mockResolvedValueOnce({ count: 2, records: [{ approver: 'a' }, { approver: 'b' }] })  // sysapproval_approver
+      .mockResolvedValueOnce({ count: 1, records: [{ ci_item: 'CI1' }] })                     // task_ci
+      .mockResolvedValueOnce({ count: 1, records: [{ number: 'CHG002' }] });                  // overlapping changes
+    const res = await executeBundleToolCall(mockClient, 'change_readiness', { number_or_sysid: 'CHG001' });
+    expect(res.conflict_status).toBe('Conflict');
+    expect(res.approvals).toHaveLength(2);
+    expect(res.affected_cis).toHaveLength(1);
+    expect(res.potential_conflicts).toHaveLength(1);
+    expect(qr().mock.calls[1][0]).toMatchObject({ table: 'sysapproval_approver' });
+    expect(qr().mock.calls[1][0].query).toContain('sysapproval=CHG_SID');
+    expect(res.summary).toContain('One call');
+  });
+});
+
+describe('service_health bundles service context', () => {
+  beforeEach(() => { vi.clearAllMocks(); });
+  it('returns service + open incidents + related CIs + recent changes', async () => {
+    qr()
+      .mockResolvedValueOnce({ count: 1, records: [{ sys_id: 'SVC1', name: 'Email' }] })                     // cmdb_ci by name (flat, no displayValue)
+      .mockResolvedValueOnce({ count: 3, records: [{ number: 'INC1' }, { number: 'INC2' }, { number: 'INC3' }] }) // incidents
+      .mockResolvedValueOnce({ count: 2, records: [{ type: 'x' }, { type: 'y' }] })                          // cmdb_rel_ci
+      .mockResolvedValueOnce({ count: 1, records: [{ number: 'CHG9' }] });                                   // recent changes
+    const res = await executeBundleToolCall(mockClient, 'service_health', { name_or_sysid: 'Email' });
+    expect(res.open_incident_count).toBe(3);
+    expect(res.related_ci_count).toBe(2);
+    expect(res.recent_changes).toHaveLength(1);
+    // incidents scoped active on both OR branches
+    expect(qr().mock.calls[1][0].query).toContain('active=true');
+    expect(res.summary).toContain('Email');
+  });
+});
+
 describe('bundle tool definitions', () => {
-  it('defines investigate_incident', () => {
-    expect(getBundleToolDefinitions().map(t => t.name)).toContain('investigate_incident');
+  it('defines all three bundles', () => {
+    const names = getBundleToolDefinitions().map(t => t.name);
+    expect(names).toEqual(expect.arrayContaining(['investigate_incident', 'change_readiness', 'service_health']));
   });
 });

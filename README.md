@@ -11,7 +11,9 @@
 
 **Connect Claude, ChatGPT, Gemini, Cursor, Copilot, or any AI, to ServiceNow.**
 
-450+ tools across ITSM, ITOM, CMDB, HRSD, CSM, Flow Designer, scripting & portal. Read, build, query and automate any instance in plain English.
+500+ tools across ITSM, ITOM, CMDB, HRSD, CSM, Flow Designer, scripting & portal. Read, build, query and automate any instance in plain English.
+
+500+ does not mean a heavy context. Your AI does not load every tool. It finds the right one on demand with `search_tools`, you can expose a role package instead of the full set, and clients that load tools only when needed pull just what a task requires, so token cost stays low.
 
 New in 4.4 to 4.7: **impact analysis** to see what depends on a table, field, or script before you change it (`list_table_config`, `find_field_references`, `find_script_references`), **Local Sync** to pull widgets and scripts to local files, edit, and push them back, and **`aggregate_report`** for server-side reports (count plus averages, no 1,000-row truncation) with chart-ready output for Copilot and Teams.
 
@@ -91,7 +93,7 @@ No instance? Grab a free Personal Developer Instance at **[developer.servicenow.
 
 | | |
 |---|---|
-| [Installation](docs/INSTALLATION.md) · [Client setup](docs/CLIENT_SETUP.md) | [All 450+ tools](docs/TOOLS.md) · [Tool packages](docs/TOOL_PACKAGES.md) |
+| [Installation](docs/INSTALLATION.md) · [Client setup](docs/CLIENT_SETUP.md) | [All 500+ tools](docs/TOOLS.md) · [Tool packages](docs/TOOL_PACKAGES.md) |
 | [Multi-instance](docs/MULTI_INSTANCE.md) · [OAuth](docs/SERVICENOW_OAUTH_SETUP.md) | [Scripting](docs/SCRIPTING.md) · [ATF](docs/ATF.md) · [Reporting](docs/REPORTING.md) |
 | [Skills & branded reports](docs/SKILLS_AND_REPORTS.md) | [Use your own Claude/Codex subscription](docs/SKILLS_AND_REPORTS.md#using-your-own-claude-code-or-codex-subscription) |
 

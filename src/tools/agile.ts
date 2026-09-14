@@ -163,7 +163,7 @@ export function getAgileToolDefinitions() {
     },
     {
       name: 'create_project',
-      description: 'Create a PPM project (pm_project). Requires WRITE_ENABLED=true.',
+      description: 'Create a SPM project (pm_project). Requires WRITE_ENABLED=true.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -178,7 +178,7 @@ export function getAgileToolDefinitions() {
     },
     {
       name: 'update_project',
-      description: 'Update a PPM project (pm_project). Requires WRITE_ENABLED=true.',
+      description: 'Update a SPM project (pm_project). Requires WRITE_ENABLED=true.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -190,7 +190,7 @@ export function getAgileToolDefinitions() {
     },
     {
       name: 'list_projects',
-      description: 'List PPM projects (pm_project).',
+      description: 'List SPM projects (pm_project).',
       inputSchema: {
         type: 'object',
         properties: {
