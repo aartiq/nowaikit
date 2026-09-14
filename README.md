@@ -3,7 +3,7 @@
 <img src="https://raw.githubusercontent.com/aartiq/servicenow-mcp/main/docs/assets/banner.png" alt="NowAIKit ServiceNow MCP Server" width="100%"/>
 
 [![npm](https://img.shields.io/npm/v/nowaikit?style=flat-square&color=00D4AA&label=npm)](https://www.npmjs.com/package/nowaikit)
-[![Tools](https://img.shields.io/badge/450%2B%20tools-all%20modules-0F4C81?style=flat-square)](docs/TOOLS.md)
+[![Tools](https://img.shields.io/badge/500%2B%20tools-all%20modules-0F4C81?style=flat-square)](docs/TOOLS.md)
 [![MCP](https://img.shields.io/badge/MCP-Model%20Context%20Protocol-0F4C81?style=flat-square)](https://modelcontextprotocol.io)
 [![License: Source Available](https://img.shields.io/badge/license-Source%20Available-f59e0b?style=flat-square)](LICENSE)
 
