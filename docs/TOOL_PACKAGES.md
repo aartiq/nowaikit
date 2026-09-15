@@ -61,7 +61,7 @@ MCP_TOOL_PACKAGE=service_desk node dist/server.js
 ## Package Definitions
 
 ### full
-All 400+ tools. Default when `MCP_TOOL_PACKAGE` is not set.
+All 500+ tools. Default when `MCP_TOOL_PACKAGE` is not set.
 
 ### service_desk
 Tools for IT help desk agents handling incidents, requests, and approvals.

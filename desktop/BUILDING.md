@@ -100,7 +100,7 @@ desktop/
       pages/
         Dashboard.tsx      # Server status, stats, recent activity
         SetupWizard.tsx    # 8-step interactive setup wizard
-        ToolBrowser.tsx    # Browse & search all 400+ tools
+        ToolBrowser.tsx    # Browse & search all 500+ tools
         AuditLog.tsx       # Filterable audit log viewer
         Instances.tsx      # Manage ServiceNow instances
         Settings.tsx       # App settings & system info

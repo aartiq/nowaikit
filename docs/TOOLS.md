@@ -1,6 +1,6 @@
 # Tool Reference — NowAIKit v2.6.0 (Latest Release)
 
-Complete reference for all 400+ tools across all ServiceNow modules. All tools accept a `table` parameter override where applicable.
+Complete reference for all 500+ tools across all ServiceNow modules. All tools accept a `table` parameter override where applicable.
 
 ## Permission Tiers
 

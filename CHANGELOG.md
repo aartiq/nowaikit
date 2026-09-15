@@ -167,6 +167,32 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
   `execute_script` returns an honest error with an optional helper endpoint instead of failing silently.
 - App Studio scoped-app creation uses the instance's registered vendor prefix.
 
+## [4.12.1] - 2026-08-18
+
+### Fixed
+- On a 403, surface ServiceNow's actual reason (data policy, ACL, mandatory or read-only field) instead
+  of a generic "Operation Failed", with an actionable diagnostic. Tuned the npm package description.
+
+## [4.11.1] - 2026-08-12
+
+### Fixed
+- Corrected the Windows MCP config paths written by setup for the Microsoft Store (MSIX) build of Claude
+  Desktop, plus Cursor and Windsurf. Refreshed the referenced model IDs.
+
+## [4.11.0] - 2026-08-12
+
+### Added
+- Decision Builder authoring tools (create and publish decision tables).
+- Least-privilege connection test that verifies with the current user instead of requiring elevated rights.
+
+## [4.10.0] - 2026-08-12
+
+### Added
+- ATF CI/CD API for running test suites from pipelines, plus more Flow Designer, Agile and SPM tools.
+
+### Changed
+- Write-safety and broader security hardening; desktop setup brought to parity with the CLI.
+
 ## [4.9.1] - 2026-08-11
 
 ### Added: one-step self-update
@@ -366,6 +392,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Repository is now `aartiq/servicenow-mcp` (canonical); homepage → nowaikit.com.
 
 ---
+
+## [4.1.2] - 2026-06-24
+
+### Changed
+- Maintenance release. Adopted as the canonical ServiceNow MCP server core.
 
 ## [4.1.1] — 2026-06-23
 

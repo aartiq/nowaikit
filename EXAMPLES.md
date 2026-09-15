@@ -1,6 +1,6 @@
 # NowAIKit — Usage Examples
 
-This document provides real-world examples of using the NowAIKit ServiceNow MCP server (400+ tools across all ServiceNow modules).
+This document provides real-world examples of using the NowAIKit ServiceNow MCP server (500+ tools across all ServiceNow modules).
 
 ## Table of Contents
 

@@ -61,7 +61,7 @@ const incidents = await callTool('list_incidents', { limit: 10, state: 'open' })
 | Method | Path | Description |
 |--------|------|-------------|
 | `GET` | `/api/health` | Health check + instance info |
-| `GET` | `/api/tools` | List all 400+ available tools |
+| `GET` | `/api/tools` | List all 500+ available tools |
 | `POST` | `/api/tool` | Call a tool: `{ "tool": "list_incidents", "params": {} }` |
 | `GET` | `/api/resources` | List @ mention resources |
 | `GET` | `/api/resource?uri=servicenow://my-incidents` | Read a resource |

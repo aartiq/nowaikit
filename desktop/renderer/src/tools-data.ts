@@ -15,7 +15,7 @@ export interface ToolDefinition {
 export const TOOL_DEFINITIONS: ToolDefinition[] = [
   {
     "name": "search_tools",
-    "description": "Search the full NowAIKit tool catalog (400+ tools) by keyword to discover the right tool without loading every definition. Returns matching tool names + descriptions ranked by relevance. Use this FIRST when you are unsure which tool to call. Especially useful with MCP_TOOL_DISCOVERY=lean, which exposes only a small core set plus this search.",
+    "description": "Search the full NowAIKit tool catalog (500+ tools) by keyword to discover the right tool without loading every definition. Returns matching tool names + descriptions ranked by relevance. Use this FIRST when you are unsure which tool to call. Especially useful with MCP_TOOL_DISCOVERY=lean, which exposes only a small core set plus this search.",
     "inputSchema": {
       "type": "object",
       "properties": {
