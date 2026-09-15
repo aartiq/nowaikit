@@ -91,11 +91,13 @@ No instance? Grab a free Personal Developer Instance at **[developer.servicenow.
 
 ## 📚 Docs
 
+Start at the **[documentation index](docs/README.md)**. Highlights:
+
 | | |
 |---|---|
-| [Installation](docs/INSTALLATION.md) · [Client setup](docs/CLIENT_SETUP.md) | [All 500+ tools](docs/TOOLS.md) · [Tool packages](docs/TOOL_PACKAGES.md) |
-| [Multi-instance](docs/MULTI_INSTANCE.md) · [OAuth](docs/SERVICENOW_OAUTH_SETUP.md) | [Scripting](docs/SCRIPTING.md) · [ATF](docs/ATF.md) · [Reporting](docs/REPORTING.md) |
-| [Skills & branded reports](docs/SKILLS_AND_REPORTS.md) | [Use your own Claude/Codex subscription](docs/SKILLS_AND_REPORTS.md#using-your-own-claude-code-or-codex-subscription) |
+| [Installation](docs/INSTALLATION.md) · [Client setup](docs/CLIENT_SETUP.md) | [All 500+ tools](docs/TOOLS.md) · [Tool packages & discovery](docs/TOOL_PACKAGES.md) |
+| [Configuration reference](docs/CONFIGURATION.md) · [Multi-instance](docs/MULTI_INSTANCE.md) | [OAuth setup](docs/SERVICENOW_OAUTH_SETUP.md) · [Delegated auth](docs/DELEGATED_AUTH.md) |
+| [Scripting](docs/SCRIPTING.md) · [ATF](docs/ATF.md) · [Reporting](docs/REPORTING.md) | [Skills & branded reports](docs/SKILLS_AND_REPORTS.md) |
 
 Full guides & product home → **[nowaikit.com](https://nowaikit.com)**
 

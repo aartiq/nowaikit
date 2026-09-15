@@ -327,5 +327,31 @@ If you encounter issues:
 
 ---
 
-**Last Updated**: February 2026
+## Per-user OAuth from the CLI
+
+Once the OAuth app exists, sign in as yourself so queries run in your own permission context:
+
+```bash
+nowaikit auth login
+```
+
+The browser opens your normal ServiceNow login (including SSO and MFA), you approve, and NowAIKit stores
+the token. This is the right path for SSO or federated accounts, which cannot use basic REST auth.
+
+The redirect URL the OAuth app must allow is `http://localhost:8765/callback`. If port 8765 is taken,
+set `NOWAIKIT_OAUTH_PORT` to a free port and register the matching redirect URL on the app.
+
+Validate a connection end to end (stored token, a live authenticated call, and for OAuth a refresh
+check), with a clear pass or fail per step:
+
+```bash
+nowaikit auth test
+```
+
+For a backend that manages OAuth centrally and passes a token per request, see
+[Delegated auth](DELEGATED_AUTH.md).
+
+---
+
+**Last Updated**: September 2026
 **ServiceNow Versions Tested**: Xanadu, Yokohama, Zurich (latest three releases)

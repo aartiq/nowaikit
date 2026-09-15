@@ -1,12 +1,34 @@
 # Role-Based Tool Packages
 
-Set `MCP_TOOL_PACKAGE` in your environment to load a role-specific subset of tools instead of the full set. This keeps the tool list focused and relevant for each user role.
+There are two independent ways to control how many tools your AI client sees: **discovery mode** (how
+the catalog is exposed) and **packages** (which subset is in scope). They compose.
+
+## Discovery mode (`MCP_TOOL_DISCOVERY`)
+
+The full catalog is 500+ tools. Some clients cap how many an MCP server can advertise (Claude cloud
+tasks cap at 500), and loading every definition also costs context. Discovery mode keeps the advertised
+list small while keeping the whole catalog reachable.
+
+| Mode | Advertised tools | Use when |
+|------|------------------|----------|
+| `lean` | A small core plus `search_tools` (~13). The model finds and calls anything else on demand. | Recommended default. Works with every client, keeps token cost low. `nowaikit setup` writes this for the full package. |
+| `core` | Only the core CRUD/query tools, no `search_tools`. | You want a fixed, deterministic set with no discovery round-trip. |
+| unset | The whole package (all 500+ for `full`). | A client with no tool cap where you want everything listed directly. |
+
+```bash
+MCP_TOOL_DISCOVERY=lean
+```
+
+## Packages (`MCP_TOOL_PACKAGE`)
+
+Load a role-specific subset instead of the full set. This keeps the tool list focused for a given role.
+Packages are already small, so they don't usually need `lean`.
 
 ## Available Packages
 
 | Package | Target Role | Tool Count |
 |---------|-------------|------------|
-| `full` | All roles (default) | 400+ |
+| `full` | All roles (default) | 500+ |
 | `service_desk` | IT help desk agent | 23 |
 | `change_coordinator` | Change manager | 18 |
 | `knowledge_author` | KB content creator | 12 |
