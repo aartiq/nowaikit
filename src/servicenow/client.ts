@@ -162,7 +162,7 @@ export class ServiceNowClient {
     this.authMode = config.authMode || 'service-account';
     this.oauthConfig = config.oauth;
     this.basicConfig = config.basic;
-    this.maxRetries = config.maxRetries || 3;
+    this.maxRetries = config.maxRetries ?? 3; // honor an explicit 0 (|| would turn 0 back into 3)
     this.retryDelayMs = config.retryDelayMs || 1000;
     this.requestTimeoutMs = config.requestTimeoutMs || 30000;
     this.impersonateUserSysId = config.impersonateUserSysId;
@@ -543,6 +543,15 @@ export class ServiceNowClient {
           if (['AUTHENTICATION_FAILED', 'INVALID_REQUEST', 'NOT_FOUND', 'INSUFFICIENT_PRIVILEGES'].includes(error.code)) {
             throw error;
           }
+        }
+
+        // Never auto-retry a non-idempotent write when we got no HTTP response (network error, timeout
+        // or abort). The write may already have committed on the server, so replaying it can duplicate
+        // the effect. A ServiceNowError means the server DID respond; a bare Error means no response.
+        const method = (options.method || 'GET').toUpperCase();
+        const safeToRetry = method === 'GET' || method === 'HEAD' || method === 'OPTIONS';
+        if (!safeToRetry && !(error instanceof ServiceNowError)) {
+          throw lastError;
         }
 
         // Retry on network errors or server errors

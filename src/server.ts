@@ -16,7 +16,7 @@ import { getPrompts, resolvePromptAsync } from './prompts/index.js';
 import { logger } from './utils/logging.js';
 import { ServiceNowError } from './utils/errors.js';
 import { connectTransport } from './transport/index.js';
-import { getDelegatedAuth } from './utils/request-context.js';
+import { getDelegatedAuth, strictDelegationViolation } from './utils/request-context.js';
 import { VERSION, SERVER_NAME } from './utils/version.js';
 
 // quiet: suppress dotenv v17+ startup banner (keeps MCP stdio + CLI output clean)
@@ -87,13 +87,30 @@ export function createServer(): Server {
       }
 
       const instanceName = (args as Record<string, unknown>)?.['instance'] as string | undefined;
-      const baseClient = instanceManager.getClient(instanceName);
       // DELEGATED_AUTH: run as the per-request identity AND (for multi-tenant
       // hosting) against the caller's own instance, both carried in the delegated
       // context headers. When a token is present we also honour its instanceUrl,
       // so one shared server serves many customers with no per-customer config.
       // No-op in normal single-user mode.
       const delegatedAuth = getDelegatedAuth();
+
+      // Strict delegated-auth: refuse to run without a valid delegated token (never fall back to base
+      // credentials), and refuse the instance-manager tools that bypass per-request delegation.
+      const violation = strictDelegationViolation(name);
+      if (violation === 'DELEGATION_REQUIRED') {
+        throw new ServiceNowError(
+          'Delegation required: strict delegated-auth mode is on, so every tool call must carry a valid delegated token from the trusted gateway. The server will not fall back to base credentials.',
+          'DELEGATION_REQUIRED',
+        );
+      }
+      if (violation === 'DELEGATION_INCOMPATIBLE_TOOL') {
+        throw new ServiceNowError(
+          `Tool "${name}" is unavailable under strict delegated-auth: it operates on server-configured instances, not the delegated per-request identity.`,
+          'DELEGATION_INCOMPATIBLE_TOOL',
+        );
+      }
+
+      const baseClient = instanceManager.getClient(instanceName);
       const client = delegatedAuth?.bearerToken
         ? baseClient.withUser({ bearerToken: delegatedAuth.bearerToken, instanceUrl: delegatedAuth.instanceUrl })
         : baseClient;

@@ -37,9 +37,40 @@ export interface DelegatedAuth {
 
 const store = new AsyncLocalStorage<DelegatedAuth>();
 
-/** True when delegated-auth mode is switched on. */
+/** True when delegated-auth mode is switched on (`DELEGATED_AUTH=true` or `=strict`). */
 export function isDelegatedAuthEnabled(): boolean {
-  return process.env.DELEGATED_AUTH === 'true';
+  return process.env.DELEGATED_AUTH === 'true' || process.env.DELEGATED_AUTH === 'strict';
+}
+
+/**
+ * Strict delegation: every tool call MUST carry a valid delegated token (which is only present when
+ * the gateway secret matched), the request is rejected before any tool runs otherwise, and the server
+ * never falls back to base credentials. Enabled with `DELEGATED_AUTH=strict` or
+ * `NOWAIKIT_REQUIRE_DELEGATION=true`. This is the supported mode for backend-managed per-user OAuth.
+ */
+export function isDelegationRequired(): boolean {
+  return process.env.DELEGATED_AUTH === 'strict' || process.env.NOWAIKIT_REQUIRE_DELEGATION === 'true';
+}
+
+/**
+ * Tools that resolve a client directly from the instance manager (server-configured instances) rather
+ * than the per-request delegated identity, so they bypass delegation and are refused under strict mode.
+ */
+export const DELEGATION_INSTANCE_SCOPED_TOOLS = new Set([
+  'compare_instances', 'switch_instance', 'get_current_instance', 'list_instances',
+]);
+
+/**
+ * Decide whether strict delegated-auth blocks this tool call. Returns an error code to reject with, or
+ * null to allow. Reads the current async delegated context, so it must be called inside the request's
+ * runWithDelegatedAuth scope. No-op (null) unless strict mode is on.
+ */
+export function strictDelegationViolation(toolName: string): 'DELEGATION_REQUIRED' | 'DELEGATION_INCOMPATIBLE_TOOL' | null {
+  if (!isDelegationRequired()) return null;
+  const ctx = getDelegatedAuth();
+  if (!ctx?.bearerToken) return 'DELEGATION_REQUIRED';
+  if (DELEGATION_INSTANCE_SCOPED_TOOLS.has(toolName)) return 'DELEGATION_INCOMPATIBLE_TOOL';
+  return null;
 }
 
 /** Run `fn` with the given delegated-auth context bound for its async lifetime. */

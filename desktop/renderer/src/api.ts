@@ -474,10 +474,14 @@ const webApi: ElectronAPI = {
     messages: Array<{ role: string; content: unknown }>;
     tools?: Array<{ name: string; description: string; inputSchema?: Record<string, unknown> }>;
     baseUrl?: string;
+    authMethod?: string;
+    instanceUrl?: string;
   }) => {
-    const { provider, apiKey, model, messages, tools: toolDefs } = params;
+    const { provider, apiKey, model, messages, tools: toolDefs, authMethod, instanceUrl } = params;
     const isLocalProvider = provider === 'ollama' || provider === 'lmstudio';
-    if (!apiKey && !isLocalProvider) return { error: 'No API key configured' };
+    // Claude Code subscription (local claude CLI) needs no API key — the server spawns claude.
+    const isSubscription = provider === 'anthropic' && authMethod === 'login';
+    if (!apiKey && !isLocalProvider && !isSubscription) return { error: 'No API key configured' };
 
     const chatStart = Date.now();
     const logChat = (prov: string, mdl: string, toolCount: number, success: boolean, durationMs: number, usage?: { inputTokens: number; outputTokens: number }, error?: string) => {
@@ -513,7 +517,23 @@ const webApi: ElectronAPI = {
         .replace(/key=[^&\s]+/g, 'key=***');
 
     try {
-      if (provider === 'anthropic') {
+      if (isSubscription) {
+        // Claude Code subscription: the local server runs the claude CLI with the NowAIKit MCP loaded,
+        // so it fetches real ServiceNow data itself and returns a final answer. No tools round-trip here.
+        const res = await fetch('/api/ai/claude-cli', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-NowAIKit-Proxy': '1' },
+          body: JSON.stringify({ messages, system: systemPrompt, instanceUrl: instanceUrl || '' }),
+        });
+        const data = await res.json() as { content?: Array<{ type: string; text?: string }>; stop_reason?: string; error?: string };
+        if (!res.ok || data.error) {
+          const e = sanitizeError(data.error || `Claude CLI error ${res.status}`);
+          logChat('claude-cli', model || 'claude-cli', 0, false, Date.now() - chatStart, undefined, e);
+          return { error: e };
+        }
+        logChat('claude-cli', model || 'claude-cli', 0, true, Date.now() - chatStart);
+        return { content: data.content ?? [{ type: 'text', text: '' }], stop_reason: data.stop_reason || 'end_turn' };
+      } else if (provider === 'anthropic') {
         const anthropicTools = toolDefs?.map(t => ({
           name: t.name, description: t.description,
           input_schema: t.inputSchema || { type: 'object', properties: {} },

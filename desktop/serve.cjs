@@ -25,6 +25,8 @@ const http = require('http');
 const https = require('https');
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
+const { spawn } = require('child_process');
 const { URL } = require('url');
 
 const PORT = parseInt(process.env.PORT || '4175', 10);
@@ -464,6 +466,158 @@ function handleReportGenerate(req, res) {
 
 // ─── HTTP server ─────────────────────────────────────────────────────────────
 
+/** Read a JSON file from ~/.config/nowaikit (returns null if missing/invalid). */
+function readNowaikitJson(file) {
+  try {
+    return JSON.parse(fs.readFileSync(path.join(os.homedir(), '.config', 'nowaikit', file), 'utf8'));
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * POST /api/ai/claude-cli
+ * Runs the local `claude` CLI (Claude Code subscription) headlessly with the NowAIKit MCP loaded, so
+ * it answers with real ServiceNow data using the user's subscription instead of an API key. The MCP
+ * server authenticates from the active instance's stored config (basic creds, or an OAuth token it
+ * self-refreshes). Returns an Anthropic-Messages-shaped body so the chat UI handles it unchanged.
+ * Body: { messages: [{role, content}], system?: string, instanceUrl?: string }
+ */
+function handleClaudeCli(req, res) {
+  const chunks = [];
+  let total = 0;
+  const MAX = 5 * 1024 * 1024;
+  req.on('data', (c) => {
+    total += c.length;
+    if (total > MAX) {
+      res.writeHead(413, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Request body too large' }));
+      req.destroy();
+    } else {
+      chunks.push(c);
+    }
+  });
+  req.on('end', () => {
+    if (total > MAX) return;
+    let body;
+    try {
+      body = JSON.parse(Buffer.concat(chunks).toString());
+    } catch {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Invalid JSON' }));
+      return;
+    }
+
+    const messages = Array.isArray(body.messages) ? body.messages : [];
+    const system = typeof body.system === 'string' ? body.system : '';
+    const instanceUrl = typeof body.instanceUrl === 'string' ? body.instanceUrl : '';
+
+    const textOf = (c) =>
+      typeof c === 'string' ? c : Array.isArray(c) ? c.map((b) => (b && b.text) || '').join('') : '';
+    const prompt = messages
+      .map((m) => `${m.role === 'assistant' ? 'Assistant' : 'User'}: ${textOf(m.content)}`)
+      .join('\n\n')
+      .trim();
+    if (!prompt) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'No prompt to send' }));
+      return;
+    }
+
+    // Resolve the active instance and build an MCP config so claude has the ServiceNow tools.
+    const cfg = readNowaikitJson('instances.json');
+    let inst = null;
+    if (cfg && cfg.instances) {
+      const list = Object.values(cfg.instances);
+      inst = list.find((i) => i.instanceUrl === instanceUrl) || list.find((i) => i.name === cfg.defaultInstance) || list[0] || null;
+    }
+    const mcpEnv = { MCP_TOOL_DISCOVERY: 'lean' };
+    if (inst) {
+      mcpEnv.SERVICENOW_INSTANCE_URL = inst.instanceUrl;
+      mcpEnv.SERVICENOW_AUTH_METHOD = inst.authMethod || 'basic';
+      if (inst.authMethod === 'oauth') {
+        if (inst.clientId) mcpEnv.SERVICENOW_OAUTH_CLIENT_ID = inst.clientId;
+        if (inst.clientSecret) mcpEnv.SERVICENOW_OAUTH_CLIENT_SECRET = inst.clientSecret;
+        // The MCP server reads and self-refreshes the stored per-user token from tokens.json.
+      } else {
+        if (inst.username) mcpEnv.SERVICENOW_BASIC_USERNAME = inst.username;
+        if (inst.password) mcpEnv.SERVICENOW_BASIC_PASSWORD = inst.password;
+      }
+    }
+
+    const serverJs = path.resolve(__dirname, '..', 'dist', 'server.js');
+    const mcpConfig = { mcpServers: { nowaikit: { command: process.execPath, args: [serverJs], env: mcpEnv } } };
+    let mcpConfigPath;
+    try {
+      mcpConfigPath = path.join(os.tmpdir(), `nowaikit-mcp-${process.pid}-${total}.json`);
+      fs.writeFileSync(mcpConfigPath, JSON.stringify(mcpConfig), { mode: 0o600 });
+    } catch (e) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Could not prepare MCP config: ' + (e.message || e) }));
+      return;
+    }
+    const cleanup = () => { try { fs.unlinkSync(mcpConfigPath); } catch { /* ignore */ } };
+
+    const bin = process.env.NOWAIKIT_CLAUDE_BIN || 'claude';
+    // Restrict to the NowAIKit MCP tools and block the built-in filesystem/shell tools, and run in a
+    // neutral temp dir, so the web chat's claude only touches ServiceNow, never the local machine.
+    const args = [
+      '-p', '--output-format', 'json',
+      '--mcp-config', mcpConfigPath,
+      '--allowedTools', 'mcp__nowaikit',
+      '--disallowedTools', 'Bash,Edit,Write,Read,WebFetch,WebSearch',
+    ];
+    if (system) args.push('--append-system-prompt', system);
+
+    let stdout = '';
+    let stderr = '';
+    let child;
+    try {
+      child = spawn(bin, args, { shell: process.platform === 'win32', cwd: os.tmpdir() });
+    } catch (e) {
+      cleanup();
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Failed to start Claude CLI: ' + (e.message || e) }));
+      return;
+    }
+    child.on('error', (e) => {
+      cleanup();
+      const msg = e.code === 'ENOENT'
+        ? 'Claude CLI not found. Install Claude Code, run `claude login`, or set NOWAIKIT_CLAUDE_BIN to the claude binary.'
+        : 'Claude CLI error: ' + e.message;
+      if (!res.headersSent) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: msg }));
+      }
+    });
+    child.stdout.on('data', (d) => { stdout += d; if (stdout.length > MAX) child.kill(); });
+    child.stderr.on('data', (d) => { stderr += d; });
+    try { child.stdin.end(prompt); } catch { /* ignore */ }
+
+    child.on('close', (code) => {
+      cleanup();
+      if (res.headersSent) return;
+      if (code !== 0 && !stdout) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: `Claude CLI exited ${code}` + (stderr ? ': ' + stderr.slice(0, 500) : '') }));
+        return;
+      }
+      let text = '';
+      try {
+        const parsed = JSON.parse(stdout);
+        text = parsed.result || parsed.text || (parsed.is_error ? 'Error: ' + (parsed.error || 'unknown') : '');
+      } catch {
+        text = stdout.trim();
+      }
+      const origin = req.headers.origin;
+      const headers = { 'Content-Type': 'application/json' };
+      if (isAllowedOrigin(origin)) headers['Access-Control-Allow-Origin'] = origin || '*';
+      res.writeHead(200, headers);
+      res.end(JSON.stringify({ role: 'assistant', model: 'claude-cli', stop_reason: 'end_turn', content: [{ type: 'text', text: text || '(no output)' }] }));
+    });
+  });
+}
+
 const server = http.createServer((req, res) => {
   const origin = req.headers.origin;
   const allowed = isAllowedOrigin(origin);
@@ -505,6 +659,13 @@ const server = http.createServer((req, res) => {
     }
     return true;
   };
+
+  // Claude Code subscription (local claude CLI) — spawns claude with the NowAIKit MCP loaded.
+  if (req.url === '/api/ai/claude-cli' && req.method === 'POST') {
+    if (!proxySecurityCheck()) return;
+    handleClaudeCli(req, res);
+    return;
+  }
 
   // Check if this is an AI proxy request
   for (const [prefix, config] of Object.entries(AI_PROXIES)) {

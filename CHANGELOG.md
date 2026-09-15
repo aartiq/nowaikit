@@ -6,6 +6,25 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ---
 
+## [4.20.0] - 2026-09-15
+
+### Added
+- Strict delegated-auth mode for backend-managed per-user OAuth. Set `DELEGATED_AUTH=strict` (or
+  `NOWAIKIT_REQUIRE_DELEGATION=true`) and every tool call must carry a valid gateway secret and a
+  delegated token. Missing or invalid delegation is rejected before any tool executes
+  (`DELEGATION_REQUIRED`), the server never falls back to base credentials, and the instance-manager
+  tools (`compare_instances`, `switch_instance`, `get_current_instance`, `list_instances`) are refused
+  (`DELEGATION_INCOMPATIBLE_TOOL`). Run the subprocess with no base credentials for a hard boundary.
+- Web dashboard: a "Claude Code subscription" option for the Anthropic provider. The local server runs
+  the `claude` CLI with the NowAIKit MCP loaded (ServiceNow tools only; filesystem and shell tools
+  disabled; neutral working dir), so the chat answers with live data using your subscription instead
+  of an API key.
+
+### Fixed
+- Retry safety. An explicit `MAX_RETRIES=0` (and `max_retries: 0`) is now honored instead of being
+  turned back into 3. Non-idempotent writes are never auto-retried when the response was lost to a
+  network error or timeout, so a create can't be silently duplicated. Reads still retry as before.
+
 ## [4.19.0] - 2026-09-14
 
 ### Added

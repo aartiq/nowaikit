@@ -358,8 +358,11 @@ async function callProviderApi(
   tools: ToolDef[],
   onUpdate: (msgs: ChatMessage[]) => void,
   baseUrl?: string,
+  authMethod?: string,
+  instanceUrl?: string,
 ): Promise<{ messages?: ChatMessage[]; error?: string }> {
-  if (!apiKey && !LOCAL_PROVIDERS.has(provider as AiProviderId)) return { error: 'No API key configured. Go to Settings to add one.' };
+  const subscription = provider === 'anthropic' && authMethod === 'login';
+  if (!apiKey && !LOCAL_PROVIDERS.has(provider as AiProviderId) && !subscription) return { error: 'No API key configured. Go to Settings to add one.' };
 
   const a = unifiedApi;
 
@@ -376,8 +379,10 @@ async function callProviderApi(
       const result = await a.sendChat({
         provider, apiKey, model,
         messages: apiMessages,
-        tools: tools.length > 0 ? tools : undefined,
+        tools: subscription ? undefined : (tools.length > 0 ? tools : undefined),
         baseUrl,
+        authMethod,
+        instanceUrl,
       });
 
       if (result.error) return { error: result.error };
@@ -530,7 +535,7 @@ export default function Chat({ settings, serverUrl, instances }: Props): React.R
 
   const activeProvider = settings.providers[provider];
   const isLocal  = LOCAL_PROVIDERS.has(provider);
-  const hasKey   = isLocal || Boolean(activeProvider?.apiKey);
+  const hasKey   = isLocal || Boolean(activeProvider?.apiKey) || activeProvider?.authMethod === 'login';
   const active   = instances.find(i => i.active);
   const displayItems = toDisplayItems(messages);
 
@@ -590,6 +595,8 @@ export default function Chat({ settings, serverUrl, instances }: Props): React.R
         provider, activeProvider?.apiKey ?? '', model, newMessages, relevantTools,
         (updatedMsgs) => setMessages(updatedMsgs), // live update as tools execute
         activeProvider?.baseUrl,
+        activeProvider?.authMethod,
+        active?.url,
       );
       setLoading(false);
       if (result.error) { setError(result.error); return; }

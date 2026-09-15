@@ -248,7 +248,7 @@ class InstanceManager {
         username: c.username,
         password: c.password,
       },
-      maxRetries: c.max_retries || parseInt(process.env.MAX_RETRIES || '3', 10),
+      maxRetries: c.max_retries ?? parseInt(process.env.MAX_RETRIES || '3', 10),
       retryDelayMs: c.retry_delay_ms || parseInt(process.env.RETRY_DELAY_MS || '1000', 10),
       requestTimeoutMs: c.request_timeout_ms || parseInt(process.env.REQUEST_TIMEOUT_MS || '30000', 10),
     };

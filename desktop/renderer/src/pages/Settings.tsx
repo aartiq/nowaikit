@@ -755,7 +755,32 @@ export default function Settings({ settings, onSave, activeInstance, onNavigate 
                               <div style={{ flex:1, height:1, background:'var(--border)' }} />
                             </div>
 
+                            {/* Anthropic: choose API key vs local Claude Code subscription */}
+                            {tab === 'anthropic' && (
+                              <div style={{ marginBottom:14 }}>
+                                <div style={{ marginBottom:6, fontWeight:500, fontSize:'0.85rem' }}>How to connect</div>
+                                <div style={{ display:'flex', gap:8 }}>
+                                  <button className="btn-ghost"
+                                    onClick={() => setDraft(d => ({ ...d, providers: { ...d.providers, anthropic: { ...d.providers.anthropic, authMethod: 'apiKey' } } }))}
+                                    style={{ flex:1, padding:'8px 12px', borderColor: prov.authMethod === 'login' ? 'var(--border)' : 'var(--accent)', opacity: prov.authMethod === 'login' ? 0.6 : 1 }}>
+                                    API key
+                                  </button>
+                                  <button className="btn-ghost"
+                                    onClick={() => setDraft(d => ({ ...d, providers: { ...d.providers, anthropic: { ...d.providers.anthropic, authMethod: 'login' } } }))}
+                                    style={{ flex:1, padding:'8px 12px', borderColor: prov.authMethod === 'login' ? 'var(--accent)' : 'var(--border)', opacity: prov.authMethod === 'login' ? 1 : 0.6 }}>
+                                    Claude Code subscription
+                                  </button>
+                                </div>
+                                {prov.authMethod === 'login' && (
+                                  <div style={{ marginTop:8, fontSize:'0.8rem', color:'var(--dim)', lineHeight:1.5 }}>
+                                    Uses your local Claude Code CLI and its subscription, no API key needed. Requires the <code>claude</code> command installed and signed in (<code>claude login</code>). NowAIKit runs it with your ServiceNow tools loaded, so it answers with live data.
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
                             {/* API key input */}
+                            {!(tab === 'anthropic' && prov.authMethod === 'login') && (<>
                             <div style={{ marginBottom:6, fontWeight:500, fontSize:'0.85rem' }}>{currentProvider.keyLabel}</div>
                             <div style={{ display:'flex', gap:8, marginBottom:8 }}>
                               <input
@@ -789,6 +814,7 @@ export default function Settings({ settings, onSave, activeInstance, onNavigate 
                             ) : (
                               <div style={{ fontSize:'0.78rem', color:'var(--dim)', marginBottom:16 }}>No key set — this provider is unavailable</div>
                             )}
+                            </>)}
                           </>
                         )}
 
