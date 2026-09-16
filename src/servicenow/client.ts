@@ -66,6 +66,23 @@ export function forbiddenDiagnostic(authMethod: 'basic' | 'oauth'): string {
   return lines.join('\n');
 }
 
+/**
+ * A business-rule or data-policy abort. ServiceNow returns 403 for these, but they are NOT a
+ * permissions problem, so we surface them separately and never show the roles/ACL checklist.
+ */
+export function businessRuleAbortDiagnostic(): string {
+  return [
+    'This was stopped by server-side logic on the instance, not by your permissions. A business rule or',
+    'data policy aborted the write, and that runs for everyone (admins included), so roles do not bypass',
+    'it. The rule or policy named above is telling you the actual reason. Typically:',
+    '  1. The record state or field combination is not allowed by the process (e.g. only one active task',
+    '     at a time, a required field, or a state transition that is not permitted).',
+    '  2. Fix it on the process side (adjust the related records or fields), not by adding roles.',
+    '  To bypass on purpose, an admin deactivates the rule or runs a fix script with',
+    '  current.setWorkflow(false). The REST path runs business rules by design and will not skip them.',
+  ].join('\n');
+}
+
 // ─── Input validation helpers ────────────────────────────────────────────────
 
 /** Best-effort MIME type from a file extension, for attachments fetched without a content type. */
@@ -519,8 +536,16 @@ export class ServiceNowClient {
               errorMessage = `${errorMessage}\n\n${basicAuthDiagnostic()}`;
             }
           } else if (response.status === 403) {
-            errorCode = 'INSUFFICIENT_PRIVILEGES';
-            errorMessage = `${errorMessage}\n\n${forbiddenDiagnostic(this.authMethod)}`;
+            // A business-rule or data-policy abort also returns 403, but it is NOT a permissions
+            // problem (business rules run for everyone, admin included, and roles do not bypass them).
+            // Label it as an abort and skip the roles/ACL checklist, which is misleading here.
+            if (/aborted by Business Rule|Data Policy Exception/i.test(errorMessage)) {
+              errorCode = 'OPERATION_ABORTED';
+              errorMessage = `${errorMessage}\n\n${businessRuleAbortDiagnostic()}`;
+            } else {
+              errorCode = 'INSUFFICIENT_PRIVILEGES';
+              errorMessage = `${errorMessage}\n\n${forbiddenDiagnostic(this.authMethod)}`;
+            }
           } else if (response.status === 404) {
             errorCode = 'NOT_FOUND';
           } else if (response.status === 400) {
@@ -540,7 +565,7 @@ export class ServiceNowClient {
         if (error instanceof ServiceNowError) {
           // 403 is not transient (a role/ACL/data-policy denial won't clear in 4s), so fail fast
           // instead of burning ~7s on retries.
-          if (['AUTHENTICATION_FAILED', 'INVALID_REQUEST', 'NOT_FOUND', 'INSUFFICIENT_PRIVILEGES'].includes(error.code)) {
+          if (['AUTHENTICATION_FAILED', 'INVALID_REQUEST', 'NOT_FOUND', 'INSUFFICIENT_PRIVILEGES', 'OPERATION_ABORTED'].includes(error.code)) {
             throw error;
           }
         }

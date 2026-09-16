@@ -48,6 +48,22 @@ describe('retry policy', () => {
     const postAttempts = fetchMock.mock.calls.filter((c: any[]) => (c[1]?.method || 'GET') === 'POST').length;
     expect(postAttempts).toBe(1); // the write is not replayed
   });
+
+  it('a business-rule abort (403) is OPERATION_ABORTED, not a privilege error, and not retried', async () => {
+    fetchMock.mockResolvedValue(res(403, { error: { message: 'Operation Failed', detail: "Operation against file 'change_task' was aborted by Business Rule 'Prevent Duplicate Active Change Tasks'" } }));
+    const err: any = await mk(3).queryRecords({ table: 'change_task' }).catch((e) => e);
+    expect(err.code).toBe('OPERATION_ABORTED');
+    expect(err.message).toMatch(/server-side logic/);          // abort guidance
+    expect(err.message).not.toMatch(/Writes need WRITE_ENABLED/); // NOT the privilege checklist
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('a genuine 403 still gets the privilege diagnostic', async () => {
+    fetchMock.mockResolvedValue(res(403, { error: { message: 'Insufficient rights to write', detail: 'ACL denied' } }));
+    const err: any = await mk(3).queryRecords({ table: 'sys_user' }).catch((e) => e);
+    expect(err.code).toBe('INSUFFICIENT_PRIVILEGES');
+    expect(err.message).toMatch(/Writes need WRITE_ENABLED|Authenticated, but not authorized/);
+  });
 });
 
 describe('strict delegated-auth', () => {
