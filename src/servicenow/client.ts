@@ -247,6 +247,21 @@ export class ServiceNowClient {
   }
 
   /**
+   * Attach a `record_url` deep-link to a record the API just returned, so create/update tool results
+   * always give the user a direct link to open the record. Uses `record_url` (not `url`) so it never
+   * clobbers a real ServiceNow `url` column. No-op if there's no sys_id.
+   */
+  attachRecordUrl<T extends Record<string, any>>(table: string, record: T): T {
+    if (!record || typeof record !== 'object') return record;
+    const raw = (record as any).sys_id;
+    const sysId = raw && typeof raw === 'object' ? (raw.value ?? raw.display_value) : raw;
+    if (sysId && !(record as any).record_url) {
+      try { (record as any).record_url = this.recordUrl(table, String(sysId)); } catch { /* ignore */ }
+    }
+    return record;
+  }
+
+  /**
    * Return the fields that ServiceNow Data Policies make mandatory on a table, so an agent can
    * collect them BEFORE a create/update and avoid the "Data Policy Exception: mandatory fields"
    * error. Reads sys_data_policy_rule (the mandatory rules) and sys_data_policy2 (the condition
@@ -1150,7 +1165,7 @@ export class ServiceNowClient {
         method: 'POST',
         body: JSON.stringify(data),
       });
-      return response.result;
+      return this.attachRecordUrl(table, response.result);
     } catch (error) {
       if (error instanceof ServiceNowError) throw error;
       throw new ServiceNowError(
@@ -1193,7 +1208,7 @@ export class ServiceNowClient {
           `ACLs or a data policy may have silently discarded them (the Table API still returns 200), ` +
           `or a business rule transformed them. Verify the change took effect.`;
       }
-      return result as ServiceNowRecord;
+      return this.attachRecordUrl(table, result as ServiceNowRecord);
     } catch (error) {
       if (error instanceof ServiceNowError) throw error;
       throw new ServiceNowError(
